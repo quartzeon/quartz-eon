@@ -170,6 +170,10 @@
     } else {
       actions.push(`<button class="btn btn--ink btn--sm" type="button" data-approve="${esc(s.id)}">${icon('i-play')}<span>Reactivate</span></button>`);
     }
+    /* Only a store that is not live can be deleted, so a working shop is never removed by a stray click. */
+    if (s.status !== 'approved') {
+      actions.push(`<button class="btn btn--ghost btn--sm" type="button" data-delete-seller="${esc(s.id)}" aria-label="Delete ${esc(s.store_name)}">${icon('i-trash')}<span>Delete</span></button>`);
+    }
     return `
       <article class="seller-row" style="--h:${Number(s.hue) || 0}">
         <div class="seller-row__main">
@@ -211,11 +215,28 @@
     toast(status === 'approved' ? 'Store approved' : status === 'suspended' ? 'Store suspended' : 'Updated');
   }
 
+  async function deleteSeller(id) {
+    const seller = sellers.find((row) => row.id === id);
+    const name = seller ? seller.store_name : 'this store';
+    if (!window.confirm(`Delete "${name}" for good? Its login, products and bank details are removed and this cannot be undone.`)) return;
+    const { error } = await sb.rpc('delete_seller', { p_seller_id: id });
+    if (error) {
+      toast(`Could not delete: ${error.message}`);
+      return;
+    }
+    sellers = sellers.filter((row) => row.id !== id);
+    renderSellers();
+    toast('Store deleted');
+    loadProducts();
+  }
+
   byId('sellers-list').addEventListener('click', (event) => {
     const approve = event.target.closest('[data-approve]');
     if (approve) { setStatus(approve.dataset.approve, 'approved'); return; }
     const suspend = event.target.closest('[data-suspend]');
-    if (suspend) setStatus(suspend.dataset.suspend, 'suspended');
+    if (suspend) { setStatus(suspend.dataset.suspend, 'suspended'); return; }
+    const remove = event.target.closest('[data-delete-seller]');
+    if (remove) deleteSeller(remove.dataset.deleteSeller);
   });
 
   /* ---------- Sections: Sellers and Products ---------- */
