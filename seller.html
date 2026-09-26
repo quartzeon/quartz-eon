@@ -1,0 +1,319 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#F2F5F3">
+<meta name="robots" content="noindex, nofollow">
+<title>Seller dashboard | Quartz Eon</title>
+<link rel="icon" type="image/png" href="assets/logo.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500..800&family=DM+Mono:wght@400;500&family=Instrument+Sans:wght@400..700&display=swap">
+<link rel="stylesheet" href="css/style.css">
+<link rel="stylesheet" href="css/seller.css">
+<script>
+  try {
+    var savedTheme = localStorage.getItem('quartz-eon.theme');
+    if (savedTheme === 'dark' || savedTheme === 'light') document.documentElement.setAttribute('data-theme', savedTheme);
+  } catch (e) {}
+  document.documentElement.lang = 'en';
+</script>
+</head>
+<body>
+
+<svg class="sprite" width="0" height="0" aria-hidden="true" focusable="false">
+  <defs>
+    <symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2.5v2M12 19.5v2M2.5 12h2M19.5 12h2M5.3 5.3l1.4 1.4M17.3 17.3l1.4 1.4M5.3 18.7l1.4-1.4M17.3 6.7l1.4-1.4"/></symbol>
+    <symbol id="i-moon" viewBox="0 0 24 24"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9z"/></symbol>
+    <symbol id="i-logout" viewBox="0 0 24 24"><path d="M15 4h-3a3 3 0 0 0-3 3v10a3 3 0 0 0 3 3h3M10 12h11M17 8l4 4-4 4"/></symbol>
+    <symbol id="i-store" viewBox="0 0 24 24"><path d="M4 9l1.5-5h13L20 9"/><path d="M4 9a3 3 0 0 0 5.3 1.9 3 3 0 0 0 5.4 0A3 3 0 0 0 20 9"/><path d="M5.5 12.5V20h13v-7.5"/><path d="M10 20v-4.5h4V20"/></symbol>
+    <symbol id="i-copy" viewBox="0 0 24 24"><rect x="9" y="9" width="11" height="11" rx="2.5"/><path d="M5 15V6.5A2.5 2.5 0 0 1 7.5 4H16"/></symbol>
+    <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+    <symbol id="i-edit" viewBox="0 0 24 24"><path d="M4 20h4L18.5 9.5a2.5 2.5 0 0 0-3.5-3.5L4.5 16.5z"/><path d="M13.5 7.5l3 3"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></symbol>
+    <symbol id="i-pause" viewBox="0 0 24 24"><rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></symbol>
+    <symbol id="i-play" viewBox="0 0 24 24"><path d="M7 5l12 7-12 7z"/></symbol>
+    <symbol id="i-trash" viewBox="0 0 24 24"><path d="M5 7h14M9 7V5.5A1.5 1.5 0 0 1 10.5 4h3A1.5 1.5 0 0 1 15 5.5V7M7 7l1 13h8l1-13"/></symbol>
+
+    <symbol id="a-layout" viewBox="0 0 48 48"><rect x="6" y="8" width="36" height="32" rx="4"/><path d="M6 18h36M20 18v22"/></symbol>
+    <symbol id="a-book" viewBox="0 0 48 48"><path d="M10 6h24a4 4 0 0 1 4 4v28H14a4 4 0 0 1-4-4z"/><path d="M10 34a4 4 0 0 1 4-4h24"/><path d="M18 14h14M18 20h10"/></symbol>
+    <symbol id="a-course" viewBox="0 0 48 48"><rect x="6" y="9" width="36" height="24" rx="4"/><path d="M20 16.5v9l8-4.5z"/><path d="M24 33v7M16 40h16"/></symbol>
+    <symbol id="a-code" viewBox="0 0 48 48"><rect x="5" y="8" width="38" height="32" rx="5"/><path d="M5 16h38"/><path d="M19 23l-5 5 5 5M29 23l5 5-5 5"/><circle cx="10" cy="12" r="1" fill="currentColor"/><circle cx="14" cy="12" r="1" fill="currentColor"/></symbol>
+    <symbol id="a-shapes" viewBox="0 0 48 48"><circle cx="16" cy="16" r="8"/><rect x="26" y="26" width="14" height="14" rx="2"/><path d="M8 40l6-11 6 11z"/></symbol>
+    <symbol id="a-vpn" viewBox="0 0 48 48"><path d="M24 5l15 6v10c0 11-7 17-15 22-8-5-15-11-15-22V11z"/><circle cx="24" cy="21" r="4"/><path d="M24 25v6"/></symbol>
+  </defs>
+</svg>
+
+<header class="site-header admin-header">
+  <div class="wrap site-header__row">
+    <a class="brand" href="seller.html" aria-label="Quartz Eon seller dashboard, home">
+      <img class="brand__mark" src="assets/logo.png" alt="" width="34" height="34">
+      <span class="brand__word">Quartz Eon</span>
+      <span class="admin-tag">Seller</span>
+    </a>
+    <div class="site-header__actions">
+      <button class="icon-btn" id="theme-toggle" type="button" aria-label="Switch to dark mode">
+        <svg class="i" aria-hidden="true" focusable="false"><use href="#i-moon"/></svg>
+      </button>
+      <button class="btn btn--ghost" id="seller-logout" type="button" hidden>
+        <svg class="i" aria-hidden="true" focusable="false"><use href="#i-logout"/></svg>
+        <span>Log out</span>
+      </button>
+    </div>
+  </div>
+</header>
+
+<main class="wrap admin-main">
+
+  <!-- Shown when nobody is signed in -->
+  <section class="admin-panel" id="seller-login" aria-labelledby="seller-login-title">
+    <span class="admin-icon"><svg class="i" aria-hidden="true" focusable="false"><use href="#i-store"/></svg></span>
+    <p class="eyebrow">Seller dashboard</p>
+    <h1 class="admin-title" id="seller-login-title">Welcome back, seller</h1>
+    <p class="admin-lead">Manage your store and products. Not a seller yet? Go to the shop and sign up from the Log in menu.</p>
+    <form class="auth__form" id="seller-login-form" novalidate>
+      <div class="field">
+        <label for="seller-email">Email</label>
+        <input id="seller-email" name="email" type="email" autocomplete="email" placeholder="you@example.com" aria-describedby="seller-email-error">
+        <p class="field__error" id="seller-email-error" hidden></p>
+      </div>
+      <div class="field">
+        <label for="seller-password">Password</label>
+        <div class="pw">
+          <input id="seller-password" name="password" type="password" autocomplete="current-password" aria-describedby="seller-password-error">
+          <button class="pw__toggle" type="button" data-pw-toggle="seller-password" aria-pressed="false">Show</button>
+        </div>
+        <p class="field__error" id="seller-password-error" hidden></p>
+      </div>
+      <p class="field__error" id="seller-form-error" hidden></p>
+      <button class="btn btn--ink btn--block" type="submit">Log in</button>
+    </form>
+  </section>
+
+  <!-- Shown when signed in but the account is not a seller -->
+  <section class="admin-panel" id="seller-denied" hidden aria-labelledby="seller-denied-title">
+    <p class="eyebrow">Signed in as <span id="seller-denied-email"></span></p>
+    <h1 class="admin-title" id="seller-denied-title">This is not a seller account</h1>
+    <p class="admin-lead">You are signed in, but this account is not registered as a seller.</p>
+  </section>
+
+  <!-- The dashboard itself -->
+  <section id="seller-app" hidden aria-label="Seller dashboard">
+
+    <div class="status-banner" id="status-banner"></div>
+
+    <div class="dash-grid">
+      <section class="dash-card" aria-labelledby="store-title">
+        <h2 class="dash-card__title" id="store-title">Your store</h2>
+        <form class="auth__form" id="store-form" novalidate>
+          <div class="field">
+            <label for="store-name">Store name</label>
+            <input id="store-name" name="storeName" type="text" autocomplete="organization">
+            <p class="field__error" id="store-name-error" hidden></p>
+          </div>
+          <div class="field">
+            <label for="store-about">About your store</label>
+            <textarea id="store-about" name="about" rows="3"></textarea>
+          </div>
+          <div class="field">
+            <label for="store-link">Store address</label>
+            <div class="copy-row">
+              <input id="store-link" type="text" readonly>
+              <button class="btn btn--ghost btn--sm" type="button" id="copy-link"><svg class="i" aria-hidden="true" focusable="false"><use href="#i-copy"/></svg><span>Copy link</span></button>
+            </div>
+            <p class="field__hint">This cannot be changed once set.</p>
+          </div>
+          <p class="field__error" id="store-form-error" hidden></p>
+          <button class="btn btn--ink" type="submit">Save changes</button>
+        </form>
+      </section>
+
+      <section class="dash-card" aria-labelledby="products-title">
+        <div class="dash-card__head">
+          <h2 class="dash-card__title" id="products-title">Products</h2>
+          <p class="admin-count" id="products-count"></p>
+        </div>
+
+        <form class="auth__form prod-form" id="product-form" novalidate>
+          <input type="hidden" name="productId" value="">
+          <p class="prod-form__title" id="prod-form-title">Add a product</p>
+          <div class="field">
+            <label for="prod-name">Product name</label>
+            <input id="prod-name" name="name" type="text" placeholder="Your product name">
+            <p class="field__error" id="prod-name-error" hidden></p>
+          </div>
+          <div class="field-row">
+            <div class="field">
+              <label for="prod-category">Category</label>
+              <select id="prod-category" name="category"></select>
+            </div>
+            <div class="field">
+              <label for="prod-icon">Shown as</label>
+              <select id="prod-icon" name="icon">
+                <option value="vpn">VPN access</option>
+                <option value="layout">Template</option>
+                <option value="book">E-book</option>
+                <option value="course">Course / video</option>
+                <option value="code">Software</option>
+                <option value="shapes">Design asset</option>
+              </select>
+            </div>
+          </div>
+          <div class="field-row">
+            <div class="field">
+              <label for="prod-price">Price (Rs.)</label>
+              <input id="prod-price" name="price" type="number" min="1" step="1" inputmode="numeric">
+              <p class="field__error" id="prod-price-error" hidden></p>
+            </div>
+            <div class="field">
+              <label for="prod-type">File type</label>
+              <input id="prod-type" name="type" type="text" placeholder="PDF, ZIP, MP4…" maxlength="12">
+            </div>
+          </div>
+          <div class="field">
+            <label for="prod-description">Description (optional)</label>
+            <textarea id="prod-description" name="description" rows="2"></textarea>
+          </div>
+          <div class="field-row" id="prod-vpn-fields" hidden>
+            <div class="field">
+              <label for="prod-vpn-days">Plan length (days)</label>
+              <input id="prod-vpn-days" name="vpnDays" type="number" min="1" max="3650" step="1" inputmode="numeric" value="30">
+              <p class="field__error" id="prod-vpn-days-error" hidden></p>
+            </div>
+            <div class="field">
+              <label for="prod-vpn-gb">Data limit (GB)</label>
+              <input id="prod-vpn-gb" name="vpnGb" type="number" min="0" step="1" inputmode="numeric" value="0">
+              <p class="field__hint">0 means unlimited.</p>
+              <p class="field__error" id="prod-vpn-gb-error" hidden></p>
+            </div>
+          </div>
+          <div class="field" id="prod-delivery-field">
+            <label for="prod-delivery">What the customer gets after paying</label>
+            <textarea id="prod-delivery" name="deliveryInfo" rows="3" placeholder="A private download link, a licence key, or instructions. Only customers who have paid see this."></textarea>
+            <p class="field__hint" id="prod-delivery-hint">Shown only to customers who have paid. Never shown on the public shop.</p>
+          </div>
+          <label class="check-row">
+            <input id="prod-hidden" name="hidden" type="checkbox">
+            <span>Hide from the shop for now</span>
+          </label>
+          <p class="field__error" id="prod-form-error" hidden></p>
+          <div class="prod-form__actions">
+            <button class="btn btn--ink" type="submit" id="prod-submit"><svg class="i" aria-hidden="true" focusable="false"><use href="#i-plus"/></svg><span>Add product</span></button>
+            <button class="link" type="button" id="prod-cancel" hidden>Cancel</button>
+          </div>
+        </form>
+
+        <div class="prod-list" id="products-list"></div>
+        <p class="admin-empty" id="products-empty" hidden>You have not added any products yet.</p>
+      </section>
+
+      <section class="dash-card sales-card" id="sales-card" aria-labelledby="sales-title">
+        <div class="dash-card__head">
+          <h2 class="dash-card__title" id="sales-title">Orders</h2>
+          <p class="admin-count" id="sales-count"></p>
+        </div>
+        <div class="prod-list" id="sales-list"></div>
+        <p class="admin-empty" id="sales-empty" hidden>No orders yet.</p>
+      </section>
+
+      <section class="dash-card" id="bank-card" aria-labelledby="bank-title">
+        <h2 class="dash-card__title" id="bank-title">Your bank details</h2>
+        <p class="admin-lead">Customers pay you directly. These details are shown to a logged-in customer while they pay for one of your products. Keep them up to date.</p>
+        <form class="auth__form" id="bank-form" novalidate>
+          <div class="field-row">
+            <div class="field">
+              <label for="bank-name">Bank</label>
+              <input id="bank-name" name="bankName" type="text" autocomplete="off" maxlength="60" placeholder="For example Commercial Bank">
+            </div>
+            <div class="field">
+              <label for="bank-branch">Branch</label>
+              <input id="bank-branch" name="branch" type="text" autocomplete="off" maxlength="60">
+            </div>
+          </div>
+          <div class="field">
+            <label for="bank-account-name">Account name</label>
+            <input id="bank-account-name" name="accountName" type="text" autocomplete="off" maxlength="80">
+            <p class="field__error" id="bank-account-name-error" hidden></p>
+          </div>
+          <div class="field">
+            <label for="bank-account-number">Account number</label>
+            <input id="bank-account-number" name="accountNumber" type="text" inputmode="numeric" autocomplete="off" maxlength="40">
+            <p class="field__error" id="bank-account-number-error" hidden></p>
+          </div>
+          <div class="field">
+            <label for="bank-note">Note for customers (optional)</label>
+            <textarea id="bank-note" name="note" rows="2" maxlength="200" placeholder="For example: put your email in the transfer reference"></textarea>
+          </div>
+          <p class="field__error" id="bank-form-error" hidden></p>
+          <p class="field__hint" id="bank-saved-note" hidden></p>
+          <button class="btn btn--ink" type="submit">Save bank details</button>
+        </form>
+      </section>
+
+      <section class="dash-card" id="telegram-card" aria-labelledby="telegram-title">
+        <h2 class="dash-card__title" id="telegram-title">Telegram alerts</h2>
+        <p class="admin-lead">Connect Telegram to get a message with the customer’s slip and <strong>Approve</strong> / <strong>Reject</strong> buttons the moment someone pays you. Pressing Approve delivers the product to the customer automatically.</p>
+        <p class="note" id="telegram-status"></p>
+        <p class="field__error" id="telegram-error" hidden></p>
+        <div class="telegram-actions">
+          <button class="btn btn--ink" type="button" id="telegram-connect">Connect Telegram</button>
+          <a class="btn btn--ink" id="telegram-open" href="#" target="_blank" rel="noopener" hidden>Open Telegram and press Start</a>
+          <button class="btn btn--ghost" type="button" id="telegram-disconnect" hidden>Disconnect</button>
+        </div>
+      </section>
+
+      <section class="dash-card" id="fee-card" aria-labelledby="fee-title" hidden>
+        <h2 class="dash-card__title" id="fee-title">Store fee: pay to the site owner</h2>
+        <p class="admin-lead" id="fee-lead"></p>
+        <dl class="pay__bank" id="fee-bank"></dl>
+        <p class="field__hint" id="fee-note" hidden></p>
+      </section>
+
+      <section class="dash-card vpn-card" id="vpn-card" aria-labelledby="vpn-title">
+        <h2 class="dash-card__title" id="vpn-title">VPN panel connection</h2>
+        <p class="admin-lead">Selling VPN access needs your own panel (for example 3x-ui). Enter its address and API token here so a client can be added automatically when someone buys a VPN plan from you. This is stored so that only you (and the site owner, for support) can see it — nobody else, and it is never shown on your public store.</p>
+        <form class="auth__form" id="vpn-form" novalidate>
+          <div class="field">
+            <label for="vpn-url">Panel address</label>
+            <input id="vpn-url" name="panelUrl" type="text" autocomplete="off" spellcheck="false" placeholder="https://your-panel.example.com:30031/xxxxxxxx/panel">
+            <p class="field__hint">The full address you use to log in, without /clients at the end.</p>
+            <p class="field__error" id="vpn-url-error" hidden></p>
+          </div>
+          <div class="field">
+            <label for="vpn-token">API token</label>
+            <div class="pw">
+              <input id="vpn-token" name="apiToken" type="password" autocomplete="off" aria-describedby="vpn-token-error">
+              <button class="pw__toggle" type="button" data-pw-toggle="vpn-token" aria-pressed="false">Show</button>
+            </div>
+            <p class="field__error" id="vpn-token-error" hidden></p>
+          </div>
+          <div class="field">
+            <label for="vpn-inbound">Inbound ID (optional)</label>
+            <input id="vpn-inbound" name="inboundId" type="text" autocomplete="off" placeholder="Leave blank to use your first inbound">
+          </div>
+          <div class="field">
+            <label for="vpn-sub">Subscription link address (optional)</label>
+            <input id="vpn-sub" name="subUrlBase" type="text" autocomplete="off" spellcheck="false" placeholder="https://your-panel.example.com:2096/sub">
+            <p class="field__hint">If your panel has subscriptions turned on, the customer gets this address followed by their own code.</p>
+          </div>
+          <p class="field__error" id="vpn-form-error" hidden></p>
+          <p class="field__hint" id="vpn-saved-note" hidden></p>
+          <button class="btn btn--ink" type="submit">Save VPN settings</button>
+        </form>
+      </section>
+    </div>
+
+  </section>
+
+</main>
+
+<div class="toasts" id="seller-toasts" role="status" aria-live="polite"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script src="js/supabase-client.js"></script>
+<script src="js/config.js"></script>
+<script src="js/seller-dashboard.js"></script>
+</body>
+</html>

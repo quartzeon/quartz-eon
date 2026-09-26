@@ -1,0 +1,214 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#F2F5F3">
+<meta name="description" content="Quartz Eon is a marketplace for digital products: templates, e-books, courses, software and design assets from independent sellers.">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Quartz Eon">
+<meta property="og:title" content="Quartz Eon">
+<meta property="og:description" content="Digital products from independent sellers: templates, e-books, courses, software and design assets.">
+<meta property="og:image" content="assets/logo.png">
+<meta name="twitter:card" content="summary">
+<title>Quartz Eon</title>
+<link rel="icon" type="image/png" href="assets/logo.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500..800&family=DM+Mono:wght@400;500&family=Instrument+Sans:wght@400..700&display=swap">
+<link rel="stylesheet" href="css/style.css">
+<script>
+  /* Apply a saved theme choice before first paint so the page never flashes the wrong theme. */
+  try {
+    var savedTheme = localStorage.getItem('quartz-eon.theme');
+    if (savedTheme === 'dark' || savedTheme === 'light') document.documentElement.setAttribute('data-theme', savedTheme);
+  } catch (e) {}
+  document.documentElement.lang = 'en';
+</script>
+</head>
+<body>
+
+<!-- Icon and product-art sprite. UI icons use a 24 grid, product art a 48 grid. -->
+<svg class="sprite" width="0" height="0" aria-hidden="true" focusable="false">
+  <defs>
+    <symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2.5v2M12 19.5v2M2.5 12h2M19.5 12h2M5.3 5.3l1.4 1.4M17.3 17.3l1.4 1.4M5.3 18.7l1.4-1.4M17.3 6.7l1.4-1.4"/></symbol>
+    <symbol id="i-moon" viewBox="0 0 24 24"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9z"/></symbol>
+    <symbol id="i-user" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-6 8-6s8 2 8 6"/></symbol>
+    <symbol id="i-chev" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></symbol>
+    <symbol id="i-bag" viewBox="0 0 24 24"><path d="M5.5 8h13l-1.1 12H6.6z"/><path d="M9 8V7a3 3 0 0 1 6 0v1"/></symbol>
+    <symbol id="i-store" viewBox="0 0 24 24"><path d="M4 9l1.5-5h13L20 9"/><path d="M4 9a3 3 0 0 0 5.3 1.9 3 3 0 0 0 5.4 0A3 3 0 0 0 20 9"/><path d="M5.5 12.5V20h13v-7.5"/><path d="M10 20v-4.5h4V20"/></symbol>
+    <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5"/><path d="M20 20l-4.2-4.2"/></symbol>
+    <symbol id="i-close" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></symbol>
+    <symbol id="i-back" viewBox="0 0 24 24"><path d="M19 12H5M11 6l-6 6 6 6"/></symbol>
+    <symbol id="i-logout" viewBox="0 0 24 24"><path d="M15 4h-3a3 3 0 0 0-3 3v10a3 3 0 0 0 3 3h3M10 12h11M17 8l4 4-4 4"/></symbol>
+
+    <symbol id="a-layout" viewBox="0 0 48 48"><rect x="6" y="8" width="36" height="32" rx="4"/><path d="M6 18h36M20 18v22"/></symbol>
+    <symbol id="a-book" viewBox="0 0 48 48"><path d="M10 6h24a4 4 0 0 1 4 4v28H14a4 4 0 0 1-4-4z"/><path d="M10 34a4 4 0 0 1 4-4h24"/><path d="M18 14h14M18 20h10"/></symbol>
+    <symbol id="a-course" viewBox="0 0 48 48"><rect x="6" y="9" width="36" height="24" rx="4"/><path d="M20 16.5v9l8-4.5z"/><path d="M24 33v7M16 40h16"/></symbol>
+    <symbol id="a-code" viewBox="0 0 48 48"><rect x="5" y="8" width="38" height="32" rx="5"/><path d="M5 16h38"/><path d="M19 23l-5 5 5 5M29 23l5 5-5 5"/><circle cx="10" cy="12" r="1" fill="currentColor"/><circle cx="14" cy="12" r="1" fill="currentColor"/></symbol>
+    <symbol id="a-shapes" viewBox="0 0 48 48"><circle cx="16" cy="16" r="8"/><rect x="26" y="26" width="14" height="14" rx="2"/><path d="M8 40l6-11 6 11z"/></symbol>
+    <symbol id="a-vpn" viewBox="0 0 48 48"><path d="M24 5l15 6v10c0 11-7 17-15 22-8-5-15-11-15-22V11z"/><circle cx="24" cy="21" r="4"/><path d="M24 25v6"/></symbol>
+  </defs>
+</svg>
+
+<div class="promo">
+  <div class="wrap promo__row">
+    <span>Delivered to your account after payment</span>
+    <span class="promo__sep" aria-hidden="true"></span>
+    <span>Open to independent sellers</span>
+  </div>
+</div>
+
+<header class="site-header" id="top">
+  <div class="wrap site-header__row">
+    <a class="brand" href="#/" aria-label="Quartz Eon, home">
+      <img class="brand__mark" src="assets/logo.png" alt="" width="34" height="34">
+      <span class="brand__word">Quartz Eon</span>
+    </a>
+    <div class="site-header__actions">
+      <button class="icon-btn" id="theme-toggle" type="button" aria-label="Switch to dark mode">
+        <svg class="i" aria-hidden="true" focusable="false"><use href="#i-moon"/></svg>
+      </button>
+      <div class="login" id="login-widget">
+        <button class="btn btn--ghost login__btn" id="login-toggle" type="button" aria-expanded="false" aria-controls="login-menu">
+          <svg class="i" aria-hidden="true" focusable="false"><use href="#i-user"/></svg>
+          <span>Log in</span>
+          <svg class="i login__chev" aria-hidden="true" focusable="false"><use href="#i-chev"/></svg>
+        </button>
+        <div class="login__menu" id="login-menu" role="group" aria-label="Log in" hidden>
+          <div class="login__panel" id="login-choose">
+            <p class="login__title">Log in as</p>
+            <button class="login__opt" type="button" data-role="customer" style="--h:226">
+              <span class="login__icon"><svg class="i" aria-hidden="true" focusable="false"><use href="#i-bag"/></svg></span>
+              <span class="login__text"><strong>Customer</strong><span>Buy and download digital products</span></span>
+            </button>
+            <button class="login__opt" type="button" data-role="seller" style="--h:160">
+              <span class="login__icon"><svg class="i" aria-hidden="true" focusable="false"><use href="#i-store"/></svg></span>
+              <span class="login__text"><strong>Seller</strong><span>Sell and manage your own products</span></span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Shown instead of the Log in button once a session is loaded -->
+      <div class="login" id="account" hidden>
+        <button class="btn btn--ghost login__btn" id="account-toggle" type="button" aria-expanded="false" aria-controls="account-menu">
+          <span class="account__dot" id="account-dot" aria-hidden="true"></span>
+          <span id="account-label">Account</span>
+          <svg class="i login__chev" aria-hidden="true" focusable="false"><use href="#i-chev"/></svg>
+        </button>
+        <div class="login__menu" id="account-menu" role="group" aria-label="Your account" hidden>
+          <div class="login__panel">
+            <p class="login__title">Signed in as</p>
+            <p class="account__email" id="account-email"></p>
+            <p class="note" id="account-note" hidden></p>
+            <a class="btn btn--ghost btn--block" href="#/orders" id="account-orders">
+              <svg class="i" aria-hidden="true" focusable="false"><use href="#i-bag"/></svg>
+              <span>My orders</span>
+            </a>
+            <button class="btn btn--ghost btn--block" type="button" id="account-logout">
+              <svg class="i" aria-hidden="true" focusable="false"><use href="#i-logout"/></svg>
+              <span>Log out</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</header>
+
+<main id="main">
+  <!-- Home page: search, categories and all products -->
+  <div id="home-view">
+  <section class="intro tone tone--sapphire" aria-labelledby="intro-title">
+    <div class="wrap intro__row">
+      <div>
+        <p class="eyebrow">Digital products marketplace</p>
+        <h1 class="intro__title" id="intro-title">Digital products from independent sellers</h1>
+      </div>
+      <div class="search">
+        <label class="sr-only" for="q">Search products</label>
+        <svg class="i" aria-hidden="true" focusable="false"><use href="#i-search"/></svg>
+        <input id="q" type="search" placeholder="Search templates, e-books, courses" autocomplete="off">
+      </div>
+    </div>
+  </section>
+
+  <section id="shop" class="sec tone tone--paper" aria-labelledby="shop-title">
+    <div class="wrap">
+      <header class="sec__head">
+        <h2 class="h2" id="shop-title">Browse products</h2>
+        <p class="sec__count" id="result-count" aria-live="polite"></p>
+      </header>
+
+      <div class="toolbar">
+        <div class="chips" id="chips" role="group" aria-label="Filter by category"></div>
+        <div class="select">
+          <label class="sr-only" for="sort">Sort products</label>
+          <select id="sort">
+            <option value="featured">Featured</option>
+            <option value="low">Price: low to high</option>
+            <option value="high">Price: high to low</option>
+            <option value="name">Name: A to Z</option>
+          </select>
+          <svg class="i select__chev" aria-hidden="true" focusable="false"><use href="#i-chev"/></svg>
+        </div>
+      </div>
+
+      <div class="grid" id="grid"></div>
+      <div class="empty" id="empty" hidden>
+        <p class="empty__title" id="empty-title">Loading products</p>
+        <p id="empty-text">One moment.</p>
+        <button class="btn btn--ink" type="button" id="clear-filters" hidden>Clear filters</button>
+        <button class="btn btn--ink" type="button" id="retry-load" hidden>Try again</button>
+      </div>
+      <noscript><p class="note">The shop needs JavaScript to show products. Please turn it on and reload the page.</p></noscript>
+    </div>
+  </section>
+  </div>
+
+  <!-- Seller store page, filled in by app.js when the address is #/store/<seller id> -->
+  <div id="store-view" hidden></div>
+
+  <!-- The logged-in customer's orders, filled in by app.js when the address is #/orders -->
+  <div id="orders-view" hidden></div>
+
+  <div class="wrap">
+    <p class="rate" id="rate-note"></p>
+  </div>
+</main>
+
+<footer class="footer">
+  <div class="wrap">
+    <div class="footer__top">
+      <div>
+        <a class="brand" href="#/" aria-label="Quartz Eon, home">
+          <img class="brand__mark" src="assets/logo.png" alt="" width="34" height="34">
+          <span class="brand__word">Quartz Eon</span>
+        </a>
+        <p class="footer__blurb">A marketplace for digital products, made by independent sellers.</p>
+      </div>
+      <a class="footer__up" href="#top">Back to top</a>
+    </div>
+    <div class="footer__base">
+      <p>&copy; <span id="year"></span> Quartz Eon. All rights reserved.</p>
+    </div>
+  </div>
+</footer>
+
+<dialog id="buy" class="modal" aria-labelledby="buy-title">
+  <div class="dlg" id="buy-body"></div>
+</dialog>
+
+<dialog id="auth" class="modal modal--auth" aria-labelledby="auth-title">
+  <div class="dlg" id="auth-body"></div>
+</dialog>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script src="js/supabase-client.js"></script>
+<script src="js/config.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>

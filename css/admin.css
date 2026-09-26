@@ -1,0 +1,90 @@
+/* Quartz Eon admin page. Loaded after style.css, so it can reuse all of its tokens and components
+   (buttons, chips, fields, badges, toasts) and only add what the admin page needs on top. */
+
+.admin-header .brand__word { margin-right: 4px; }
+.admin-tag {
+  padding: 3px 9px; border-radius: 999px; background: var(--ink); color: var(--paper);
+  font: 500 11px/1 var(--font-mono); letter-spacing: .08em; text-transform: uppercase;
+}
+
+.admin-main { padding-block: clamp(32px, 5vw, 56px) 72px; }
+
+/* Log in / access-denied panels: one roomy, welcoming card, not a cramped little box */
+.admin-panel {
+  display: grid; justify-items: start; gap: 16px; width: min(500px, 100%); margin-inline: auto;
+  padding: 48px clamp(24px, 5vw, 44px) 40px; border: 1px solid var(--line); border-radius: var(--radius-l); background: var(--card);
+}
+.admin-icon {
+  display: grid; place-items: center; width: 52px; height: 52px; margin-bottom: 4px; border-radius: 14px;
+  background: hsl(248 var(--art-s) var(--art-l)); color: hsl(248 var(--art-fg-s) var(--art-fg-l));
+}
+.admin-title { font: 800 clamp(1.7rem, 1.4rem + 1vw, 2.1rem)/1.12 var(--font-display); letter-spacing: -.03em; }
+.admin-lead { color: var(--ink-2); font-size: 15px; line-height: 1.5; }
+.admin-panel .auth__form { width: 100%; margin-top: 8px; }
+.admin-panel .auth__form .btn--block { min-height: 52px; font-size: 16px; }
+#admin-denied-email { font-weight: 700; color: var(--ink); }
+
+/* Dashboard head and status filter */
+.admin-app__head { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 12px 24px; margin-bottom: 22px; }
+.admin-count { font: 500 13px/1 var(--font-mono); letter-spacing: .04em; color: var(--ink-2); }
+.admin-tabs { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 28px; }
+.admin-empty { margin-top: 24px; color: var(--ink-2); }
+
+/* Seller rows */
+.admin-list { display: grid; gap: 14px; }
+.seller-row {
+  display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 14px 20px;
+  padding: 18px 20px; border: 1px solid var(--line); border-radius: var(--radius-l); background: var(--card);
+}
+.seller-row__main { display: flex; align-items: center; gap: 14px; min-width: 0; }
+.seller-row__avatar {
+  display: grid; place-items: center; flex: none; width: 46px; height: 46px; border-radius: 13px;
+  background: hsl(var(--h) var(--art-s) var(--art-l)); color: hsl(var(--h) var(--art-fg-s) var(--art-fg-l));
+}
+.seller-row__avatar .i { width: 22px; height: 22px; }
+.seller-row__avatar .art { width: 26px; height: 26px; }
+.admin-tabs--sections { margin-bottom: 20px; padding-bottom: 20px; border-bottom: 1px solid var(--line); }
+.seller-row__text { min-width: 0; }
+.seller-row__name { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; font: 700 17px/1.25 var(--font-display); letter-spacing: -.01em; }
+.seller-row__meta { margin-top: 2px; font-size: 13px; color: var(--ink-2); overflow-wrap: anywhere; }
+.seller-row__actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.settings-card { max-width: 620px; padding: 24px clamp(18px, 3vw, 28px); border: 1px solid var(--line); border-radius: var(--radius-l); background: var(--card); }
+.settings-card__title { margin-bottom: 8px; font: 700 20px/1.2 var(--font-display); letter-spacing: -.015em; }
+.settings-card .auth__form { margin-top: 18px; }
+.field__hint { font-size: 13px; color: var(--ink-2); }
+.order-problem { color: var(--danger); font-weight: 600; }
+
+.status-badge {
+  display: inline-flex; align-items: center; padding: 3px 9px; border-radius: 999px;
+  font: 500 11px/1.4 var(--font-mono); letter-spacing: .06em; text-transform: uppercase;
+}
+.status-badge--pending { background: hsl(38 90% 92%); color: hsl(30 70% 32%); }
+.status-badge--approved { background: hsl(150 55% 90%); color: hsl(150 45% 26%); }
+.status-badge--suspended { background: hsl(0 70% 93%); color: hsl(0 55% 38%); }
+:root[data-theme="dark"] .status-badge--pending { background: hsl(38 45% 20%); color: hsl(40 85% 76%); }
+:root[data-theme="dark"] .status-badge--approved { background: hsl(150 30% 18%); color: hsl(150 55% 72%); }
+:root[data-theme="dark"] .status-badge--suspended { background: hsl(0 35% 20%); color: hsl(0 75% 78%); }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .status-badge--pending { background: hsl(38 45% 20%); color: hsl(40 85% 76%); }
+  :root:not([data-theme="light"]) .status-badge--approved { background: hsl(150 30% 18%); color: hsl(150 55% 72%); }
+  :root:not([data-theme="light"]) .status-badge--suspended { background: hsl(0 35% 20%); color: hsl(0 75% 78%); }
+}
+
+@media (max-width: 640px) {
+  .seller-row { grid-template-columns: 1fr; }
+  .seller-row__actions { justify-content: flex-start; }
+}
+
+/* Toast: a brief confirmation after approving/suspending a store */
+.toasts {
+  position: fixed; left: 50%; bottom: calc(20px + env(safe-area-inset-bottom, 0px)); z-index: 1000;
+  width: max-content; max-width: calc(100% - 32px); transform: translateX(-50%); pointer-events: none;
+}
+.toast {
+  padding: 12px 18px; border-radius: var(--radius); background: var(--ink); color: var(--paper);
+  font-weight: 500; box-shadow: var(--shadow-2);
+}
+@media (prefers-reduced-motion: no-preference) {
+  .toast { animation: toast-in .2s ease-out; }
+}
+@keyframes toast-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }

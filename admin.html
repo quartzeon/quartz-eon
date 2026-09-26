@@ -1,0 +1,211 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#F2F5F3">
+<meta name="robots" content="noindex, nofollow">
+<title>Admin | Quartz Eon</title>
+<link rel="icon" type="image/png" href="assets/logo.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500..800&family=DM+Mono:wght@400;500&family=Instrument+Sans:wght@400..700&display=swap">
+<link rel="stylesheet" href="css/style.css">
+<link rel="stylesheet" href="css/admin.css">
+<script>
+  try {
+    var savedTheme = localStorage.getItem('quartz-eon.theme');
+    if (savedTheme === 'dark' || savedTheme === 'light') document.documentElement.setAttribute('data-theme', savedTheme);
+  } catch (e) {}
+  document.documentElement.lang = 'en';
+</script>
+</head>
+<body>
+
+<svg class="sprite" width="0" height="0" aria-hidden="true" focusable="false">
+  <defs>
+    <symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2.5v2M12 19.5v2M2.5 12h2M19.5 12h2M5.3 5.3l1.4 1.4M17.3 17.3l1.4 1.4M5.3 18.7l1.4-1.4M17.3 6.7l1.4-1.4"/></symbol>
+    <symbol id="i-moon" viewBox="0 0 24 24"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9z"/></symbol>
+    <symbol id="i-logout" viewBox="0 0 24 24"><path d="M15 4h-3a3 3 0 0 0-3 3v10a3 3 0 0 0 3 3h3M10 12h11M17 8l4 4-4 4"/></symbol>
+    <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 3l7 3v6c0 5-3.5 7.5-7 9-3.5-1.5-7-4-7-9V6z"/><path d="M9 12l2 2 4-4"/></symbol>
+    <symbol id="i-store" viewBox="0 0 24 24"><path d="M4 9l1.5-5h13L20 9"/><path d="M4 9a3 3 0 0 0 5.3 1.9 3 3 0 0 0 5.4 0A3 3 0 0 0 20 9"/><path d="M5.5 12.5V20h13v-7.5"/><path d="M10 20v-4.5h4V20"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></symbol>
+    <symbol id="i-pause" viewBox="0 0 24 24"><rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></symbol>
+    <symbol id="i-play" viewBox="0 0 24 24"><path d="M7 5l12 7-12 7z"/></symbol>
+    <symbol id="i-trash" viewBox="0 0 24 24"><path d="M5 7h14M9 7V5.5A1.5 1.5 0 0 1 10.5 4h3A1.5 1.5 0 0 1 15 5.5V7M7 7l1 13h8l1-13"/></symbol>
+    <symbol id="a-layout" viewBox="0 0 48 48"><rect x="6" y="8" width="36" height="32" rx="4"/><path d="M6 18h36M20 18v22"/></symbol>
+    <symbol id="a-book" viewBox="0 0 48 48"><path d="M10 6h24a4 4 0 0 1 4 4v28H14a4 4 0 0 1-4-4z"/><path d="M10 34a4 4 0 0 1 4-4h24"/><path d="M18 14h14M18 20h10"/></symbol>
+    <symbol id="a-course" viewBox="0 0 48 48"><rect x="6" y="9" width="36" height="24" rx="4"/><path d="M20 16.5v9l8-4.5z"/><path d="M24 33v7M16 40h16"/></symbol>
+    <symbol id="a-code" viewBox="0 0 48 48"><rect x="5" y="8" width="38" height="32" rx="5"/><path d="M5 16h38"/><path d="M19 23l-5 5 5 5M29 23l5 5-5 5"/><circle cx="10" cy="12" r="1" fill="currentColor"/><circle cx="14" cy="12" r="1" fill="currentColor"/></symbol>
+    <symbol id="a-shapes" viewBox="0 0 48 48"><circle cx="16" cy="16" r="8"/><rect x="26" y="26" width="14" height="14" rx="2"/><path d="M8 40l6-11 6 11z"/></symbol>
+    <symbol id="a-vpn" viewBox="0 0 48 48"><path d="M24 5l15 6v10c0 11-7 17-15 22-8-5-15-11-15-22V11z"/><circle cx="24" cy="21" r="4"/><path d="M24 25v6"/></symbol>
+  </defs>
+</svg>
+
+<header class="site-header admin-header">
+  <div class="wrap site-header__row">
+    <a class="brand" href="admin.html" aria-label="Quartz Eon admin, home">
+      <img class="brand__mark" src="assets/logo.png" alt="" width="34" height="34">
+      <span class="brand__word">Quartz Eon</span>
+      <span class="admin-tag">Admin</span>
+    </a>
+    <div class="site-header__actions">
+      <button class="icon-btn" id="theme-toggle" type="button" aria-label="Switch to dark mode">
+        <svg class="i" aria-hidden="true" focusable="false"><use href="#i-moon"/></svg>
+      </button>
+      <button class="btn btn--ghost" id="admin-logout" type="button" hidden>
+        <svg class="i" aria-hidden="true" focusable="false"><use href="#i-logout"/></svg>
+        <span>Log out</span>
+      </button>
+    </div>
+  </div>
+</header>
+
+<main class="wrap admin-main">
+
+  <!-- Shown when nobody is signed in -->
+  <section class="admin-panel" id="admin-login" aria-labelledby="admin-login-title">
+    <span class="admin-icon"><svg class="i" aria-hidden="true" focusable="false"><use href="#i-shield"/></svg></span>
+    <p class="eyebrow">Owner access</p>
+    <h1 class="admin-title" id="admin-login-title">Admin log in</h1>
+    <p class="admin-lead">This page is for the site owner only. Enter your admin email and we will send you a one-time log in link.</p>
+    <form class="auth__form" id="admin-login-form" novalidate>
+      <div class="field">
+        <label for="admin-email">Email</label>
+        <input id="admin-email" name="email" type="email" autocomplete="email" placeholder="you@example.com" aria-describedby="admin-email-error">
+        <p class="field__error" id="admin-email-error" hidden></p>
+      </div>
+      <p class="field__error" id="admin-form-error" hidden></p>
+      <button class="btn btn--ink btn--block" type="submit">Email me a log in link</button>
+      <p class="admin-lead admin-note" id="admin-login-note" hidden>Check your email for the link. Open it on this device to finish logging in.</p>
+    </form>
+  </section>
+
+  <!-- Shown when signed in but the account is not an admin -->
+  <section class="admin-panel" id="admin-denied" hidden aria-labelledby="admin-denied-title">
+    <p class="eyebrow">Signed in as <span id="admin-denied-email"></span></p>
+    <h1 class="admin-title" id="admin-denied-title">This is not an admin account</h1>
+    <p class="admin-lead">You are signed in, but this account does not have admin access. Log out and use the site owner's account instead.</p>
+  </section>
+
+  <!-- The admin dashboard itself -->
+  <section id="admin-app" hidden aria-label="Admin dashboard">
+    <div class="admin-tabs admin-tabs--sections" id="section-tabs" role="group" aria-label="Section">
+      <button class="chip" type="button" data-section="sellers" aria-pressed="true">Sellers</button>
+      <button class="chip" type="button" data-section="products" aria-pressed="false">Products</button>
+      <button class="chip" type="button" data-section="orders" aria-pressed="false">Orders</button>
+      <button class="chip" type="button" data-section="settings" aria-pressed="false">Settings</button>
+    </div>
+
+    <div id="sellers-section">
+      <header class="admin-app__head">
+        <div>
+          <p class="eyebrow">Owner access</p>
+          <h1 class="admin-title">Sellers</h1>
+        </div>
+        <p class="admin-count" id="sellers-count" aria-live="polite"></p>
+      </header>
+
+      <div class="admin-tabs" id="status-tabs" role="group" aria-label="Filter by status">
+        <button class="chip" type="button" data-status="all" aria-pressed="true">All</button>
+        <button class="chip" type="button" data-status="pending">Pending</button>
+        <button class="chip" type="button" data-status="approved">Approved</button>
+        <button class="chip" type="button" data-status="suspended">Suspended</button>
+      </div>
+
+      <div class="admin-list" id="sellers-list"></div>
+      <p class="empty__title admin-empty" id="sellers-empty" hidden>No sellers here yet</p>
+    </div>
+
+    <div id="products-section" hidden>
+      <header class="admin-app__head">
+        <div>
+          <p class="eyebrow">Owner access</p>
+          <h1 class="admin-title">Products</h1>
+        </div>
+        <p class="admin-count" id="products-count" aria-live="polite"></p>
+      </header>
+
+      <div class="admin-tabs" id="product-status-tabs" role="group" aria-label="Filter by status">
+        <button class="chip" type="button" data-pstatus="all" aria-pressed="true">All</button>
+        <button class="chip" type="button" data-pstatus="active" aria-pressed="false">Active</button>
+        <button class="chip" type="button" data-pstatus="hidden" aria-pressed="false">Hidden</button>
+      </div>
+
+      <div class="admin-list" id="products-list"></div>
+      <p class="empty__title admin-empty" id="products-empty" hidden>No products here yet</p>
+    </div>
+
+    <div id="orders-section" hidden>
+      <header class="admin-app__head">
+        <div>
+          <p class="eyebrow">Owner access</p>
+          <h1 class="admin-title">Orders</h1>
+        </div>
+        <p class="admin-count" id="orders-count" aria-live="polite"></p>
+      </header>
+
+      <div class="admin-tabs" id="order-status-tabs" role="group" aria-label="Filter by status">
+        <button class="chip" type="button" data-ostatus="awaiting_review" aria-pressed="true">Waiting for review</button>
+        <button class="chip" type="button" data-ostatus="paid" aria-pressed="false">Paid</button>
+        <button class="chip" type="button" data-ostatus="rejected" aria-pressed="false">Not accepted</button>
+        <button class="chip" type="button" data-ostatus="all" aria-pressed="false">All</button>
+      </div>
+
+      <div class="admin-list" id="orders-list"></div>
+      <p class="empty__title admin-empty" id="orders-empty" hidden>No orders here yet</p>
+    </div>
+
+    <div id="settings-section" hidden>
+      <header class="admin-app__head">
+        <div>
+          <p class="eyebrow">Owner access</p>
+          <h1 class="admin-title">Settings</h1>
+        </div>
+      </header>
+
+      <div class="settings-card">
+        <h2 class="settings-card__title">Your bank details</h2>
+        <p class="admin-lead">Shown <strong>only to sellers</strong>, on their dashboard, so they can pay their monthly store fee to you. Customers never see these.</p>
+        <form class="auth__form" id="owner-bank-form" novalidate>
+          <div class="field-row">
+            <div class="field">
+              <label for="owner-bank-name">Bank</label>
+              <input id="owner-bank-name" name="bankName" type="text" autocomplete="off" maxlength="60">
+            </div>
+            <div class="field">
+              <label for="owner-bank-branch">Branch</label>
+              <input id="owner-bank-branch" name="branch" type="text" autocomplete="off" maxlength="60">
+            </div>
+          </div>
+          <div class="field">
+            <label for="owner-bank-account-name">Account name</label>
+            <input id="owner-bank-account-name" name="accountName" type="text" autocomplete="off" maxlength="80">
+          </div>
+          <div class="field">
+            <label for="owner-bank-account-number">Account number</label>
+            <input id="owner-bank-account-number" name="accountNumber" type="text" inputmode="numeric" autocomplete="off" maxlength="40">
+          </div>
+          <div class="field">
+            <label for="owner-bank-note">Note for sellers (optional)</label>
+            <textarea id="owner-bank-note" name="note" rows="2" maxlength="200" placeholder="For example: put your store name in the transfer reference"></textarea>
+          </div>
+          <p class="field__error" id="owner-bank-error" hidden></p>
+          <p class="field__hint" id="owner-bank-saved" hidden></p>
+          <button class="btn btn--ink" type="submit">Save bank details</button>
+        </form>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<div class="toasts" id="admin-toasts" role="status" aria-live="polite"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script src="js/supabase-client.js"></script>
+<script src="js/config.js"></script>
+<script src="js/admin.js"></script>
+</body>
+</html>
