@@ -235,6 +235,11 @@
     storeForm.elements.storeName.value = sellerRow.store_name;
     storeForm.elements.about.value = sellerRow.about || '';
     byId('store-link').value = `${window.location.origin}${window.location.pathname.replace('seller.html', '')}index.html#/store/${sellerRow.store_slug}`;
+    storeForm.elements.whatsapp.value = sellerRow.contact_whatsapp || '';
+    storeForm.elements.telegram.value = sellerRow.contact_telegram || '';
+    storeForm.elements.facebook.value = sellerRow.social_facebook || '';
+    storeForm.elements.instagram.value = sellerRow.social_instagram || '';
+    storeForm.elements.website.value = sellerRow.social_website || '';
     renderStoreLogo();
     renderStatusBanner();
   }
@@ -259,18 +264,52 @@
       return;
     }
     const about = storeForm.elements.about.value.trim();
+    const f = storeForm.elements;
+    let ok = true;
+
+    /* WhatsApp: digits with the country code. A Sri Lankan number written 0771234567 becomes 94771234567. */
+    let whatsapp = f.whatsapp.value.replace(/[^0-9]/g, '');
+    if (/^0\d{9}$/.test(whatsapp)) whatsapp = `94${whatsapp.slice(1)}`;
+    if (whatsapp && !/^\d{9,15}$/.test(whatsapp)) { showFieldError(f.whatsapp, 'Enter the number with the country code, for example 94771234567.'); ok = false; }
+    /* Telegram: just the username, even if a link or an @ was pasted. */
+    const telegram = f.telegram.value.trim().replace(/^https?:\/\/(t\.me|telegram\.me)\//i, '').replace(/^@/, '').replace(/[/?].*$/, '');
+    if (telegram && !/^[A-Za-z0-9_]{5,32}$/.test(telegram)) { showFieldError(f.telegram, 'Use 5 to 32 letters, numbers or underscores.'); ok = false; }
+    const link = (input, pattern, message) => {
+      const value = input.value.trim();
+      if (value && (value.length > 200 || !pattern.test(value))) { showFieldError(input, message); ok = false; }
+      return value;
+    };
+    const facebook = link(f.facebook, /^https:\/\/([a-z0-9-]+\.)*(facebook\.com|fb\.com|fb\.me)\/\S*$/i, 'Use a link that starts with https:// and is on facebook.com.');
+    const instagram = link(f.instagram, /^https:\/\/([a-z0-9-]+\.)*instagram\.com\/\S*$/i, 'Use a link that starts with https:// and is on instagram.com.');
+    const website = link(f.website, /^https:\/\/[a-z0-9.-]+\.[a-z]{2,}(\/\S*)?$/i, 'Use a link that starts with https://');
+    if (!ok) return;
+
+    const details = {
+      store_name: storeName,
+      about,
+      contact_whatsapp: whatsapp || null,
+      contact_telegram: telegram || null,
+      social_facebook: facebook || null,
+      social_instagram: instagram || null,
+      social_website: website || null
+    };
     const submitButton = storeForm.querySelector('button[type="submit"]');
     submitButton.disabled = true;
-    const { error } = await sb.from('sellers').update({ store_name: storeName, about }).eq('id', sellerRow.id);
+    const { error } = await sb.from('sellers').update(details).eq('id', sellerRow.id);
     submitButton.disabled = false;
     if (error) {
       byId('store-form-error').textContent = error.message;
       byId('store-form-error').hidden = false;
       return;
     }
-    sellerRow.store_name = storeName;
-    sellerRow.about = about;
+    Object.assign(sellerRow, details);
+    f.whatsapp.value = whatsapp;
+    f.telegram.value = telegram;
     toast('Store details saved');
+  });
+
+  storeForm.addEventListener('input', (event) => {
+    if (event.target.getAttribute && event.target.getAttribute('aria-invalid') === 'true') showFieldError(event.target, '');
   });
 
   /* ---------- VPN panel connection ---------- */

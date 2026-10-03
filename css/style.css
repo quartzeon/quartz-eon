@@ -423,6 +423,18 @@ section[id] { scroll-margin-top: 76px; }
 .pc--tile .pc__buy { min-height: 44px; padding-inline: 20px; font-size: 15px; }
 .pc--tile .product__seller { font-size: 13px; }
 
+/* ---------- Social icons on a store page, contact buttons on a product page ---------- */
+.social { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
+.social__btn { display: grid; place-items: center; width: 40px; height: 40px; border: 1.5px solid var(--line); border-radius: 50%; background: #fff; color: #222; }
+.social__btn:hover, .social__btn:focus-visible { border-color: var(--ink); transform: translateY(-1px); }
+.social__btn .i { width: 20px; height: 20px; }
+.social__icon { width: 22px; height: 22px; display: block; }
+.contact { display: grid; gap: 10px; margin-top: 8px; padding-top: 16px; border-top: 1px solid var(--line); }
+.contact__title { font-size: 14px; font-weight: 600; }
+.contact__buttons { display: flex; flex-wrap: wrap; gap: 8px; }
+.contact__buttons .btn { gap: 10px; }
+.contact__buttons .social__icon { width: 20px; height: 20px; padding: 0; background: transparent; }
+
 /* ---------- Sellers of the chosen category ---------- */
 .sellers-strip { margin-bottom: 28px; }
 .sellers-strip__title { margin-bottom: 12px; font: 500 12px/1 var(--font-mono); letter-spacing: .09em; text-transform: uppercase; color: var(--ink-3); }

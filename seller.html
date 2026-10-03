@@ -129,6 +129,36 @@
             <label for="store-about">About your store</label>
             <textarea id="store-about" name="about" rows="3"></textarea>
           </div>
+          <div class="field-row">
+            <div class="field">
+              <label for="store-whatsapp">WhatsApp number</label>
+              <input id="store-whatsapp" name="whatsapp" type="tel" inputmode="tel" autocomplete="off" placeholder="0771234567 or 94771234567">
+              <p class="field__hint">Customers can message you from your product pages.</p>
+              <p class="field__error" id="store-whatsapp-error" hidden></p>
+            </div>
+            <div class="field">
+              <label for="store-telegram">Telegram username</label>
+              <input id="store-telegram" name="telegram" type="text" autocomplete="off" spellcheck="false" placeholder="yourname">
+              <p class="field__hint">Without the @.</p>
+              <p class="field__error" id="store-telegram-error" hidden></p>
+            </div>
+          </div>
+          <div class="field">
+            <label for="store-facebook">Facebook page link</label>
+            <input id="store-facebook" name="facebook" type="url" autocomplete="off" spellcheck="false" placeholder="https://facebook.com/yourpage">
+            <p class="field__error" id="store-facebook-error" hidden></p>
+          </div>
+          <div class="field">
+            <label for="store-instagram">Instagram link</label>
+            <input id="store-instagram" name="instagram" type="url" autocomplete="off" spellcheck="false" placeholder="https://instagram.com/yourname">
+            <p class="field__error" id="store-instagram-error" hidden></p>
+          </div>
+          <div class="field">
+            <label for="store-website">Website link</label>
+            <input id="store-website" name="website" type="url" autocomplete="off" spellcheck="false" placeholder="https://example.com">
+            <p class="field__hint">All of these are optional. They show on your store page, and WhatsApp and Telegram also on your product pages.</p>
+            <p class="field__error" id="store-website-error" hidden></p>
+          </div>
           <div class="field">
             <label for="store-link">Store address</label>
             <div class="copy-row">

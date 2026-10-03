@@ -363,7 +363,7 @@
     if (stores.error || products.error) {
       catalog.status = 'error';
     } else {
-      SELLERS = stores.data.map((s) => ({ id: s.id, slug: s.store_slug, name: s.store_name, about: s.about, hue: s.hue, logo: s.logo || '' }));
+      SELLERS = stores.data.map((s) => ({ id: s.id, slug: s.store_slug, name: s.store_name, about: s.about, hue: s.hue, logo: s.logo || '', whatsapp: s.contact_whatsapp || '', telegram: s.contact_telegram || '', facebook: s.social_facebook || '', instagram: s.social_instagram || '', website: s.social_website || '' }));
       SELLER_BY_ID = new Map(SELLERS.map((s) => [s.id, s]));
       SELLER_BY_SLUG = new Map(SELLERS.map((s) => [s.slug, s]));
       PRODUCTS = products.data.map((p) => ({
@@ -423,6 +423,37 @@
     byId('clear-filters').hidden = action !== 'clear';
     byId('retry-load').hidden = action !== 'retry';
     byId('empty').hidden = false;
+  }
+
+  /* ---------- How to reach a seller ---------- */
+  const brandIcon = (slug) => `<img class="social__icon" src="https://cdn.simpleicons.org/${slug}" alt="" width="22" height="22" loading="lazy">`;
+
+  /* The icon buttons shown next to a store's name: WhatsApp, Telegram, Facebook, Instagram, website. */
+  function socialLinksHtml(seller) {
+    const links = [
+      seller.whatsapp && { href: `https://wa.me/${seller.whatsapp}`, label: 'WhatsApp', icon: brandIcon('whatsapp') },
+      seller.telegram && { href: `https://t.me/${seller.telegram}`, label: 'Telegram', icon: brandIcon('telegram') },
+      seller.facebook && { href: seller.facebook, label: 'Facebook', icon: brandIcon('facebook') },
+      seller.instagram && { href: seller.instagram, label: 'Instagram', icon: brandIcon('instagram') },
+      seller.website && { href: seller.website, label: 'Website', icon: icon('i-globe') }
+    ].filter(Boolean);
+    if (!links.length) return '';
+    return `<div class="social" aria-label="${esc(seller.name)} on the web">${links.map((l) => `
+      <a class="social__btn" href="${esc(l.href)}" target="_blank" rel="noopener noreferrer" title="${esc(l.label)}" aria-label="${esc(l.label)}">${l.icon}</a>`).join('')}</div>`;
+  }
+
+  /* On a product page: ready-made WhatsApp and Telegram buttons to ask the seller about this product. */
+  function sellerContactHtml(seller, product) {
+    if (!seller.whatsapp && !seller.telegram) return '';
+    const message = encodeURIComponent(`Hi, I am interested in "${product.name}" on ${CFG.storeName}.`);
+    return `
+      <div class="contact">
+        <p class="contact__title">Questions? Contact ${esc(seller.name)}</p>
+        <div class="contact__buttons">
+          ${seller.whatsapp ? `<a class="btn btn--ghost" href="https://wa.me/${esc(seller.whatsapp)}?text=${message}" target="_blank" rel="noopener noreferrer">${brandIcon('whatsapp')}<span>WhatsApp</span></a>` : ''}
+          ${seller.telegram ? `<a class="btn btn--ghost" href="https://t.me/${esc(seller.telegram)}" target="_blank" rel="noopener noreferrer">${brandIcon('telegram')}<span>Telegram</span></a>` : ''}
+        </div>
+      </div>`;
   }
 
   /* A seller's logo (a file in the product-images bucket), or their initials when they have not added one. */
@@ -556,6 +587,7 @@
               <p class="eyebrow">Seller store</p>
               <h1 class="store-title" id="store-title">${esc(seller.name)}</h1>
               ${seller.about ? `<p class="store-about">${esc(seller.about)}</p>` : ''}
+              ${socialLinksHtml(seller)}
               <p class="store-meta">${list.length} ${plural(list.length, 'product', 'products')}${categories.length ? ` &middot; ${esc(categories.join(', '))}` : ''}</p>
             </div>
           </div>
@@ -675,6 +707,7 @@
       page.image = 0;
     }
     const seller = sellerOf(p);
+    const contactHtml = sellerContactHtml(seller, p);
     const gallery = `
       <div class="pd__main">
         ${p.images.length ? `<img id="pd-main-img" src="${esc(photoUrl(p.images[page.image] || p.images[0]))}" alt="${esc(p.name)}">` : `<div class="pd__art">${art(p.icon)}</div>`}
@@ -728,7 +761,7 @@
               ${options}
               <button class="btn btn--ink btn--block pd__buy pc__buy" type="button" id="pd-buy" ${state.disabled ? 'disabled' : ''}>${state.text}</button>
               ${p.description ? `<div class="pd__desc">${paragraphs(p.description)}</div>` : ''}
-              <ul class="buy__list">${perks.map((text) => `<li>${icon('i-check')}<span>${esc(text)}</span></li>`).join('')}</ul>
+              <ul class="buy__list">${perks.map((text) => `<li>${icon('i-check')}<span>${esc(text)}</span></li>`).join('')}</ul>${contactHtml}
             </article>
           </div>
         </section>`;
@@ -750,7 +783,7 @@
               ${options}
               <button class="btn btn--ink btn--block pd__buy" type="button" id="pd-buy" ${state.disabled ? 'disabled' : ''}>${state.text}</button>
               ${p.description ? `<div class="pd__desc">${paragraphs(p.description)}</div>` : ''}
-              <ul class="buy__list">${perks.map((text) => `<li>${icon('i-check')}<span>${esc(text)}</span></li>`).join('')}</ul>
+              <ul class="buy__list">${perks.map((text) => `<li>${icon('i-check')}<span>${esc(text)}</span></li>`).join('')}</ul>${contactHtml}
             </div>
           </div>
         </div>
