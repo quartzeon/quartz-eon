@@ -186,6 +186,22 @@
         <p class="admin-empty" id="sales-empty" hidden>No orders yet.</p>
       </section>
 
+      <section class="dash-card" id="availability-card" aria-labelledby="availability-title">
+        <h2 class="dash-card__title" id="availability-title">Availability</h2>
+        <p class="admin-lead">Tell customers when you are online, like WhatsApp Business. They see <strong>Online</strong> or <strong>Away</strong> on your store and product pages. Times are Sri Lanka time.</p>
+        <form class="auth__form" id="availability-form" novalidate>
+          <div class="pp-themes av-modes" role="radiogroup" aria-label="Availability">
+            <label class="pp-theme"><input type="radio" name="mode" value="none" checked><span class="pp-theme__name">Do not show</span><span class="pp-theme__text">Customers see no status.</span></label>
+            <label class="pp-theme"><input type="radio" name="mode" value="always"><span class="pp-theme__name">Always online</span><span class="pp-theme__text">Shown as Online all the time.</span></label>
+            <label class="pp-theme"><input type="radio" name="mode" value="hours"><span class="pp-theme__name">Follow my hours</span><span class="pp-theme__text">Online during the hours below, Away otherwise.</span></label>
+            <label class="pp-theme"><input type="radio" name="mode" value="away"><span class="pp-theme__name">Away</span><span class="pp-theme__text">Shown as Away until you change it (holiday, break).</span></label>
+          </div>
+          <div class="av-hours" id="av-hours" hidden></div>
+          <p class="field__error" id="availability-error" hidden></p>
+          <button class="btn btn--ink" type="submit">Save availability</button>
+        </form>
+      </section>
+
       <section class="dash-card" id="bank-card" aria-labelledby="bank-title">
         <h2 class="dash-card__title" id="bank-title">Your bank details</h2>
         <p class="admin-lead">Customers pay you directly. These details are shown to a logged-in customer while they pay for one of your products. Keep them up to date.</p>

@@ -435,6 +435,27 @@ section[id] { scroll-margin-top: 76px; }
 .contact__buttons .btn { gap: 10px; }
 .contact__buttons .social__icon { width: 20px; height: 20px; padding: 0; background: transparent; }
 
+/* ---------- Online / Away ---------- */
+.presence-wrap { display: grid; gap: 6px; justify-items: start; margin-top: 10px; }
+.presence { display: inline-flex; align-items: center; gap: 8px; padding: 5px 12px; border-radius: 999px; font-size: 13px; font-weight: 600; }
+.presence i, .presence-dot { display: inline-block; flex: none; width: 9px; height: 9px; border-radius: 50%; }
+.presence--on { background: hsl(150 55% 90%); color: hsl(150 45% 24%); }
+.presence--on i { background: hsl(150 65% 40%); box-shadow: 0 0 0 3px hsl(150 65% 40% / .25); }
+.presence--off { background: hsl(40 12% 90%); color: hsl(40 8% 32%); }
+.presence--off i { background: hsl(40 6% 55%); }
+:root[data-theme="dark"] .presence--on { background: hsl(150 30% 18%); color: hsl(150 55% 74%); }
+:root[data-theme="dark"] .presence--off { background: hsl(220 8% 20%); color: hsl(220 8% 74%); }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .presence--on { background: hsl(150 30% 18%); color: hsl(150 55% 74%); }
+  :root:not([data-theme="light"]) .presence--off { background: hsl(220 8% 20%); color: hsl(220 8% 74%); }
+}
+.presence-dot { width: 8px; height: 8px; margin-right: 6px; background: hsl(150 65% 45%); vertical-align: middle; }
+.hours { font-size: 13px; color: var(--ink-2); }
+.hours summary { cursor: pointer; text-decoration: underline; text-underline-offset: 3px; }
+.hours ul { display: grid; gap: 4px; margin: 8px 0 4px; padding: 0; list-style: none; min-width: 230px; }
+.hours li { display: flex; justify-content: space-between; gap: 18px; }
+.hours p { margin: 0; font-size: 12px; color: var(--ink-3); }
+
 /* ---------- Sellers of the chosen category ---------- */
 .sellers-strip { margin-bottom: 28px; }
 .sellers-strip__title { margin-bottom: 12px; font: 500 12px/1 var(--font-mono); letter-spacing: .09em; text-transform: uppercase; color: var(--ink-3); }

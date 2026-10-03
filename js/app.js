@@ -363,7 +363,7 @@
     if (stores.error || products.error) {
       catalog.status = 'error';
     } else {
-      SELLERS = stores.data.map((s) => ({ id: s.id, slug: s.store_slug, name: s.store_name, about: s.about, hue: s.hue, logo: s.logo || '', whatsapp: s.contact_whatsapp || '', telegram: s.contact_telegram || '', facebook: s.social_facebook || '', instagram: s.social_instagram || '', website: s.social_website || '' }));
+      SELLERS = stores.data.map((s) => ({ id: s.id, slug: s.store_slug, name: s.store_name, about: s.about, hue: s.hue, logo: s.logo || '', whatsapp: s.contact_whatsapp || '', telegram: s.contact_telegram || '', facebook: s.social_facebook || '', instagram: s.social_instagram || '', website: s.social_website || '', availabilityMode: s.availability_mode || 'none', availabilityHours: Array.isArray(s.availability_hours) ? s.availability_hours : [] }));
       SELLER_BY_ID = new Map(SELLERS.map((s) => [s.id, s]));
       SELLER_BY_SLUG = new Map(SELLERS.map((s) => [s.slug, s]));
       PRODUCTS = products.data.map((p) => ({
@@ -442,6 +442,54 @@
       <a class="social__btn" href="${esc(l.href)}" target="_blank" rel="noopener noreferrer" title="${esc(l.label)}" aria-label="${esc(l.label)}">${l.icon}</a>`).join('')}</div>`;
   }
 
+  /* ---------- Online / Away, like WhatsApp Business ---------- */
+  const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+  const SL_ZONE = 'Asia/Colombo'; /* the hours are Sri Lanka time, whatever the visitor's clock says */
+
+  const clockMinutes = (hhmm) => { const [h, m] = String(hhmm).split(':').map(Number); return h * 60 + m; };
+  function clockText(hhmm) {
+    const [h, m] = String(hhmm).split(':').map(Number);
+    return `${h % 12 || 12}:${String(m).padStart(2, '0')} ${h < 12 ? 'AM' : 'PM'}`;
+  }
+
+  function colomboNow() {
+    const parts = new Intl.DateTimeFormat('en-US', { timeZone: SL_ZONE, weekday: 'short', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).formatToParts(new Date());
+    const get = (type) => (parts.find((p) => p.type === type) || {}).value || '';
+    return { day: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].indexOf(get('weekday')), minutes: Number(get('hour')) * 60 + Number(get('minute')) };
+  }
+
+  /* { online, text } for a seller, or null when they chose not to show a status. */
+  function availabilityOf(seller) {
+    if (seller.availabilityMode === 'always') return { online: true, text: 'Online' };
+    if (seller.availabilityMode === 'away') return { online: false, text: 'Away' };
+    if (seller.availabilityMode !== 'hours' || seller.availabilityHours.length !== 7) return null;
+    const week = seller.availabilityHours;
+    const now = colomboNow();
+    const today = week[now.day];
+    if (today.open && now.minutes >= clockMinutes(today.from) && now.minutes < clockMinutes(today.to)) {
+      return { online: true, text: `Online · until ${clockText(today.to)}` };
+    }
+    if (today.open && now.minutes < clockMinutes(today.from)) return { online: false, text: `Away · back today at ${clockText(today.from)}` };
+    for (let ahead = 1; ahead <= 7; ahead += 1) {
+      const day = (now.day + ahead) % 7;
+      if (week[day].open) return { online: false, text: `Away · back ${ahead === 1 ? 'tomorrow' : DAY_NAMES[day]} at ${clockText(week[day].from)}` };
+    }
+    return { online: false, text: 'Away' };
+  }
+
+  /* The green or grey dot and text. withHours adds the weekly opening hours underneath. */
+  function presenceHtml(seller, withHours) {
+    const a = availabilityOf(seller);
+    if (!a) return '';
+    const hours = withHours && seller.availabilityMode === 'hours' && seller.availabilityHours.length === 7 ? `
+      <details class="hours">
+        <summary>Opening hours</summary>
+        <ul>${seller.availabilityHours.map((h, i) => `<li><span>${DAY_NAMES[i]}</span><span>${h.open ? `${clockText(h.from)} – ${clockText(h.to)}` : 'Closed'}</span></li>`).join('')}</ul>
+        <p>Sri Lanka time.</p>
+      </details>` : '';
+    return `<div class="presence-wrap"><span class="presence ${a.online ? 'presence--on' : 'presence--off'}"><i aria-hidden="true"></i>${esc(a.text)}</span>${hours}</div>`;
+  }
+
   /* On a product page: ready-made WhatsApp and Telegram buttons to ask the seller about this product. */
   function sellerContactHtml(seller, product) {
     if (!seller.whatsapp && !seller.telegram) return '';
@@ -449,6 +497,7 @@
     return `
       <div class="contact">
         <p class="contact__title">Questions? Contact ${esc(seller.name)}</p>
+        ${presenceHtml(seller, false)}
         <div class="contact__buttons">
           ${seller.whatsapp ? `<a class="btn btn--ghost" href="https://wa.me/${esc(seller.whatsapp)}?text=${message}" target="_blank" rel="noopener noreferrer">${brandIcon('whatsapp')}<span>WhatsApp</span></a>` : ''}
           ${seller.telegram ? `<a class="btn btn--ghost" href="https://t.me/${esc(seller.telegram)}" target="_blank" rel="noopener noreferrer">${brandIcon('telegram')}<span>Telegram</span></a>` : ''}
@@ -477,7 +526,7 @@
         <a class="seller-chip" href="#/store/${esc(s.slug)}" style="--h:${hueOf(s)}">
           ${sellerLogoHtml(s, 'seller-chip__logo')}
           <span class="seller-chip__text">
-            <span class="seller-chip__name">${esc(s.name)}</span>
+            <span class="seller-chip__name">${(availabilityOf(s) || {}).online ? '<i class="presence-dot" title="Online now" aria-label="Online now"></i>' : ''}${esc(s.name)}</span>
             <span class="seller-chip__count">${counts.get(s.id)} ${plural(counts.get(s.id), 'product', 'products')}</span>
           </span>
         </a>`).join('')}</div>`;
@@ -587,6 +636,7 @@
               <p class="eyebrow">Seller store</p>
               <h1 class="store-title" id="store-title">${esc(seller.name)}</h1>
               ${seller.about ? `<p class="store-about">${esc(seller.about)}</p>` : ''}
+              ${presenceHtml(seller, true)}
               ${socialLinksHtml(seller)}
               <p class="store-meta">${list.length} ${plural(list.length, 'product', 'products')}${categories.length ? ` &middot; ${esc(categories.join(', '))}` : ''}</p>
             </div>

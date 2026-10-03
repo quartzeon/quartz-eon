@@ -241,6 +241,7 @@
     storeForm.elements.instagram.value = sellerRow.social_instagram || '';
     storeForm.elements.website.value = sellerRow.social_website || '';
     renderStoreLogo();
+    fillAvailability();
     renderStatusBanner();
   }
 
@@ -478,6 +479,66 @@
     if (retry) { retrySale(retry.dataset.orderRetry); return; }
     const slip = t.closest('[data-slip]');
     if (slip) viewSlip(slip.dataset.slip);
+  });
+
+  /* ---------- Availability: Online / Away and opening hours ---------- */
+  const availabilityForm = byId('availability-form');
+  const DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+  /* Monday to Saturday 9 to 6 until the seller changes it. */
+  const defaultHours = () => DAYS.map((d, i) => ({ open: i !== 0, from: '09:00', to: '18:00' }));
+  let hours = defaultHours();
+
+  function renderHoursRows() {
+    byId('av-hours').innerHTML = hours.map((h, i) => `
+      <div class="av-row" data-day="${i}">
+        <span class="av-row__day">${DAYS[i]}</span>
+        <label class="check-row"><input type="checkbox" data-field="open"${h.open ? ' checked' : ''}><span>Open</span></label>
+        <input type="time" data-field="from" value="${esc(h.from)}"${h.open ? '' : ' disabled'} aria-label="${DAYS[i]} opens">
+        <input type="time" data-field="to" value="${esc(h.to)}"${h.open ? '' : ' disabled'} aria-label="${DAYS[i]} closes">
+      </div>`).join('');
+  }
+
+  function syncAvailability() {
+    byId('av-hours').hidden = availabilityForm.elements.mode.value !== 'hours';
+  }
+
+  function fillAvailability() {
+    const saved = Array.isArray(sellerRow.availability_hours) && sellerRow.availability_hours.length === 7 ? sellerRow.availability_hours : null;
+    hours = saved ? saved.map((h) => ({ open: !!h.open, from: h.from || '09:00', to: h.to || '18:00' })) : defaultHours();
+    availabilityForm.elements.mode.value = sellerRow.availability_mode || 'none';
+    renderHoursRows();
+    syncAvailability();
+  }
+
+  availabilityForm.querySelectorAll('input[name="mode"]').forEach((radio) => radio.addEventListener('change', syncAvailability));
+
+  byId('av-hours').addEventListener('change', (event) => {
+    const row = event.target.closest('[data-day]');
+    const field = event.target.dataset.field;
+    if (!row || !field) return;
+    const h = hours[Number(row.dataset.day)];
+    if (field === 'open') { h.open = event.target.checked; renderHoursRows(); return; }
+    h[field] = event.target.value;
+  });
+
+  availabilityForm.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    const errorBox = byId('availability-error');
+    errorBox.hidden = true;
+    const mode = availabilityForm.elements.mode.value;
+    if (mode === 'hours') {
+      const bad = hours.findIndex((h) => h.open && (!h.from || !h.to || h.from >= h.to));
+      if (bad >= 0) { errorBox.textContent = `${DAYS[bad]}: the closing time must be after the opening time.`; errorBox.hidden = false; return; }
+      if (!hours.some((h) => h.open)) { errorBox.textContent = 'Open at least one day, or choose a different option.'; errorBox.hidden = false; return; }
+    }
+    const button = availabilityForm.querySelector('button[type="submit"]');
+    button.disabled = true;
+    const details = { availability_mode: mode, availability_hours: hours };
+    const { error } = await sb.from('sellers').update(details).eq('id', sellerRow.id);
+    button.disabled = false;
+    if (error) { errorBox.textContent = error.message; errorBox.hidden = false; return; }
+    Object.assign(sellerRow, details);
+    toast('Availability saved');
   });
 
   /* ---------- Your bank details (customers pay you directly) ---------- */
