@@ -17,6 +17,9 @@ window.QE_CONFIG = {
   // The bot's username (without the @). Sellers open it from their dashboard to connect Telegram.
   telegramBot: 'quartzeon_alerts_bot',
 
+  // Set to true once Google log in is switched on in Supabase (see README.md). Shows "Continue with Google".
+  googleLogin: true,
+
   // PayPal (optional): paste your PayPal REST app "Client ID" here (safe to be public; the secret goes into
   // the Edge Function secrets, see README.md). PayPal money goes to YOUR PayPal account, not to the seller.
   // Leave empty to switch PayPal off. Bank transfers are paid to each seller's own bank details.

@@ -104,6 +104,14 @@
             <p class="login__title">Signed in as</p>
             <p class="account__email" id="account-email"></p>
             <p class="note" id="account-note" hidden></p>
+            <a class="btn btn--ink btn--block" href="seller.html" id="account-dashboard" hidden>
+              <svg class="i" aria-hidden="true" focusable="false"><use href="#i-store"/></svg>
+              <span>My store dashboard</span>
+            </a>
+            <a class="btn btn--ink btn--block" href="admin.html" id="account-admin" hidden>
+              <svg class="i" aria-hidden="true" focusable="false"><use href="#i-store"/></svg>
+              <span>Admin page</span>
+            </a>
             <a class="btn btn--ghost btn--block" href="#/orders" id="account-orders">
               <svg class="i" aria-hidden="true" focusable="false"><use href="#i-bag"/></svg>
               <span>My orders</span>
@@ -171,6 +179,9 @@
 
   <!-- Seller store page, filled in by app.js when the address is #/store/<seller id> -->
   <div id="store-view" hidden></div>
+
+  <!-- One product with its photos, options and price, filled in by app.js when the address is #/product/<id> -->
+  <div id="product-view" hidden></div>
 
   <!-- The logged-in customer's orders, filled in by app.js when the address is #/orders -->
   <div id="orders-view" hidden></div>

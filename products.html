@@ -1,0 +1,247 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#F2F5F3">
+<meta name="robots" content="noindex, nofollow">
+<title>Your products | Quartz Eon</title>
+<link rel="icon" type="image/png" href="assets/logo.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500..800&family=DM+Mono:wght@400;500&family=Instrument+Sans:wght@400..700&display=swap">
+<link rel="stylesheet" href="css/style.css">
+<link rel="stylesheet" href="css/seller.css">
+<script>
+  try {
+    var savedTheme = localStorage.getItem('quartz-eon.theme');
+    if (savedTheme === 'dark' || savedTheme === 'light') document.documentElement.setAttribute('data-theme', savedTheme);
+  } catch (e) {}
+  document.documentElement.lang = 'en';
+</script>
+</head>
+<body>
+
+<svg class="sprite" width="0" height="0" aria-hidden="true" focusable="false">
+  <defs>
+    <symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2.5v2M12 19.5v2M2.5 12h2M19.5 12h2M5.3 5.3l1.4 1.4M17.3 17.3l1.4 1.4M5.3 18.7l1.4-1.4M17.3 6.7l1.4-1.4"/></symbol>
+    <symbol id="i-moon" viewBox="0 0 24 24"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9z"/></symbol>
+    <symbol id="i-logout" viewBox="0 0 24 24"><path d="M15 4h-3a3 3 0 0 0-3 3v10a3 3 0 0 0 3 3h3M10 12h11M17 8l4 4-4 4"/></symbol>
+    <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+    <symbol id="i-edit" viewBox="0 0 24 24"><path d="M4 20h4L18.5 9.5a2.5 2.5 0 0 0-3.5-3.5L4.5 16.5z"/><path d="M13.5 7.5l3 3"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></symbol>
+    <symbol id="i-close" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></symbol>
+    <symbol id="i-star" viewBox="0 0 24 24"><path d="M12 3.5l2.6 5.4 5.9.8-4.3 4.1 1 5.9L12 16.9l-5.2 2.8 1-5.9L3.5 9.7l5.9-.8z"/></symbol>
+    <symbol id="i-trash" viewBox="0 0 24 24"><path d="M5 7h14M9 7V5.5A1.5 1.5 0 0 1 10.5 4h3A1.5 1.5 0 0 1 15 5.5V7M7 7l1 13h8l1-13"/></symbol>
+    <symbol id="i-back" viewBox="0 0 24 24"><path d="M19 12H5M11 6l-6 6 6 6"/></symbol>
+
+    <symbol id="a-layout" viewBox="0 0 48 48"><rect x="6" y="8" width="36" height="32" rx="4"/><path d="M6 18h36M20 18v22"/></symbol>
+    <symbol id="a-book" viewBox="0 0 48 48"><path d="M10 6h24a4 4 0 0 1 4 4v28H14a4 4 0 0 1-4-4z"/><path d="M10 34a4 4 0 0 1 4-4h24"/><path d="M18 14h14M18 20h10"/></symbol>
+    <symbol id="a-course" viewBox="0 0 48 48"><rect x="6" y="9" width="36" height="24" rx="4"/><path d="M20 16.5v9l8-4.5z"/><path d="M24 33v7M16 40h16"/></symbol>
+    <symbol id="a-code" viewBox="0 0 48 48"><rect x="5" y="8" width="38" height="32" rx="5"/><path d="M5 16h38"/><path d="M19 23l-5 5 5 5M29 23l5 5-5 5"/><circle cx="10" cy="12" r="1" fill="currentColor"/><circle cx="14" cy="12" r="1" fill="currentColor"/></symbol>
+    <symbol id="a-shapes" viewBox="0 0 48 48"><circle cx="16" cy="16" r="8"/><rect x="26" y="26" width="14" height="14" rx="2"/><path d="M8 40l6-11 6 11z"/></symbol>
+    <symbol id="a-vpn" viewBox="0 0 48 48"><path d="M24 5l15 6v10c0 11-7 17-15 22-8-5-15-11-15-22V11z"/><circle cx="24" cy="21" r="4"/><path d="M24 25v6"/></symbol>
+  </defs>
+</svg>
+
+<header class="site-header admin-header">
+  <div class="wrap site-header__row">
+    <a class="brand" href="seller.html" aria-label="Quartz Eon seller dashboard, home">
+      <img class="brand__mark" src="assets/logo.png" alt="" width="34" height="34">
+      <span class="brand__word">Quartz Eon</span>
+      <span class="admin-tag">Products</span>
+    </a>
+    <div class="site-header__actions">
+      <a class="btn btn--ghost" href="seller.html">Dashboard</a>
+      <a class="btn btn--ghost" href="index.html">Back to shop</a>
+      <button class="icon-btn" id="theme-toggle" type="button" aria-label="Switch to dark mode">
+        <svg class="i" aria-hidden="true" focusable="false"><use href="#i-moon"/></svg>
+      </button>
+      <button class="btn btn--ghost" id="pp-logout" type="button" hidden>
+        <svg class="i" aria-hidden="true" focusable="false"><use href="#i-logout"/></svg>
+        <span>Log out</span>
+      </button>
+    </div>
+  </div>
+</header>
+
+<main class="wrap admin-main">
+
+  <p class="admin-lead" id="pp-loading">Loading…</p>
+
+  <section class="admin-panel" id="pp-denied" hidden>
+    <h1 class="admin-title">This is not a seller account</h1>
+    <p class="admin-lead">Log in with your seller account on the <a href="seller.html">seller dashboard</a>, then come back here.</p>
+  </section>
+
+  <section id="pp-app" hidden aria-label="Your products">
+
+    <!-- The list of products -->
+    <div id="pp-list-view">
+      <header class="admin-app__head">
+        <div>
+          <p class="eyebrow">Your store</p>
+          <h1 class="admin-title">Products</h1>
+        </div>
+        <div class="pp-head-actions">
+          <p class="admin-count" id="pp-count" aria-live="polite"></p>
+          <button class="btn btn--ink" type="button" id="pp-add"><svg class="i" aria-hidden="true" focusable="false"><use href="#i-plus"/></svg><span>Add product</span></button>
+        </div>
+      </header>
+      <div class="pp-list" id="pp-list"></div>
+      <p class="admin-empty" id="pp-empty" hidden>You have not added any products yet. Press <strong>Add product</strong> to start.</p>
+    </div>
+
+    <!-- The product editor: what customers will see on the product page -->
+    <div id="pp-editor-view" hidden>
+      <button class="link pp-back" type="button" id="pp-cancel-top"><svg class="i" aria-hidden="true" focusable="false"><use href="#i-back"/></svg><span>All products</span></button>
+      <header class="admin-app__head">
+        <div>
+          <p class="eyebrow" id="pp-editor-eyebrow">New product</p>
+          <h1 class="admin-title" id="pp-editor-title">Add a product</h1>
+        </div>
+      </header>
+
+      <form class="pp-form" id="pp-form" novalidate>
+        <input type="hidden" name="productId" value="">
+
+        <section class="dash-card">
+          <h2 class="dash-card__title">What customers see</h2>
+          <div class="auth__form">
+            <div class="field">
+              <label for="pp-name">Title</label>
+              <input id="pp-name" name="name" type="text" maxlength="80" placeholder="The name of your product">
+              <p class="field__error" id="pp-name-error" hidden></p>
+            </div>
+            <div class="field">
+              <label for="pp-description">Description</label>
+              <textarea id="pp-description" name="description" rows="6" maxlength="4000" placeholder="Tell customers what they get. Blank lines make new paragraphs."></textarea>
+              <p class="field__hint">Optional. If you leave it empty, customers just see the title and photos.</p>
+            </div>
+
+            <div class="field">
+              <span class="pp-label">Photos</span>
+              <div class="pp-photos" id="pp-photos"></div>
+              <label class="btn btn--ghost btn--sm pp-upload" for="pp-photo-input" id="pp-upload-label">
+                <svg class="i" aria-hidden="true" focusable="false"><use href="#i-plus"/></svg><span>Add photos</span>
+              </label>
+              <input id="pp-photo-input" type="file" accept="image/jpeg,image/png,image/webp" multiple hidden>
+              <p class="field__hint">Up to 6 photos. The first one is the cover shown in the shop. Photos are resized for you.</p>
+              <p class="field__error" id="pp-photo-error" hidden></p>
+            </div>
+
+            <div class="field-row">
+              <div class="field">
+                <label for="pp-category">Category</label>
+                <select id="pp-category" name="category"></select>
+              </div>
+              <div class="field">
+                <label for="pp-icon">Shown as (when there is no photo)</label>
+                <select id="pp-icon" name="icon">
+                  <option value="vpn">VPN access</option>
+                  <option value="layout">Template</option>
+                  <option value="book">E-book</option>
+                  <option value="course">Course / video</option>
+                  <option value="code">Software</option>
+                  <option value="shapes">Design asset</option>
+                </select>
+              </div>
+            </div>
+            <div class="field">
+              <label for="pp-type">File type label</label>
+              <input id="pp-type" name="type" type="text" maxlength="12" placeholder="PDF, ZIP, MP4…">
+              <p class="field__hint">Optional. Leave empty and customers will not see a file type.</p>
+            </div>
+          </div>
+        </section>
+
+        <section class="dash-card">
+          <h2 class="dash-card__title">Price and options</h2>
+          <p class="admin-lead">Sell one thing at one price, or add <strong>options</strong> (for example 30 days, 60 days, 90 days). With options, the customer chooses one, and each option has its own price and its own stock.</p>
+          <div class="auth__form">
+            <div id="pp-simple-price">
+              <div class="field-row">
+                <div class="field">
+                  <label for="pp-price">Price (Rs.)</label>
+                  <input id="pp-price" name="price" type="number" min="1" step="1" inputmode="numeric">
+                  <p class="field__error" id="pp-price-error" hidden></p>
+                </div>
+                <div class="field">
+                  <label for="pp-stock">In stock</label>
+                  <input id="pp-stock" name="stock" type="number" min="0" step="1" inputmode="numeric" placeholder="Unlimited">
+                  <p class="field__hint">Empty means unlimited. When it reaches 0 the product shows as sold out.</p>
+                  <p class="field__error" id="pp-stock-error" hidden></p>
+                </div>
+              </div>
+            </div>
+
+            <div id="pp-options-wrap">
+              <div class="pp-options" id="pp-options"></div>
+              <button class="btn btn--ghost btn--sm" type="button" id="pp-add-option"><svg class="i" aria-hidden="true" focusable="false"><use href="#i-plus"/></svg><span>Add an option</span></button>
+              <p class="field__error" id="pp-options-error" hidden></p>
+            </div>
+          </div>
+        </section>
+
+        <section class="dash-card" id="pp-vpn-card" hidden>
+          <h2 class="dash-card__title">VPN plan</h2>
+          <p class="admin-lead">How long a VPN account lasts and how much data it allows. Every purchase creates one on your panel automatically.</p>
+          <div class="auth__form" id="pp-vpn-simple">
+            <div class="field-row">
+              <div class="field">
+                <label for="pp-vpn-days">Plan length (days)</label>
+                <input id="pp-vpn-days" name="vpnDays" type="number" min="1" max="3650" step="1" inputmode="numeric" value="30">
+                <p class="field__error" id="pp-vpn-days-error" hidden></p>
+              </div>
+              <div class="field">
+                <label for="pp-vpn-gb">Data limit (GB)</label>
+                <input id="pp-vpn-gb" name="vpnGb" type="number" min="0" step="1" inputmode="numeric" value="0">
+                <p class="field__hint">0 means unlimited.</p>
+                <p class="field__error" id="pp-vpn-gb-error" hidden></p>
+              </div>
+            </div>
+          </div>
+          <p class="field__hint" id="pp-vpn-options-note" hidden>Each option above has its own length and data limit.</p>
+        </section>
+
+        <section class="dash-card" id="pp-delivery-card">
+          <h2 class="dash-card__title">What the customer gets after paying</h2>
+          <div class="auth__form">
+            <div class="field">
+              <label for="pp-delivery">Download link, licence key or instructions</label>
+              <textarea id="pp-delivery" name="deliveryInfo" rows="3" placeholder="A private download link, a licence key, or instructions."></textarea>
+              <p class="field__hint">Shown only to customers whose payment you approved. Never shown on the shop.</p>
+            </div>
+          </div>
+        </section>
+
+        <section class="dash-card">
+          <h2 class="dash-card__title">Visibility</h2>
+          <div class="auth__form">
+            <label class="check-row"><input id="pp-show-stock" name="showStock" type="checkbox"><span>Show customers how many are left (for example “3 left”)</span></label>
+            <label class="check-row"><input id="pp-sold-out" name="soldOut" type="checkbox"><span>Mark as sold out (customers cannot buy it)</span></label>
+            <label class="check-row"><input id="pp-hidden" name="hidden" type="checkbox"><span>Hide from the shop for now</span></label>
+            <p class="field__hint">A product also turns into “Sold out” by itself when its stock reaches 0.</p>
+          </div>
+        </section>
+
+        <p class="field__error" id="pp-form-error" hidden></p>
+        <div class="pp-form__actions">
+          <button class="btn btn--ink" type="submit" id="pp-save"><svg class="i" aria-hidden="true" focusable="false"><use href="#i-check"/></svg><span>Save product</span></button>
+          <button class="link" type="button" id="pp-cancel">Cancel</button>
+        </div>
+      </form>
+    </div>
+  </section>
+
+</main>
+
+<div class="toasts" id="seller-toasts" role="status" aria-live="polite"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script src="js/supabase-client.js"></script>
+<script src="js/config.js"></script>
+<script src="js/products-panel.js"></script>
+</body>
+</html>

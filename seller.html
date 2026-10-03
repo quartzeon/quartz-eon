@@ -1,4 +1,4 @@
-<!doctype html>
+﻿<!doctype html>
 <html lang="en">
 <head>
 <meta charset="utf-8">
@@ -54,6 +54,7 @@
       <span class="admin-tag">Seller</span>
     </a>
     <div class="site-header__actions">
+      <a class="btn btn--ghost" href="index.html">Back to shop</a>
       <button class="icon-btn" id="theme-toggle" type="button" aria-label="Switch to dark mode">
         <svg class="i" aria-hidden="true" focusable="false"><use href="#i-moon"/></svg>
       </button>
@@ -129,84 +130,10 @@
           <button class="btn btn--ink" type="submit">Save changes</button>
         </form>
       </section>
-
       <section class="dash-card" aria-labelledby="products-title">
-        <div class="dash-card__head">
-          <h2 class="dash-card__title" id="products-title">Products</h2>
-          <p class="admin-count" id="products-count"></p>
-        </div>
-
-        <form class="auth__form prod-form" id="product-form" novalidate>
-          <input type="hidden" name="productId" value="">
-          <p class="prod-form__title" id="prod-form-title">Add a product</p>
-          <div class="field">
-            <label for="prod-name">Product name</label>
-            <input id="prod-name" name="name" type="text" placeholder="Your product name">
-            <p class="field__error" id="prod-name-error" hidden></p>
-          </div>
-          <div class="field-row">
-            <div class="field">
-              <label for="prod-category">Category</label>
-              <select id="prod-category" name="category"></select>
-            </div>
-            <div class="field">
-              <label for="prod-icon">Shown as</label>
-              <select id="prod-icon" name="icon">
-                <option value="vpn">VPN access</option>
-                <option value="layout">Template</option>
-                <option value="book">E-book</option>
-                <option value="course">Course / video</option>
-                <option value="code">Software</option>
-                <option value="shapes">Design asset</option>
-              </select>
-            </div>
-          </div>
-          <div class="field-row">
-            <div class="field">
-              <label for="prod-price">Price (Rs.)</label>
-              <input id="prod-price" name="price" type="number" min="1" step="1" inputmode="numeric">
-              <p class="field__error" id="prod-price-error" hidden></p>
-            </div>
-            <div class="field">
-              <label for="prod-type">File type</label>
-              <input id="prod-type" name="type" type="text" placeholder="PDF, ZIP, MP4…" maxlength="12">
-            </div>
-          </div>
-          <div class="field">
-            <label for="prod-description">Description (optional)</label>
-            <textarea id="prod-description" name="description" rows="2"></textarea>
-          </div>
-          <div class="field-row" id="prod-vpn-fields" hidden>
-            <div class="field">
-              <label for="prod-vpn-days">Plan length (days)</label>
-              <input id="prod-vpn-days" name="vpnDays" type="number" min="1" max="3650" step="1" inputmode="numeric" value="30">
-              <p class="field__error" id="prod-vpn-days-error" hidden></p>
-            </div>
-            <div class="field">
-              <label for="prod-vpn-gb">Data limit (GB)</label>
-              <input id="prod-vpn-gb" name="vpnGb" type="number" min="0" step="1" inputmode="numeric" value="0">
-              <p class="field__hint">0 means unlimited.</p>
-              <p class="field__error" id="prod-vpn-gb-error" hidden></p>
-            </div>
-          </div>
-          <div class="field" id="prod-delivery-field">
-            <label for="prod-delivery">What the customer gets after paying</label>
-            <textarea id="prod-delivery" name="deliveryInfo" rows="3" placeholder="A private download link, a licence key, or instructions. Only customers who have paid see this."></textarea>
-            <p class="field__hint" id="prod-delivery-hint">Shown only to customers who have paid. Never shown on the public shop.</p>
-          </div>
-          <label class="check-row">
-            <input id="prod-hidden" name="hidden" type="checkbox">
-            <span>Hide from the shop for now</span>
-          </label>
-          <p class="field__error" id="prod-form-error" hidden></p>
-          <div class="prod-form__actions">
-            <button class="btn btn--ink" type="submit" id="prod-submit"><svg class="i" aria-hidden="true" focusable="false"><use href="#i-plus"/></svg><span>Add product</span></button>
-            <button class="link" type="button" id="prod-cancel" hidden>Cancel</button>
-          </div>
-        </form>
-
-        <div class="prod-list" id="products-list"></div>
-        <p class="admin-empty" id="products-empty" hidden>You have not added any products yet.</p>
+        <h2 class="dash-card__title" id="products-title">Products</h2>
+        <p class="admin-lead">Add and manage your products: title, description, photos, options with their own prices and stock, and sold out status.</p>
+        <a class="btn btn--ink" href="products.html"><svg class="i" aria-hidden="true" focusable="false"><use href="#i-edit"/></svg><span>Manage products</span></a>
       </section>
 
       <section class="dash-card sales-card" id="sales-card" aria-labelledby="sales-title">
@@ -317,3 +244,4 @@
 <script src="js/seller-dashboard.js"></script>
 </body>
 </html>
+

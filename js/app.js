@@ -1,4 +1,4 @@
-/* Quartz Eon storefront: plain JavaScript, no build step.
+﻿/* Quartz Eon storefront: plain JavaScript, no build step.
    Products and stores are read from Supabase (the public_products and public_stores views), and
    accounts use Supabase too — customer email-link log in, seller email/password log in, sign up
    and password reset, and an account menu that replaces the Log in button once someone is signed
@@ -160,6 +160,9 @@
     byId('account-email').textContent = session.user.email || '';
     const label = { seller: 'Seller', admin: 'Admin' }[profile && profile.role] || 'Account';
     byId('account-label').textContent = label;
+    /* A seller goes from here to their dashboard; the owner to the admin page. */
+    byId('account-dashboard').hidden = !(profile && profile.role === 'seller');
+    byId('account-admin').hidden = !(profile && profile.role === 'admin');
     const dot = byId('account-dot');
     const note = byId('account-note');
     if (profile && profile.role === 'seller' && sellerRow) {
@@ -186,7 +189,11 @@
       sellerRow = null;
     }
     paintAccountUI();
-    if (event === 'SIGNED_IN' && authDialog.open) authDialog.close();
+    if (event === 'SIGNED_IN' && authDialog.open) {
+      authDialog.close();
+      /* A seller who just logged in through the Seller form lands straight on their dashboard. */
+      if (auth.role === 'seller' && profile && profile.role === 'seller') window.location.href = 'seller.html';
+    }
     ordersState.status = 'idle';
     if (view.name === 'orders') renderOrders();
   });
@@ -205,10 +212,24 @@
   const dollars = (n) => `$${money2(n / rate.value)}`;
   const rupeeNumber = (n) => Math.round(n).toLocaleString('en-US');
 
-  function priceHtml(p) {
+  /* What a price looks like. With several options and none chosen it reads "From Rs. ...". */
+  function priceHtml(p, optionIndex) {
+    const options = p.options || [];
+    const chosen = Number.isInteger(optionIndex) ? options[optionIndex] : null;
+    const amount = chosen ? chosen.price : p.price;
+    const from = !chosen && options.length > 1 ? '<span class="price__from">From</span> ' : '';
     return `
-      <span class="price"><span class="price__cur">${esc(CFG.currencySymbol)}</span>${rupeeNumber(p.price)}</span>
-      <span class="usd" title="Approximate, at the current exchange rate">&asymp; ${dollars(p.price)}</span>`;
+      <span class="price">${from}<span class="price__cur">${esc(CFG.currencySymbol)}</span>${rupeeNumber(amount)}</span>
+      <span class="usd" title="Approximate, at the current exchange rate">&asymp; ${dollars(amount)}</span>`;
+  }
+
+  /* The public address of a product photo. */
+  const photoUrl = (path) => sb.storage.from('product-images').getPublicUrl(path).data.publicUrl;
+
+  /* The price and name of what is being bought: the product, or one of its options. */
+  function offerOf(p, optionIndex) {
+    const chosen = Number.isInteger(optionIndex) ? (p.options || [])[optionIndex] : null;
+    return { price: chosen ? chosen.price : p.price, label: chosen ? chosen.label : '' };
   }
 
   function formatDate(iso) {
@@ -276,19 +297,21 @@
     const sellerLine = showSeller
       ? `<p class="product__seller">by ${seller.slug ? `<a href="#/store/${esc(seller.slug)}">${esc(seller.name)}</a>` : esc(seller.name)}</p>`
       : '';
+    const href = `#/product/${esc(p.id)}`;
     return `
-      <article class="product" style="--h:${hueOf(p)}">
-        <div class="product__art">
-          ${art(p.icon)}
+      <article class="product${p.soldOut ? ' is-soldout' : ''}" style="--h:${hueOf(p)}">
+        <a class="product__art" href="${href}" aria-label="${esc(p.name)}">
+          ${p.images.length ? `<img class="product__photo" src="${esc(photoUrl(p.images[0]))}" alt="" loading="lazy">` : art(p.icon)}
           ${p.type ? `<span class="badge">${esc(p.type)}</span>` : ''}
-        </div>
+          ${p.soldOut ? '<span class="badge badge--soldout">Sold out</span>' : ''}
+        </a>
         <div class="product__info">
           <p class="product__cat">${esc(p.category)}</p>
-          <h3 class="product__name">${esc(p.name)}</h3>
+          <h3 class="product__name"><a href="${href}">${esc(p.name)}</a></h3>
           ${sellerLine}
           <div class="product__buy">
             <p class="product__price">${priceHtml(p)}</p>
-            <button class="btn btn--ink btn--sm" type="button" data-buy="${esc(p.id)}" aria-label="Buy ${esc(p.name)}">Buy</button>
+            <a class="btn ${p.soldOut ? 'btn--ghost' : 'btn--ink'} btn--sm" href="${href}" aria-label="${p.soldOut ? 'See' : 'Buy'} ${esc(p.name)}">${p.soldOut ? 'Details' : 'Buy'}</a>
           </div>
         </div>
       </article>`;
@@ -321,6 +344,12 @@
         type: p.type,
         description: p.description,
         icon: p.icon,
+        images: Array.isArray(p.images) ? p.images : [],
+        options: Array.isArray(p.options) ? p.options : [],
+        stockLeft: p.stock_left == null ? null : p.stock_left,
+        soldOut: !!p.sold_out,
+        vpnDays: p.vpn_days,
+        vpnGb: p.vpn_data_gb,
         hue: (SELLER_BY_ID.get(p.seller_id) || {}).hue || 0
       }));
       PRODUCT_BY_ID = new Map(PRODUCTS.map((p) => [p.id, p]));
@@ -413,6 +442,7 @@
   const homeView = byId('home-view');
   const storeView = byId('store-view');
   const ordersView = byId('orders-view');
+  const productView = byId('product-view');
   const view = { name: 'home', slug: '' };
   const DEFAULT_DESCRIPTION = 'Quartz Eon is a marketplace for digital products: templates, e-books, courses, software and design assets from independent sellers.';
 
@@ -478,24 +508,33 @@
   function renderCurrentView() {
     if (view.name === 'store') renderStore();
     else if (view.name === 'orders') renderOrders();
+    else if (view.name === 'product') renderProduct();
     else renderProducts();
   }
 
   function route() {
-    const match = window.location.hash.match(/^#\/store\/([\w-]+)$/);
-    const next = window.location.hash === '#/orders'
+    const hash = window.location.hash;
+    const store = hash.match(/^#\/store\/([\w-]+)$/);
+    const product = hash.match(/^#\/product\/([\w-]+)$/);
+    const next = hash === '#/orders'
       ? { name: 'orders', slug: '' }
-      : match ? { name: 'store', slug: match[1] } : { name: 'home', slug: '' };
+      : product ? { name: 'product', slug: product[1] }
+      : store ? { name: 'store', slug: store[1] } : { name: 'home', slug: '' };
     const changed = next.name !== view.name || next.slug !== view.slug;
+    if (changed) page.productId = '';
     view.name = next.name;
     view.slug = next.slug;
     homeView.hidden = view.name !== 'home';
     storeView.hidden = view.name !== 'store';
     ordersView.hidden = view.name !== 'orders';
+    productView.hidden = view.name !== 'product';
     const seller = SELLER_BY_SLUG.get(view.slug);
+    const item = view.name === 'product' ? PRODUCT_BY_ID.get(view.slug) : null;
     document.title = view.name === 'store' && seller ? `${seller.name} | ${CFG.storeName}`
+      : item ? `${item.name} | ${CFG.storeName}`
       : view.name === 'orders' ? `My orders | ${CFG.storeName}` : CFG.storeName;
-    const description = view.name === 'store' && seller && seller.about ? seller.about : DEFAULT_DESCRIPTION;
+    const description = item ? (item.description || DEFAULT_DESCRIPTION).slice(0, 160)
+      : view.name === 'store' && seller && seller.about ? seller.about : DEFAULT_DESCRIPTION;
     const meta = document.querySelector('meta[name="description"]');
     if (meta) meta.setAttribute('content', description);
     renderCurrentView();
@@ -504,40 +543,149 @@
 
   window.addEventListener('hashchange', route);
 
-  /* ---------- Buy dialog ---------- */
+  /* ---------- Product page (address: index.html#/product/<id>) ---------- */
   const buyDialog = byId('buy');
+  const page = { productId: '', option: null, image: 0 };
 
-  function openBuy(id) {
-    const p = PRODUCT_BY_ID.get(id);
-    if (!p) return;
-    const seller = sellerOf(p);
-    const kind = [p.category, p.type].filter(Boolean).map(esc).join(' &middot; ');
-    byId('buy-body').innerHTML = `
-      <button class="icon-btn dlg__x" type="button" data-close aria-label="Close">${icon('i-close')}</button>
-      <div class="buy" style="--h:${hueOf(p)}">
-        <div class="buy__art">${art(p.icon)}</div>
-        <div class="buy__info">
-          <p class="product__cat">${kind}</p>
-          <h2 class="buy__title" id="buy-title">${esc(p.name)}</h2>
-          <p class="product__seller">by ${esc(seller.name)}</p>
-          ${p.description ? `<p class="buy__desc">${esc(p.description)}</p>` : ''}
-          <p class="product__price buy__price">${priceHtml(p)}</p>
-          <ul class="buy__list">
-            <li>${icon('i-check')}<span>Delivered to your account once payment is confirmed</span></li>
-            <li>${icon('i-check')}<span>File type: ${esc(p.type || 'digital file')}</span></li>
-            <li>${icon('i-check')}<span>Sold by ${esc(seller.name)}</span></li>
-          </ul>
-          <button class="btn btn--ink btn--block" type="button" id="buy-continue" data-product="${esc(p.id)}">Continue to payment</button>
-        </div>
-      </div>`;
-    if (!buyDialog.open) buyDialog.showModal();
+  /* A click on the dark backdrop closes the checkout dialog. Page scrolling is locked in CSS while a dialog is open. */
+  buyDialog.addEventListener('click', (event) => {
+    if (event.target === buyDialog) buyDialog.close();
+  });
+
+  /* Blank lines in the seller's text make paragraphs; single line breaks are kept. */
+  function paragraphs(text) {
+    return String(text || '').split(/\n{2,}/).map((part) => part.trim()).filter(Boolean)
+      .map((part) => `<p>${esc(part).replace(/\n/g, '<br>')}</p>`).join('');
   }
 
+  function planText(days, gb) {
+    const length = days > 0 ? `Valid for ${days} ${plural(days, 'day', 'days')}` : '';
+    return [length, gb > 0 ? `${gb} GB of data` : 'Unlimited data'].filter(Boolean).join(' · ');
+  }
+
+  /* The state of the Buy button on the product page. */
+  function purchaseState(p) {
+    if (p.soldOut) return { text: 'Sold out', disabled: true };
+    if (p.options.length && page.option === null) return { text: 'Choose an option', disabled: true };
+    return { text: 'Buy now', disabled: false };
+  }
+
+  function updatePurchase(p) {
+    const price = byId('pd-price');
+    const button = byId('pd-buy');
+    if (price) price.innerHTML = priceHtml(p, page.option);
+    if (button) {
+      const state = purchaseState(p);
+      button.textContent = state.text;
+      button.disabled = state.disabled;
+    }
+  }
+
+  function renderProduct() {
+    if (catalog.status !== 'ready') {
+      const failed = catalog.status === 'error';
+      productView.innerHTML = `
+        <section class="sec tone tone--paper"><div class="wrap"><div class="empty">
+          <p class="empty__title">${failed ? 'Could not load this product' : 'Loading product'}</p>
+          <p>${failed ? 'Check your connection and try again.' : 'One moment.'}</p>
+          ${failed ? '<button class="btn btn--ink" type="button" id="retry-product">Try again</button>' : ''}
+        </div></div></section>`;
+      const retry = byId('retry-product');
+      if (retry) retry.addEventListener('click', loadCatalog);
+      return;
+    }
+    const p = PRODUCT_BY_ID.get(view.slug);
+    if (!p) {
+      productView.innerHTML = `
+        <section class="sec tone tone--paper"><div class="wrap"><div class="empty">
+          <p class="empty__title">Product not found</p>
+          <p>This product is not for sale any more, or the address is wrong.</p>
+          <a class="btn btn--ink" href="#/">Back to all products</a>
+        </div></div></section>`;
+      return;
+    }
+    if (page.productId !== p.id) {
+      page.productId = p.id;
+      page.option = p.options.length === 1 && !p.options[0].soldOut ? 0 : null;
+      page.image = 0;
+    }
+    const seller = sellerOf(p);
+    const gallery = `
+      <div class="pd__main">
+        ${p.images.length ? `<img id="pd-main-img" src="${esc(photoUrl(p.images[page.image] || p.images[0]))}" alt="${esc(p.name)}">` : `<div class="pd__art">${art(p.icon)}</div>`}
+        ${p.soldOut ? '<span class="badge badge--soldout">Sold out</span>' : ''}
+      </div>
+      ${p.images.length > 1 ? `<div class="pd__thumbs">${p.images.map((path, i) => `
+        <button class="pd__thumb" type="button" data-pd-img="${i}" aria-pressed="${i === page.image}" aria-label="Show photo ${i + 1}"><img src="${esc(photoUrl(path))}" alt="" loading="lazy"></button>`).join('')}</div>` : ''}`;
+
+    const options = p.options.length ? `
+      <fieldset class="pd-options">
+        <legend>Choose an option</legend>
+        ${p.options.map((o, i) => `
+          <label class="pd-option${o.soldOut ? ' is-disabled' : ''}">
+            <input type="radio" name="pd-option" value="${i}" ${o.soldOut ? 'disabled' : ''} ${page.option === i ? 'checked' : ''}>
+            <span class="pd-option__name">${esc(o.label)}${p.icon === 'vpn' && o.days ? `<small>${esc(planText(o.days, o.gb))}</small>` : ''}</span>
+            <span class="pd-option__price">${esc(CFG.currencySymbol)} ${rupeeNumber(o.price)}</span>
+            <span class="pd-option__stock">${o.soldOut ? 'Sold out' : o.left != null ? `${o.left} left` : ''}</span>
+          </label>`).join('')}
+      </fieldset>` : '';
+
+    const perks = [
+      'Delivered to your account once payment is confirmed',
+      p.icon === 'vpn' && !p.options.length ? planText(p.vpnDays, p.vpnGb) : '',
+      p.type ? `File type: ${p.type}` : '',
+      `Sold by ${seller.name}`
+    ].filter(Boolean);
+
+    const state = purchaseState(p);
+    productView.innerHTML = `
+      <section class="sec tone tone--paper" aria-labelledby="pd-title">
+        <div class="wrap">
+          <a class="back" href="${seller.slug ? `#/store/${esc(seller.slug)}` : '#/'}">${icon('i-back')}<span>${seller.slug ? esc(seller.name) : 'All products'}</span></a>
+          <div class="pd" style="--h:${hueOf(p)}">
+            <div class="pd__gallery">${gallery}</div>
+            <div class="pd__info">
+              <p class="product__cat">${esc(p.category)}</p>
+              <h1 class="pd__title" id="pd-title">${esc(p.name)}</h1>
+              <p class="product__seller">by ${seller.slug ? `<a href="#/store/${esc(seller.slug)}">${esc(seller.name)}</a>` : esc(seller.name)}</p>
+              <p class="product__price pd__price" id="pd-price">${priceHtml(p, page.option)}</p>
+              ${!p.options.length && !p.soldOut && p.stockLeft != null ? `<p class="pd__stock">${p.stockLeft === 1 ? 'Only 1 left' : `${p.stockLeft} left`}</p>` : ''}
+              ${options}
+              <button class="btn btn--ink btn--block pd__buy" type="button" id="pd-buy" ${state.disabled ? 'disabled' : ''}>${state.text}</button>
+              ${p.description ? `<div class="pd__desc">${paragraphs(p.description)}</div>` : ''}
+              <ul class="buy__list">${perks.map((text) => `<li>${icon('i-check')}<span>${esc(text)}</span></li>`).join('')}</ul>
+            </div>
+          </div>
+        </div>
+      </section>`;
+  }
+
+  productView.addEventListener('change', (event) => {
+    if (!event.target.matches('input[name="pd-option"]')) return;
+    const p = PRODUCT_BY_ID.get(view.slug);
+    if (!p) return;
+    page.option = Number(event.target.value);
+    updatePurchase(p);
+  });
+
+  productView.addEventListener('click', (event) => {
+    const p = PRODUCT_BY_ID.get(view.slug);
+    if (!p) return;
+    const thumb = event.target.closest('[data-pd-img]');
+    if (thumb) {
+      page.image = Number(thumb.dataset.pdImg);
+      const main = byId('pd-main-img');
+      if (main) main.src = photoUrl(p.images[page.image]);
+      productView.querySelectorAll('[data-pd-img]').forEach((b) => b.setAttribute('aria-pressed', String(b === thumb)));
+      return;
+    }
+    if (event.target.closest('#pd-buy') && !purchaseState(p).disabled) startCheckout(p.id, page.option);
+  });
   /* ---------- Checkout: log in first, then pay by PayPal or bank transfer ---------- */
   const PAYPAL_ON = !!CFG.paypalClientId;
   const RECEIPT_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'application/pdf'];
   const RECEIPT_MAX = 5 * 1024 * 1024;
-  const checkout = { productId: '', method: '' };
+  const checkout = { productId: '', option: null, method: '' };
   let paypalSdk = null;
 
   /* Works out a readable message from a Supabase function reply, whichever way it failed. */
@@ -570,8 +718,8 @@
       <div class="pay" style="--h:${hueOf(p)}">
         <p class="product__cat">Checkout</p>
         <h2 class="buy__title" id="buy-title">${esc(p.name)}</h2>
-        <p class="product__seller">by ${esc(seller.name)}</p>
-        <p class="product__price buy__price">${priceHtml(p)}</p>
+        <p class="product__seller">by ${esc(seller.name)}${offerOf(p, checkout.option).label ? ` &middot; ${esc(offerOf(p, checkout.option).label)}` : ''}</p>
+        <p class="product__price buy__price">${priceHtml(p, checkout.option)}</p>
         ${inner}
       </div>`;
   }
@@ -586,10 +734,12 @@
       </div>`);
   }
 
-  function startCheckout(id) {
+  function startCheckout(id, optionIndex) {
     const p = PRODUCT_BY_ID.get(id);
     if (!p) return;
     checkout.productId = id;
+    checkout.option = Number.isInteger(optionIndex) ? optionIndex : null;
+    if (!buyDialog.open) buyDialog.showModal();
     if (!session) {
       showCheckoutMessage(p, 'Log in to buy', 'Your purchases and downloads are kept in your account. Log in with your email (no password needed), then come back to this product.',
         '<button class="btn btn--ink btn--block" type="button" data-login-first>Log in</button>');
@@ -613,7 +763,7 @@
       .filter((row) => row[1])
       .map(([k, v]) => `<div><dt>${esc(k)}</dt><dd>${esc(v)}</dd></div>`).join('');
     panel.innerHTML = `
-      <p class="auth__hint">Transfer <strong>${esc(CFG.currencySymbol)} ${rupeeNumber(p.price)}</strong> to ${esc(sellerOf(p).name)}’s account below, then send the slip so they can confirm your payment.</p>
+      <p class="auth__hint">Transfer <strong>${esc(CFG.currencySymbol)} ${rupeeNumber(offerOf(p, checkout.option).price)}</strong> to ${esc(sellerOf(p).name)}’s account below, then send the slip so they can confirm your payment.</p>
       <dl class="pay__bank">${rows}</dl>
       ${bank.note ? `<p class="auth__hint">${esc(bank.note)}</p>` : ''}
       <form class="auth__form" id="bank-form" novalidate>
@@ -638,7 +788,7 @@
     let body;
     if (method === 'paypal') {
       body = `
-        <p class="auth__hint">PayPal charges in US dollars: about ${esc(dollars(p.price))} at today’s rate. The exact amount is shown by PayPal before you pay.</p>
+        <p class="auth__hint">PayPal charges in US dollars: about ${esc(dollars(offerOf(p, checkout.option).price))} at today’s rate. The exact amount is shown by PayPal before you pay.</p>
         <p class="field__error" id="pay-error" hidden></p>
         <div id="paypal-buttons" class="pay__paypal"><p class="note">Loading PayPal…</p></div>`;
     } else {
@@ -659,7 +809,7 @@
       paypal.Buttons({
         style: { layout: 'vertical', shape: 'rect', label: 'pay' },
         createOrder: async () => {
-          const { data, error } = await sb.functions.invoke('paypal-create-order', { body: { product_id: p.id } });
+          const { data, error } = await sb.functions.invoke('paypal-create-order', { body: { product_id: p.id, option: checkout.option } });
           if (error || !data || !data.id) throw new Error(await functionError(error, data));
           return data.id;
         },
@@ -706,8 +856,9 @@
         const { error: uploadError } = await sb.storage.from('receipts').upload(receiptPath, file, { contentType: file.type });
         if (uploadError) throw uploadError;
       }
-      const { data: orderId, error } = await sb.rpc('create_bank_order', { p_product_id: p.id, p_reference: reference, p_receipt_path: receiptPath });
+      const { data: orderId, error } = await sb.rpc('create_bank_order', { p_product_id: p.id, p_option: checkout.option, p_reference: reference, p_receipt_path: receiptPath });
       if (error) throw error;
+      loadCatalog(); /* the stock changed, so the shop shows the new numbers */
       /* Tell the owner (Telegram) there is a transfer to check. Failure here changes nothing for the customer. */
       sb.functions.invoke('notify', { body: { kind: 'bank_order', id: orderId } }).catch(() => {});
       ordersState.status = 'idle';
@@ -715,6 +866,7 @@
     } catch (err) {
       errorBox.textContent = (err && err.message) || 'Something went wrong. Please try again.';
       errorBox.hidden = false;
+      if (/sold out|not available/i.test(errorBox.textContent)) loadCatalog();
       button.disabled = false;
       button.textContent = 'I have paid, send for review';
     }
@@ -851,7 +1003,14 @@
     const email = fieldHtml({ id: 'auth-email', name: 'email', label: 'Email', type: 'email', autocomplete: 'email', placeholder: 'you@example.com' });
 
     if (auth.role === 'customer') {
+      const google = CFG.googleLogin ? `
+        <button class="btn btn--ghost btn--block" type="button" data-google-login>
+          <svg class="i" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M21.6 12.2c0-.7-.1-1.3-.2-1.9H12v3.6h5.4a4.6 4.6 0 0 1-2 3v2.5h3.2c1.9-1.7 3-4.3 3-7.2z" fill="#4285F4" stroke="none"/><path d="M12 22c2.7 0 5-.9 6.6-2.4l-3.2-2.5c-.9.6-2 1-3.4 1-2.6 0-4.8-1.8-5.6-4.1H3.1v2.6A10 10 0 0 0 12 22z" fill="#34A853" stroke="none"/><path d="M6.4 14c-.2-.6-.3-1.3-.3-2s.1-1.4.3-2V7.4H3.1a10 10 0 0 0 0 9.2z" fill="#FBBC05" stroke="none"/><path d="M12 5.9c1.5 0 2.8.5 3.8 1.5l2.9-2.9A10 10 0 0 0 3.1 7.4L6.4 10c.8-2.3 3-4.1 5.6-4.1z" fill="#EA4335" stroke="none"/></svg>
+          <span>Continue with Google</span>
+        </button>
+        <p class="auth__or"><span>or use your email</span></p>` : '';
       return `
+        ${google}
         <form class="auth__form" id="auth-form" novalidate>
           ${email}
           <button class="btn btn--ink btn--block" type="submit">Email me a log in link</button>
@@ -1014,6 +1173,12 @@
       focusFirstField();
       return;
     }
+    if (event.target.closest('[data-google-login]')) {
+      sb.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: redirectUrl() } }).then(({ error }) => {
+        if (error) showAuthNote(friendlyAuthError(error));
+      });
+      return;
+    }
     const toggle = event.target.closest('[data-pw-toggle]');
     if (toggle) {
       const input = byId(toggle.dataset.pwToggle);
@@ -1110,10 +1275,6 @@
 
   document.addEventListener('click', (event) => {
     const target = event.target;
-    const buy = target.closest('[data-buy]');
-    if (buy) { openBuy(buy.dataset.buy); return; }
-    const proceed = target.closest('#buy-continue');
-    if (proceed) { startCheckout(proceed.dataset.product); return; }
     if (target.closest('[data-login-first]')) {
       if (buyDialog.open) buyDialog.close();
       openAuth('customer', 'login');
@@ -1139,3 +1300,4 @@
   loadRate();
   loadCatalog();
 })();
+

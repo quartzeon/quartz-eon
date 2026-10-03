@@ -335,6 +335,50 @@ section[id] { scroll-margin-top: 76px; }
 .price__cur { margin-right: 5px; font: 500 13px/1 var(--font-mono); letter-spacing: 0; color: var(--ink-2); }
 .usd { font: 400 13px/1 var(--font-mono); color: var(--ink-3); font-variant-numeric: tabular-nums; }
 
+.product__art { overflow: hidden; }
+.product__photo { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.product__name a:hover { text-decoration: underline; text-underline-offset: 3px; }
+.badge--soldout { left: auto; right: 12px; background: hsl(0 60% 42%); color: #fff; }
+.product.is-soldout .product__photo, .product.is-soldout .art { opacity: .45; }
+.price__from { margin-right: 4px; font: 500 12px/1 var(--font-mono); letter-spacing: .04em; text-transform: uppercase; color: var(--ink-3); }
+
+/* ---------- Product page ---------- */
+.pd { display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr); gap: clamp(24px, 4vw, 56px); align-items: start; }
+.pd__main {
+  position: relative; display: grid; place-items: center; aspect-ratio: 4 / 3; overflow: hidden; border-radius: var(--radius-l);
+  background: hsl(var(--h) var(--art-s) var(--art-l)); color: hsl(var(--h) var(--art-fg-s) var(--art-fg-l));
+}
+.pd__main img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.pd__art { display: grid; place-items: center; width: 100%; height: 100%; }
+.pd__art .art { width: 34%; height: 34%; }
+.pd__thumbs { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 12px; }
+.pd__thumb { width: 72px; height: 72px; padding: 0; overflow: hidden; border: 2px solid transparent; border-radius: 10px; background: var(--paper); cursor: pointer; }
+.pd__thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.pd__thumb[aria-pressed="true"] { border-color: var(--ink); }
+.pd__info { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+.pd__title { font: 800 clamp(1.7rem, 1.3rem + 1.6vw, 2.4rem)/1.08 var(--font-display); letter-spacing: -.03em; text-wrap: balance; overflow-wrap: anywhere; }
+.pd__price { flex-direction: row; align-items: baseline; gap: 12px; margin-top: 4px; }
+.pd__price .price { font-size: 32px; }
+.pd__stock { font: 500 13px/1.3 var(--font-mono); color: hsl(30 70% 38%); }
+.pd__buy { min-height: 52px; font-size: 16px; }
+.pd__buy:disabled { opacity: .55; cursor: not-allowed; }
+.pd__desc { display: grid; gap: 12px; color: var(--ink-2); line-height: 1.6; overflow-wrap: anywhere; }
+.pd-options { display: grid; gap: 8px; margin: 4px 0; padding: 0; border: 0; min-width: 0; }
+.pd-options legend { margin-bottom: 8px; padding: 0; font-size: 13px; font-weight: 600; }
+.pd-option {
+  display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 4px 12px;
+  padding: 12px 14px; border: 1.5px solid var(--line); border-radius: 12px; background: var(--card); cursor: pointer;
+}
+.pd-option:has(input:checked) { border-color: var(--ink); }
+.pd-option.is-disabled { opacity: .55; cursor: not-allowed; }
+.pd-option input { accent-color: var(--ink); width: 17px; height: 17px; margin: 0; grid-row: 1 / span 2; }
+.pd-option__name { font-weight: 600; overflow-wrap: anywhere; }
+.pd-option__name small { display: block; margin-top: 2px; font-size: 12px; font-weight: 400; color: var(--ink-2); }
+.pd-option__price { font: 700 15px/1 var(--font-display); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.pd-option__stock { grid-column: 2 / -1; font: 500 12px/1.2 var(--font-mono); color: var(--ink-3); }
+.pd-option__stock:empty { display: none; }
+@media (max-width: 760px) { .pd { grid-template-columns: minmax(0, 1fr); } }
+
 .empty { display: grid; justify-items: start; gap: 12px; padding: 48px 0; color: var(--ink-2); }
 .empty__title { font: 700 24px/1.1 var(--font-display); letter-spacing: -.02em; color: var(--ink); }
 .rate { max-width: 70ch; padding-bottom: 64px; font: 400 13px/1.6 var(--font-mono); color: var(--ink-3); }
@@ -460,6 +504,8 @@ dialog::backdrop { background: rgb(8 12 16 / .55); }
 }
 .pw__toggle:hover { color: var(--ink); }
 .auth__hint { font-size: 14px; color: var(--ink-2); }
+.auth__or { display: flex; align-items: center; gap: 12px; margin: -4px 0; font-size: 13px; color: var(--ink-2); }
+.auth__or::before, .auth__or::after { content: ''; flex: 1; height: 1px; background: var(--line); }
 .auth__row { display: flex; justify-content: flex-end; margin-top: -6px; }
 .auth__switch { padding-top: 16px; border-top: 1px solid var(--line); font-size: 14px; color: var(--ink-2); }
 .auth__done { display: grid; justify-items: start; gap: 14px; }

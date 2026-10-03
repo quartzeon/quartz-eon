@@ -64,6 +64,38 @@
 .copy-row input { flex: 1; min-width: 0; font-family: var(--font-mono); font-size: 13px; color: var(--ink-2); background: var(--paper); }
 .field__hint { font-size: 13px; color: var(--ink-2); }
 
+/* ---------- Product panel (products.html) ---------- */
+.pp-head-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 18px; }
+.pp-list { display: grid; gap: 12px; }
+.pp-thumb { overflow: hidden; }
+.pp-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.pp-row .prod-row__actions { flex-wrap: wrap; align-items: center; }
+.pp-back { display: inline-flex; align-items: center; gap: 8px; margin-bottom: 14px; }
+.pp-back .i { width: 18px; height: 18px; }
+.pp-form { display: grid; gap: 20px; max-width: 760px; }
+.pp-form .dash-card .auth__form { margin-top: 14px; }
+.pp-form__actions { display: flex; align-items: center; gap: 16px; padding-bottom: 24px; }
+.pp-label { font-size: 13px; font-weight: 600; }
+.pp-photos { display: flex; flex-wrap: wrap; gap: 10px; }
+.pp-photo { position: relative; width: 112px; height: 112px; margin: 0; overflow: hidden; border: 1.5px solid var(--line); border-radius: 12px; background: var(--paper); }
+.pp-photo img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.pp-photo.is-cover { border-color: var(--brand); }
+.pp-photo--busy { display: grid; place-items: center; font-size: 13px; color: var(--ink-2); }
+.pp-photo__tag { position: absolute; left: 6px; bottom: 6px; padding: 2px 8px; border-radius: 999px; background: var(--brand); color: var(--brand-ink); font: 500 11px/1.5 var(--font-mono); letter-spacing: .04em; }
+.pp-photo__btn { position: absolute; top: 6px; display: grid; place-items: center; width: 28px; height: 28px; padding: 0; border: 0; border-radius: 50%; background: rgb(8 12 16 / .65); color: #fff; cursor: pointer; }
+.pp-photo__btn .i { width: 15px; height: 15px; }
+.pp-photo__btn--x { right: 6px; }
+.pp-photo__btn--star { left: 6px; }
+.pp-upload { align-self: flex-start; cursor: pointer; }
+.pp-options { display: grid; gap: 12px; margin-bottom: 12px; }
+.pp-option { display: grid; grid-template-columns: minmax(0, 2fr) repeat(auto-fit, minmax(90px, 1fr)); gap: 10px 12px; align-items: end; padding: 14px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--paper); position: relative; padding-right: 54px; }
+.pp-option .field label { font-size: 12px; }
+.pp-option__x { position: absolute; top: 12px; right: 12px; }
+@media (max-width: 640px) {
+  .pp-option { grid-template-columns: 1fr 1fr; }
+  .pp-option__label { grid-column: 1 / -1; }
+}
+
 .order-problem { color: var(--danger); font-weight: 600; }
 .telegram-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 14px; }
 .dash-card .pay__bank { margin-top: 14px; }
