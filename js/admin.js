@@ -125,6 +125,7 @@
       loadProducts();
       loadOrders();
       loadOwnerBank();
+      loadBrands();
     } else {
       showPanel('denied', session.user.email);
     }
@@ -504,6 +505,91 @@
     byId('owner-bank-saved').hidden = false;
     byId('owner-bank-saved').textContent = 'Saved just now.';
     toast('Bank details saved');
+  });
+
+  /* ---------- Brand logos: uploaded once here, picked by every seller ---------- */
+  const BRAND_BUCKET = 'product-images';
+  const brandUrl = (path) => sb.storage.from(BRAND_BUCKET).getPublicUrl(path).data.publicUrl;
+  let brands = [];
+
+  function shrinkLogo(file) {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      const url = URL.createObjectURL(file);
+      img.onload = () => {
+        URL.revokeObjectURL(url);
+        const scale = Math.min(1, 600 / Math.max(img.width, img.height));
+        const canvas = document.createElement('canvas');
+        canvas.width = Math.max(1, Math.round(img.width * scale));
+        canvas.height = Math.max(1, Math.round(img.height * scale));
+        const ctx = canvas.getContext('2d');
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        canvas.toBlob((blob) => (blob ? resolve(blob) : reject(new Error('Could not read that image.'))), 'image/jpeg', 0.9);
+      };
+      img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('That file is not a usable image.')); };
+      img.src = url;
+    });
+  }
+
+  function renderBrands() {
+    byId('brand-list').innerHTML = brands.map((b) => `
+      <figure class="brand-item">
+        <img src="${esc(brandUrl(b.path))}" alt="" loading="lazy">
+        <span>${esc(b.name)}</span>
+        <button class="icon-btn icon-btn--sm" type="button" data-delete-brand="${esc(b.id)}" aria-label="Delete ${esc(b.name)}">${icon('i-trash')}</button>
+      </figure>`).join('');
+  }
+
+  async function loadBrands() {
+    const { data } = await sb.from('brand_logos').select('*').order('name');
+    brands = data || [];
+    renderBrands();
+  }
+
+  byId('brand-form').addEventListener('submit', async (event) => {
+    event.preventDefault();
+    const f = byId('brand-form').elements;
+    const name = f.brandName.value.trim();
+    const file = f.brandFile.files[0];
+    const error = byId('brand-error');
+    error.hidden = true;
+    if (!name) { error.textContent = 'Enter the brand name.'; error.hidden = false; return; }
+    if (!file || !/^image\/(jpeg|png|webp)$/.test(file.type)) { error.textContent = 'Choose a JPG, PNG or WebP logo image.'; error.hidden = false; return; }
+    const button = byId('brand-form').querySelector('button[type="submit"]');
+    button.disabled = true;
+    try {
+      const blob = await shrinkLogo(file);
+      const path = `brands/${Date.now()}-${name.toLowerCase().replace(/[^a-z0-9]+/g, '-').slice(0, 24)}.jpg`;
+      const { error: uploadError } = await sb.storage.from(BRAND_BUCKET).upload(path, blob, { contentType: 'image/jpeg' });
+      if (uploadError) throw uploadError;
+      const { data, error: insertError } = await sb.from('brand_logos').insert({ name, path }).select().maybeSingle();
+      if (insertError) { sb.storage.from(BRAND_BUCKET).remove([path]).catch(() => {}); throw insertError; }
+      brands.push(data);
+      brands.sort((a, b) => a.name.localeCompare(b.name));
+      renderBrands();
+      byId('brand-form').reset();
+      toast('Logo added');
+    } catch (err) {
+      error.textContent = (err && err.message) || 'Could not add the logo.';
+      error.hidden = false;
+    } finally {
+      button.disabled = false;
+    }
+  });
+
+  byId('brand-list').addEventListener('click', async (event) => {
+    const del = event.target.closest('[data-delete-brand]');
+    if (!del) return;
+    const brand = brands.find((b) => b.id === del.dataset.deleteBrand);
+    if (!brand || !window.confirm(`Remove the ${brand.name} logo? Products that already use it will lose their logo.`)) return;
+    const { error } = await sb.from('brand_logos').delete().eq('id', brand.id);
+    if (error) { toast(`Could not remove: ${error.message}`); return; }
+    sb.storage.from(BRAND_BUCKET).remove([brand.path]).catch(() => {});
+    brands = brands.filter((b) => b.id !== brand.id);
+    renderBrands();
+    toast('Logo removed');
   });
 
   document.title = `Admin | ${CFG.storeName}`;

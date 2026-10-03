@@ -51,6 +51,14 @@
 .settings-card { max-width: 620px; padding: 24px clamp(18px, 3vw, 28px); border: 1px solid var(--line); border-radius: var(--radius-l); background: var(--card); }
 .settings-card__title { margin-bottom: 8px; font: 700 20px/1.2 var(--font-display); letter-spacing: -.015em; }
 .settings-card .auth__form { margin-top: 18px; }
+.settings-card--spaced { margin-top: 24px; }
+.brand-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 10px; margin-top: 18px; }
+.brand-item { position: relative; display: grid; gap: 8px; justify-items: center; padding: 12px 8px; border: 1px solid var(--line); border-radius: 12px; background: var(--paper); text-align: center; }
+.brand-item img { width: 64px; height: 64px; object-fit: contain; border-radius: 10px; background: #fff; }
+.brand-item span { font-size: 13px; overflow-wrap: anywhere; }
+.brand-item button { position: absolute; top: 6px; right: 6px; }
+.field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+@media (max-width: 640px) { .field-row { grid-template-columns: 1fr; } }
 .field__hint { font-size: 13px; color: var(--ink-2); }
 .order-problem { color: var(--danger); font-weight: 600; }
 

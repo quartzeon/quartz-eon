@@ -196,6 +196,26 @@
           <button class="btn btn--ink" type="submit">Save bank details</button>
         </form>
       </div>
+
+      <div class="settings-card settings-card--spaced">
+        <h2 class="settings-card__title">Brand logos</h2>
+        <p class="admin-lead">Logos for brands the free logo library does not have (for example Dialog, Mobitel, Hutch, SLT). Everything you add here shows up for every seller in <strong>Search brand logos</strong>, under “Our brands”. Use each company’s official logo, a square image on a plain background works best.</p>
+        <form class="auth__form" id="brand-form" novalidate>
+          <div class="field-row">
+            <div class="field">
+              <label for="brand-name">Brand name</label>
+              <input id="brand-name" name="brandName" type="text" maxlength="40" placeholder="For example Dialog">
+            </div>
+            <div class="field">
+              <label for="brand-file">Logo image</label>
+              <input id="brand-file" name="brandFile" type="file" accept="image/jpeg,image/png,image/webp">
+            </div>
+          </div>
+          <p class="field__error" id="brand-error" hidden></p>
+          <button class="btn btn--ink" type="submit">Add logo</button>
+        </form>
+        <div class="brand-list" id="brand-list"></div>
+      </div>
     </div>
   </section>
 

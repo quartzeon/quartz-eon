@@ -23,7 +23,7 @@
   const photoUrl = (path) => sb.storage.from(BUCKET).getPublicUrl(path).data.publicUrl;
   /* A logo is either an uploaded file (a storage path) or one picked from the brand library, saved as "si:<name>". */
   const LIB = 'si:';
-  const isFile = (value) => !!value && !String(value).startsWith(LIB);
+  const isFile = (value) => !!value && !String(value).startsWith(LIB) && !String(value).startsWith('brands/'); // shared brand logos belong to the owner, never deleted by a seller
   const logoUrl = (value) => (String(value).startsWith(LIB) ? ('https://cdn.simpleicons.org/' + encodeURIComponent(String(value).slice(LIB.length))) : photoUrl(value));
 
   /* ---------- Theme ---------- */
@@ -484,6 +484,7 @@
     'microsoft', 'disneyplus', 'hbo', 'primevideo', 'amazon', 'paypal', 'steam', 'discord', 'twitch', 'github', 'nordvpn', 'expressvpn', 'protonvpn',
     'cloudflare', 'wireguard', 'openvpn', 'adobe', 'figma', 'notion', 'zoom', 'linkedin', 'snapchat', 'reddit', 'pinterest'];
   const SHOW_MAX = 60;
+  let ownBrands = [];      // the owner's shared logos: { name, path }
   let library = null;      // [{ title, slug, hex }] once loaded
   let libraryLoading = null;
   let searchTimer = 0;
@@ -501,21 +502,33 @@
 
   function renderLogoGrid() {
     const query = byId('pp-logo-search').value.trim().toLowerCase();
+    const words = query ? query.split(/\s+/) : [];
     const grid = byId('pp-logo-grid');
     if (!library) return;
+    /* The owner's own brands (Dialog, Mobitel, Hutch, SLT...) always come first. */
+    const mine = ownBrands.filter((b) => words.every((w) => b.name.toLowerCase().includes(w)));
     let list;
     if (query) {
-      const words = query.split(/\s+/);
       list = library.filter((i) => words.every((w) => i.title.toLowerCase().includes(w) || i.slug.includes(w)));
       list.sort((a, b) => (a.title.toLowerCase().startsWith(query) ? 0 : 1) - (b.title.toLowerCase().startsWith(query) ? 0 : 1));
     } else {
       list = POPULAR.map((slug) => library.find((i) => i.slug === slug)).filter(Boolean);
     }
-    const shown = list.slice(0, SHOW_MAX);
-    byId('pp-logo-count').textContent = query
-      ? (list.length ? `${list.length} ${plural(list.length, 'logo', 'logos')} found${list.length > SHOW_MAX ? `, showing the first ${SHOW_MAX}. Type more to narrow it down.` : '.'}` : 'No logo found. Try another word, or upload your own image.')
-      : 'Popular brands. Type to search all 3,000+ logos.';
-    grid.innerHTML = shown.map((i) => `
+    const shown = list.slice(0, Math.max(0, SHOW_MAX - mine.length));
+    const total = list.length + mine.length;
+    if (query) {
+      byId('pp-logo-count').textContent = total
+        ? `${total} ${plural(total, 'logo', 'logos')} found${total > SHOW_MAX ? `, showing the first ${SHOW_MAX}. Type more to narrow it down.` : '.'}`
+        : 'No logo found. Try another word, or upload your own image.';
+    } else {
+      byId('pp-logo-count').textContent = mine.length ? 'Our brands first, then popular brands. Type to search all 3,000+ logos.' : 'Popular brands. Type to search all 3,000+ logos.';
+    }
+    const ownHtml = mine.map((b) => `
+      <button class="pp-logo-item" type="button" data-path="${esc(b.path)}" title="${esc(b.name)}">
+        <span class="pp-logo-item__img"><img src="${esc(photoUrl(b.path))}" alt="" loading="lazy"></span>
+        <span class="pp-logo-item__name">${esc(b.name)}</span>
+      </button>`).join('');
+    grid.innerHTML = ownHtml + shown.map((i) => `
       <button class="pp-logo-item" type="button" data-slug="${esc(i.slug)}" title="${esc(i.title)}">
         <span class="pp-logo-item__img"><img src="https://cdn.simpleicons.org/${encodeURIComponent(i.slug)}" alt="" loading="lazy"></span>
         <span class="pp-logo-item__name">${esc(i.title)}</span>
@@ -529,6 +542,8 @@
     if (!logoDialog.open) logoDialog.showModal();
     byId('pp-logo-search').focus();
     try {
+      const own = await sb.from('brand_logos').select('name, path').order('name');
+      ownBrands = own.data || [];
       await loadLibrary();
       renderLogoGrid();
     } catch (e) {
@@ -542,10 +557,10 @@
   });
 
   byId('pp-logo-grid').addEventListener('click', (event) => {
-    const item = event.target.closest('[data-slug]');
+    const item = event.target.closest('[data-slug], [data-path]');
     if (!item) return;
     if (isFile(logo) && logo !== originalLogo) sb.storage.from(BUCKET).remove([logo]).catch(() => {});
-    logo = LIB + item.dataset.slug;
+    logo = item.dataset.path ? item.dataset.path : LIB + item.dataset.slug;
     showBox('pp-logo-error', '');
     renderLogo();
     logoDialog.close();
