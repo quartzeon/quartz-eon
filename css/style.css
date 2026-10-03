@@ -1,4 +1,4 @@
-/* Quartz Eon storefront styles.
+﻿/* Quartz Eon storefront styles.
    Piece 2: theme tokens, page shell (promo bar, header with log in menu, footer) and the products page. */
 
 /* ---------- Tokens ----------
@@ -382,30 +382,61 @@ section[id] { scroll-margin-top: 76px; }
 /* ---------- Plan card (logo, badge, key figures, detail lines) ---------- */
 .product__logo { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; padding: 18%; background: #fff; }
 .pc {
-  display: flex; flex-direction: column; gap: 16px; width: min(480px, 100%); margin-inline: auto; padding: 24px;
-  border: 1px solid var(--line); border-radius: 24px; background: var(--card); box-shadow: var(--shadow-2);
+  --pc-soft: color-mix(in srgb, var(--ink) 6%, var(--card));
+  display: flex; flex-direction: column; gap: 14px; width: min(460px, 100%); margin-inline: auto; padding: 22px;
+  border: 1px solid var(--line); border-radius: 22px; background: var(--card); box-shadow: var(--shadow-2);
 }
-.pc__head { display: flex; align-items: center; gap: 16px; }
-.pc__logo { flex: none; width: 72px; height: 72px; padding: 6px; border-radius: 16px; background: #fff; object-fit: contain; }
+.pc__head { display: flex; align-items: center; gap: 14px; min-width: 0; }
+.pc__head > div { min-width: 0; }
+.pc__logo { flex: none; width: 60px; height: 60px; padding: 6px; border-radius: 14px; background: #fff; object-fit: contain; }
 .pc__logo--art { display: grid; place-items: center; padding: 0; background: hsl(var(--h) var(--art-s) var(--art-l)); color: hsl(var(--h) var(--art-fg-s) var(--art-fg-l)); }
 .pc__logo--art .art { width: 56%; height: 56%; }
-.pc__title { font: 800 clamp(1.25rem, 1.1rem + .7vw, 1.6rem)/1.15 var(--font-display); letter-spacing: -.02em; text-wrap: balance; overflow-wrap: anywhere; }
-.pc__badge { display: inline-flex; align-items: center; gap: 6px; margin-top: 8px; padding: 5px 12px; border-radius: 999px; background: hsl(0 60% 94%); color: hsl(0 55% 38%); font-size: 13px; font-weight: 600; }
-.pc__badge .i { width: 14px; height: 14px; }
-.pc__stats { display: flex; flex-wrap: wrap; align-items: stretch; gap: 0; padding: 14px 6px; border: 1px solid var(--line); border-radius: 16px; background: var(--paper); }
-.pc__stat { display: flex; flex: 1 1 0; min-width: 84px; flex-direction: column; align-items: center; justify-content: center; gap: 4px; padding: 6px 10px; text-align: center; }
+.pc__title { font: 700 1.1rem/1.25 var(--font-display); letter-spacing: -.01em; text-wrap: balance; overflow-wrap: anywhere; }
+.pc__title a { text-decoration: none; color: inherit; }
+.pc__title a:hover { text-decoration: underline; text-underline-offset: 3px; }
+#pd-title.pc__title { font-size: clamp(1.15rem, 1.05rem + .5vw, 1.4rem); }
+.pc__badge { display: inline-flex; align-items: center; gap: 6px; margin-top: 6px; padding: 4px 11px; border-radius: 999px; background: hsl(0 60% 94%); color: hsl(0 55% 38%); font-size: 12px; font-weight: 600; }
+.pc__badge .i { width: 13px; height: 13px; }
+.pc__stats { display: flex; flex-wrap: wrap; align-items: stretch; min-height: 84px; padding: 12px 4px; border-radius: 14px; background: var(--pc-soft); }
+.pc__stat { display: flex; flex: 1 1 0; min-width: 78px; flex-direction: column; align-items: center; justify-content: center; gap: 5px; padding: 4px 10px; text-align: center; }
 .pc__stat + .pc__stat { border-left: 1px solid var(--line); }
-.pc__stat strong { font: 800 clamp(1.6rem, 1.3rem + 1vw, 2.1rem)/1 var(--font-display); letter-spacing: -.02em; color: hsl(var(--h) 55% 48%); }
-.pc__stat span { font: 600 12px/1 var(--font-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--ink-2); }
+.pc__stat strong { font: 800 1.5rem/1.05 var(--font-display); letter-spacing: -.02em; color: var(--brand); overflow-wrap: anywhere; }
+.pc__stat strong.is-long { font-size: 1.05rem; line-height: 1.15; }
+.pc__stat span { font: 600 11px/1 var(--font-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--ink-2); }
 .pc__stat--price .product__price { align-items: center; text-align: center; }
-.pc__stat--price .pd__price { flex-direction: column; align-items: center; gap: 6px; margin: 0; }
-.pc__stat--price .price { font-size: 22px; color: hsl(var(--h) 55% 48%); }
-.pc__info { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; }
-.pc__info li { display: flex; align-items: flex-start; gap: 12px; padding: 12px 14px; border-radius: 12px; background: var(--paper); color: var(--ink-2); font-size: 15px; line-height: 1.4; overflow-wrap: anywhere; }
-.pc__info .i { flex: none; width: 20px; height: 20px; margin-top: 1px; }
-.pc__buy { min-height: 56px; border-radius: 16px; }
+.pc__stat--price .pd__price { flex-direction: column; align-items: center; gap: 5px; margin: 0; }
+.pc__stat--price .price { font-size: 1.25rem; color: var(--brand); }
+.pc__stat--price .price__from { color: var(--ink-3); }
+.pc__stat--price .usd { font-size: 12px; }
+.pc__info { display: grid; gap: 6px; margin: 0; padding: 0; list-style: none; }
+.pc__info li { display: flex; align-items: flex-start; gap: 10px; padding: 10px 12px; border-radius: 11px; background: var(--pc-soft); color: var(--ink-2); font-size: 14px; line-height: 1.4; overflow-wrap: anywhere; }
+.pc__info .i { flex: none; width: 18px; height: 18px; margin-top: 1px; }
+.pc__buy { min-height: 52px; border-radius: 14px; }
 .pc.is-soldout .pc__logo, .pc.is-soldout .pc__stats { opacity: .55; }
+/* The same card inside the shop's product list. Lists with plan cards use wider columns so the cards read well. */
+.grid:has(.pc--tile) { grid-template-columns: repeat(auto-fill, minmax(min(100%, 330px), 1fr)); }
+.pc--tile { width: 100%; height: 100%; margin: 0; padding: 18px; box-shadow: none; }
+.pc--tile .pc__title { font-size: 1.02rem; }
+.pc__foot { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: auto; padding-top: 4px; }
+.pc__foot .link { font-size: 14px; color: var(--ink-2); text-decoration: none; }
+.pc__foot .link:hover { color: var(--ink); text-decoration: underline; text-underline-offset: 3px; }
+.pc--tile .pc__buy { min-height: 44px; padding-inline: 20px; font-size: 15px; }
+.pc--tile .product__seller { font-size: 13px; }
 
+/* ---------- Sellers of the chosen category ---------- */
+.sellers-strip { margin-bottom: 28px; }
+.sellers-strip__title { margin-bottom: 12px; font: 500 12px/1 var(--font-mono); letter-spacing: .09em; text-transform: uppercase; color: var(--ink-3); }
+.sellers-strip__list { display: flex; flex-wrap: wrap; gap: 10px; }
+.seller-chip {
+  display: flex; align-items: center; gap: 12px; min-width: 0; padding: 8px 18px 8px 8px; border: 1.5px solid var(--line);
+  border-radius: 999px; background: var(--card); color: var(--ink); text-decoration: none;
+}
+.seller-chip:hover, .seller-chip:focus-visible { border-color: var(--ink); }
+.seller-chip__logo { display: grid; place-items: center; flex: none; width: 40px; height: 40px; overflow: hidden; border-radius: 50%; background: hsl(var(--h) var(--art-s) var(--art-l)); color: hsl(var(--h) var(--art-fg-s) var(--art-fg-l)); font: 700 14px/1 var(--font-display); }
+.seller-chip__logo img { width: 100%; height: 100%; object-fit: cover; background: #fff; }
+.seller-chip__text { display: grid; min-width: 0; }
+.seller-chip__name { font-weight: 600; font-size: 15px; overflow-wrap: anywhere; }
+.seller-chip__count { font-size: 12px; color: var(--ink-2); }
 .empty { display: grid; justify-items: start; gap: 12px; padding: 48px 0; color: var(--ink-2); }
 .empty__title { font: 700 24px/1.1 var(--font-display); letter-spacing: -.02em; color: var(--ink); }
 .rate { max-width: 70ch; padding-bottom: 64px; font: 400 13px/1.6 var(--font-mono); color: var(--ink-3); }
@@ -425,6 +456,8 @@ section[id] { scroll-margin-top: 76px; }
   color: hsl(var(--h) var(--art-fg-s) var(--art-fg-l));
   font: 800 32px/1 var(--font-display); letter-spacing: -.03em;
 }
+.store-avatar--img { overflow: hidden; background: #fff; }
+.store-avatar--img img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .store-title { font: 800 clamp(2rem, 1.2rem + 3vw, 3.2rem)/1 var(--font-display); letter-spacing: -.04em; text-wrap: balance; }
 .store-about { max-width: 52ch; margin-top: 12px; color: var(--ink-2); }
 .store-meta { margin-top: 12px; font: 500 12px/1.4 var(--font-mono); letter-spacing: .06em; text-transform: uppercase; color: var(--ink-2); }
@@ -585,3 +618,4 @@ dialog::backdrop { background: rgb(8 12 16 / .55); }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; }
 }
+

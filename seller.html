@@ -30,6 +30,7 @@
     <symbol id="i-logout" viewBox="0 0 24 24"><path d="M15 4h-3a3 3 0 0 0-3 3v10a3 3 0 0 0 3 3h3M10 12h11M17 8l4 4-4 4"/></symbol>
     <symbol id="i-store" viewBox="0 0 24 24"><path d="M4 9l1.5-5h13L20 9"/><path d="M4 9a3 3 0 0 0 5.3 1.9 3 3 0 0 0 5.4 0A3 3 0 0 0 20 9"/><path d="M5.5 12.5V20h13v-7.5"/><path d="M10 20v-4.5h4V20"/></symbol>
     <symbol id="i-copy" viewBox="0 0 24 24"><rect x="9" y="9" width="11" height="11" rx="2.5"/><path d="M5 15V6.5A2.5 2.5 0 0 1 7.5 4H16"/></symbol>
+    <symbol id="i-close" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></symbol>
     <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
     <symbol id="i-edit" viewBox="0 0 24 24"><path d="M4 20h4L18.5 9.5a2.5 2.5 0 0 0-3.5-3.5L4.5 16.5z"/><path d="M13.5 7.5l3 3"/></symbol>
     <symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></symbol>
@@ -113,6 +114,16 @@
             <label for="store-name">Store name</label>
             <input id="store-name" name="storeName" type="text" autocomplete="organization">
             <p class="field__error" id="store-name-error" hidden></p>
+          </div>
+          <div class="field">
+            <span class="pp-label">Store logo</span>
+            <div class="pp-logo" id="store-logo"></div>
+            <div class="pp-logo-actions">
+              <label class="btn btn--ghost btn--sm pp-upload" for="store-logo-input"><svg class="i" aria-hidden="true" focusable="false"><use href="#i-plus"/></svg><span id="store-logo-label">Upload a logo</span></label>
+            </div>
+            <input id="store-logo-input" type="file" accept="image/jpeg,image/png,image/webp" hidden>
+            <p class="field__hint">Shown next to your store name in the shop. A square image works best.</p>
+            <p class="field__error" id="store-logo-error" hidden></p>
           </div>
           <div class="field">
             <label for="store-about">About your store</label>

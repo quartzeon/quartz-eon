@@ -160,10 +160,82 @@
   /* ---------- Store profile ---------- */
   const storeForm = byId('store-form');
 
+  /* ---------- Store logo: uploaded straight away, shown next to the store name in the shop ---------- */
+  const LOGO_BUCKET = 'product-images';
+  const logoUrl = (path) => sb.storage.from(LOGO_BUCKET).getPublicUrl(path).data.publicUrl;
+
+  function renderStoreLogo() {
+    byId('store-logo').innerHTML = sellerRow.logo
+      ? `<figure class="pp-photo pp-photo--logo"><img src="${esc(logoUrl(sellerRow.logo))}" alt="Store logo"><button class="pp-photo__btn pp-photo__btn--x" type="button" data-remove-store-logo aria-label="Remove the logo" title="Remove">${icon('i-close')}</button></figure>`
+      : '';
+    byId('store-logo-label').textContent = sellerRow.logo ? 'Change the logo' : 'Upload a logo';
+  }
+
+  /* A logo is shrunk to 600 pixels on a white background (JPEG has no transparency). */
+  function shrinkLogo(file) {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      const url = URL.createObjectURL(file);
+      img.onload = () => {
+        URL.revokeObjectURL(url);
+        const scale = Math.min(1, 600 / Math.max(img.width, img.height));
+        const canvas = document.createElement('canvas');
+        canvas.width = Math.max(1, Math.round(img.width * scale));
+        canvas.height = Math.max(1, Math.round(img.height * scale));
+        const ctx = canvas.getContext('2d');
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        canvas.toBlob((blob) => (blob ? resolve(blob) : reject(new Error('Could not read that image.'))), 'image/jpeg', 0.9);
+      };
+      img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('That file is not a usable image.')); };
+      img.src = url;
+    });
+  }
+
+  async function saveStoreLogo(path) {
+    const previous = sellerRow.logo;
+    const { error } = await sb.from('sellers').update({ logo: path }).eq('id', sellerRow.id);
+    if (error) return error;
+    sellerRow.logo = path;
+    if (previous) sb.storage.from(LOGO_BUCKET).remove([previous]).catch(() => {});
+    renderStoreLogo();
+    return null;
+  }
+
+  byId('store-logo-input').addEventListener('change', async (event) => {
+    const file = (event.target.files || [])[0];
+    event.target.value = '';
+    const errorBox = byId('store-logo-error');
+    errorBox.hidden = true;
+    if (!file) return;
+    if (!/^image\/(jpeg|png|webp)$/.test(file.type)) { errorBox.textContent = 'Use a JPG, PNG or WebP image.'; errorBox.hidden = false; return; }
+    try {
+      const blob = await shrinkLogo(file);
+      const path = `${sellerRow.id}/store-logo-${Date.now()}.jpg`;
+      const { error: uploadError } = await sb.storage.from(LOGO_BUCKET).upload(path, blob, { contentType: 'image/jpeg' });
+      if (uploadError) throw uploadError;
+      const saveError = await saveStoreLogo(path);
+      if (saveError) { sb.storage.from(LOGO_BUCKET).remove([path]).catch(() => {}); throw saveError; }
+      toast('Store logo saved');
+    } catch (err) {
+      errorBox.textContent = (err && err.message) || 'Could not save the logo.';
+      errorBox.hidden = false;
+    }
+  });
+
+  byId('store-logo').addEventListener('click', async (event) => {
+    if (!event.target.closest('[data-remove-store-logo]')) return;
+    const error = await saveStoreLogo(null);
+    if (error) toast(`Could not remove the logo: ${error.message}`);
+    else toast('Store logo removed');
+  });
+
   function fillStoreForm() {
     storeForm.elements.storeName.value = sellerRow.store_name;
     storeForm.elements.about.value = sellerRow.about || '';
     byId('store-link').value = `${window.location.origin}${window.location.pathname.replace('seller.html', '')}index.html#/store/${sellerRow.store_slug}`;
+    renderStoreLogo();
     renderStatusBanner();
   }
 

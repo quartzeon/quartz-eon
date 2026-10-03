@@ -294,7 +294,35 @@
   }
 
   /* ---------- Product cards ---------- */
+  /* A "plan card" product in a list: the same card as on its page (logo, badge, key figures, detail lines), then Details and Buy now. */
+  function planTile(p, showSeller) {
+    const seller = sellerOf(p);
+    const href = `#/product/${esc(p.id)}`;
+    const stat = (s) => `<div class="pc__stat"><strong class="${String(s.value).length > 6 ? 'is-long' : ''}">${esc(s.value)}</strong>${s.label ? `<span>${esc(s.label)}</span>` : ''}</div>`;
+    return `
+      <article class="pc pc--tile${p.soldOut ? ' is-soldout' : ''}" style="--h:${hueOf(p)}">
+        <header class="pc__head">
+          ${p.logo ? `<img class="pc__logo" src="${esc(logoUrl(p.logo))}" alt="" loading="lazy">` : `<span class="pc__logo pc__logo--art">${art(p.icon)}</span>`}
+          <div>
+            <h3 class="pc__title"><a href="${href}">${esc(p.name)}</a></h3>
+            ${p.badge ? `<span class="pc__badge">${icon('i-shield')}${esc(p.badge)}</span>` : ''}
+          </div>
+        </header>
+        <div class="pc__stats">
+          ${p.stats.map(stat).join('')}
+          <div class="pc__stat pc__stat--price"><div class="product__price pd__price">${priceHtml(p)}</div></div>
+        </div>
+        ${p.info.length ? `<ul class="pc__info">${p.info.map((row) => `<li>${icon(`i-${esc(row.icon)}`)}<span>${esc(row.text)}</span></li>`).join('')}</ul>` : ''}
+        ${showSeller ? `<p class="product__seller">by ${seller.slug ? `<a href="#/store/${esc(seller.slug)}">${esc(seller.name)}</a>` : esc(seller.name)}</p>` : ''}
+        <div class="pc__foot">
+          <a class="link" href="${href}">Details &rarr;</a>
+          <a class="btn ${p.soldOut ? 'btn--ghost' : 'btn--ink'} pc__buy" href="${href}">${p.soldOut ? 'Sold out' : 'Buy now'}</a>
+        </div>
+      </article>`;
+  }
+
   function productTile(p, showSeller) {
+    if (p.theme === 'plan') return planTile(p, showSeller);
     const seller = sellerOf(p);
     const sellerLine = showSeller
       ? `<p class="product__seller">by ${seller.slug ? `<a href="#/store/${esc(seller.slug)}">${esc(seller.name)}</a>` : esc(seller.name)}</p>`
@@ -335,7 +363,7 @@
     if (stores.error || products.error) {
       catalog.status = 'error';
     } else {
-      SELLERS = stores.data.map((s) => ({ id: s.id, slug: s.store_slug, name: s.store_name, about: s.about, hue: s.hue }));
+      SELLERS = stores.data.map((s) => ({ id: s.id, slug: s.store_slug, name: s.store_name, about: s.about, hue: s.hue, logo: s.logo || '' }));
       SELLER_BY_ID = new Map(SELLERS.map((s) => [s.id, s]));
       SELLER_BY_SLUG = new Map(SELLERS.map((s) => [s.slug, s]));
       PRODUCTS = products.data.map((p) => ({
@@ -397,7 +425,36 @@
     byId('empty').hidden = false;
   }
 
+  /* A seller's logo (a file in the product-images bucket), or their initials when they have not added one. */
+  function sellerLogoHtml(seller, className) {
+    return seller.logo
+      ? `<span class="${className}"><img src="${esc(photoUrl(seller.logo))}" alt="" loading="lazy"></span>`
+      : `<span class="${className}" aria-hidden="true">${esc(initials(seller.name))}</span>`;
+  }
+
+  /* When a category is chosen, the sellers who sell in it are listed first, each with their logo and name. */
+  function renderSellersStrip() {
+    const box = byId('sellers-strip');
+    if (catalog.status !== 'ready' || state.cat === 'All') { box.hidden = true; box.innerHTML = ''; return; }
+    const counts = new Map();
+    PRODUCTS.filter((p) => p.category === state.cat).forEach((p) => counts.set(p.sellerId, (counts.get(p.sellerId) || 0) + 1));
+    const sellers = SELLERS.filter((s) => counts.has(s.id)).sort((a, b) => a.name.localeCompare(b.name));
+    if (!sellers.length) { box.hidden = true; box.innerHTML = ''; return; }
+    box.innerHTML = `
+      <p class="sellers-strip__title">${sellers.length} ${plural(sellers.length, 'seller', 'sellers')} in ${esc(state.cat)}</p>
+      <div class="sellers-strip__list">${sellers.map((s) => `
+        <a class="seller-chip" href="#/store/${esc(s.slug)}" style="--h:${hueOf(s)}">
+          ${sellerLogoHtml(s, 'seller-chip__logo')}
+          <span class="seller-chip__text">
+            <span class="seller-chip__name">${esc(s.name)}</span>
+            <span class="seller-chip__count">${counts.get(s.id)} ${plural(counts.get(s.id), 'product', 'products')}</span>
+          </span>
+        </a>`).join('')}</div>`;
+    box.hidden = false;
+  }
+
   function renderProducts() {
+    renderSellersStrip();
     if (catalog.status !== 'ready') {
       byId('grid').innerHTML = '';
       byId('grid').hidden = true;
@@ -494,7 +551,7 @@
         <div class="wrap">
           <a class="back" href="#/">${icon('i-back')}<span>All products</span></a>
           <div class="store-head__row">
-            <span class="store-avatar" aria-hidden="true">${esc(initials(seller.name))}</span>
+            ${sellerLogoHtml(seller, `store-avatar${seller.logo ? ' store-avatar--img' : ''}`)}
             <div>
               <p class="eyebrow">Seller store</p>
               <h1 class="store-title" id="store-title">${esc(seller.name)}</h1>
@@ -649,7 +706,7 @@
 
     /* The "plan card" style: a logo, a badge, key figures, detail lines with icons, then the Buy button. */
     if (p.theme === 'plan') {
-      const stat = (s) => `<div class="pc__stat"><strong>${esc(s.value)}</strong>${s.label ? `<span>${esc(s.label)}</span>` : ''}</div>`;
+      const stat = (s) => `<div class="pc__stat"><strong class="${String(s.value).length > 6 ? 'is-long' : ''}">${esc(s.value)}</strong>${s.label ? `<span>${esc(s.label)}</span>` : ''}</div>`;
       productView.innerHTML = `
         <section class="sec tone tone--paper" aria-labelledby="pd-title">
           <div class="wrap">
@@ -1340,5 +1397,6 @@
   loadRate();
   loadCatalog();
 })();
+
 
 
