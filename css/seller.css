@@ -4,6 +4,10 @@
    copied here so this page does not depend on css/admin.css. */
 
 .admin-header .brand__word { margin-right: 4px; }
+/* The header buttons wrap on small screens instead of pushing the page wider than the screen. */
+.admin-header .site-header__row { flex-wrap: wrap; gap: 10px 16px; padding-block: 10px; }
+.admin-header .site-header__actions { flex-wrap: wrap; justify-content: flex-end; gap: 8px; }
+@media (max-width: 560px) { .admin-header .site-header__actions .btn { padding-inline: 14px; min-height: 40px; font-size: 14px; } }
 .admin-tag {
   padding: 3px 9px; border-radius: 999px; background: var(--ink); color: var(--paper);
   font: 500 11px/1 var(--font-mono); letter-spacing: .08em; text-transform: uppercase;
@@ -93,14 +97,22 @@
 .pp-theme input { position: absolute; top: 14px; right: 14px; accent-color: var(--ink); width: 17px; height: 17px; margin: 0; }
 .pp-theme__name { font: 700 16px/1.2 var(--font-display); }
 .pp-theme__text { font-size: 13px; line-height: 1.45; color: var(--ink-2); padding-right: 24px; }
-.av-modes { grid-template-columns: 1fr 1fr; }
-.av-hours { display: grid; gap: 8px; }
-.av-row { display: grid; grid-template-columns: 110px auto 1fr 1fr; align-items: center; gap: 10px; padding: 8px 12px; border: 1px solid var(--line); border-radius: 12px; background: var(--paper); }
+#availability-card { grid-column: 1 / -1; }
+#availability-card .auth__form { max-width: 760px; }
+.av-modes { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.av-hours { display: grid; gap: 8px; max-width: 560px; }
+.av-row { display: grid; grid-template-columns: 96px auto minmax(0, 1fr) minmax(0, 1fr); align-items: center; gap: 10px; padding: 8px 12px; border: 1px solid var(--line); border-radius: 12px; background: var(--paper); }
 .av-row__day { font-weight: 600; font-size: 14px; }
-.av-row input[type="time"] { width: 100%; min-height: 42px; padding: 8px 10px; border: 1.5px solid var(--line); border-radius: 10px; background: var(--card); font: inherit; color: inherit; }
+.av-row input[type="time"] { width: 100%; min-width: 0; min-height: 42px; padding: 8px 10px; border: 1.5px solid var(--line); border-radius: 10px; background: var(--card); font: inherit; font-size: 14px; color: inherit; }
 .av-row input[type="time"]:disabled { opacity: .4; }
-.av-row .check-row { font-size: 13px; }
-@media (max-width: 640px) { .av-modes { grid-template-columns: 1fr; } .av-row { grid-template-columns: 1fr auto; } .av-row input[type="time"] { grid-column: span 1; } }
+.av-row .check-row { font-size: 13px; white-space: nowrap; }
+@media (max-width: 1100px) { .av-modes { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 640px) {
+  .av-modes { grid-template-columns: 1fr; }
+  .av-row { grid-template-columns: 1fr auto; }
+  .av-row input[type="time"] { grid-column: auto; }
+  .av-row .av-row__day { grid-column: 1; }
+}
 .pp-logo { display: flex; }
 .pp-photo--logo { width: 96px; height: 96px; background: #fff; }
 .pp-photo--logo img { object-fit: contain; padding: 6px; }

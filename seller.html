@@ -107,6 +107,16 @@
     <div class="status-banner" id="status-banner"></div>
 
     <div class="dash-grid">
+
+
+      <section class="dash-card sales-card" id="sales-card" aria-labelledby="sales-title">
+        <div class="dash-card__head">
+          <h2 class="dash-card__title" id="sales-title">Orders</h2>
+          <p class="admin-count" id="sales-count"></p>
+        </div>
+        <div class="prod-list" id="sales-list"></div>
+        <p class="admin-empty" id="sales-empty" hidden>No orders yet.</p>
+      </section>
       <section class="dash-card" aria-labelledby="store-title">
         <h2 class="dash-card__title" id="store-title">Your store</h2>
         <form class="auth__form" id="store-form" novalidate>
@@ -175,15 +185,6 @@
         <h2 class="dash-card__title" id="products-title">Products</h2>
         <p class="admin-lead">Add and manage your products: title, description, photos, options with their own prices and stock, and sold out status.</p>
         <a class="btn btn--ink" href="products.html"><svg class="i" aria-hidden="true" focusable="false"><use href="#i-edit"/></svg><span>Manage products</span></a>
-      </section>
-
-      <section class="dash-card sales-card" id="sales-card" aria-labelledby="sales-title">
-        <div class="dash-card__head">
-          <h2 class="dash-card__title" id="sales-title">Orders</h2>
-          <p class="admin-count" id="sales-count"></p>
-        </div>
-        <div class="prod-list" id="sales-list"></div>
-        <p class="admin-empty" id="sales-empty" hidden>No orders yet.</p>
       </section>
 
       <section class="dash-card" id="availability-card" aria-labelledby="availability-title">
@@ -301,4 +302,5 @@
 <script src="js/seller-dashboard.js"></script>
 </body>
 </html>
+
 
