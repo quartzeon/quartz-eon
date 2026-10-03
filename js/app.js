@@ -225,6 +225,8 @@
 
   /* The public address of a product photo. */
   const photoUrl = (path) => sb.storage.from('product-images').getPublicUrl(path).data.publicUrl;
+  /* A logo is an uploaded file, or a brand picked from the library (saved as "si:<name>"). */
+  const logoUrl = (value) => (String(value).startsWith('si:') ? ('https://cdn.simpleicons.org/' + encodeURIComponent(String(value).slice(3))) : photoUrl(value));
 
   /* The price and name of what is being bought: the product, or one of its options. */
   function offerOf(p, optionIndex) {
@@ -301,7 +303,7 @@
     return `
       <article class="product${p.soldOut ? ' is-soldout' : ''}" style="--h:${hueOf(p)}">
         <a class="product__art" href="${href}" aria-label="${esc(p.name)}">
-          ${p.theme === 'plan' && p.logo ? `<img class="product__logo" src="${esc(photoUrl(p.logo))}" alt="" loading="lazy">`
+          ${p.theme === 'plan' && p.logo ? `<img class="product__logo" src="${esc(logoUrl(p.logo))}" alt="" loading="lazy">`
             : p.images.length ? `<img class="product__photo" src="${esc(photoUrl(p.images[0]))}" alt="" loading="lazy">` : art(p.icon)}
           ${p.theme === 'plan' && p.badge ? `<span class="badge">${esc(p.badge)}</span>` : p.type ? `<span class="badge">${esc(p.type)}</span>` : ''}
           ${p.soldOut ? '<span class="badge badge--soldout">Sold out</span>' : ''}
@@ -654,7 +656,7 @@
             <a class="back" href="${seller.slug ? `#/store/${esc(seller.slug)}` : '#/'}">${icon('i-back')}<span>${seller.slug ? esc(seller.name) : 'All products'}</span></a>
             <article class="pc${p.soldOut ? ' is-soldout' : ''}" style="--h:${hueOf(p)}">
               <header class="pc__head">
-                ${p.logo ? `<img class="pc__logo" src="${esc(photoUrl(p.logo))}" alt="">` : `<span class="pc__logo pc__logo--art">${art(p.icon)}</span>`}
+                ${p.logo ? `<img class="pc__logo" src="${esc(logoUrl(p.logo))}" alt="">` : `<span class="pc__logo pc__logo--art">${art(p.icon)}</span>`}
                 <div>
                   <h1 class="pc__title" id="pd-title">${esc(p.name)}</h1>
                   ${p.badge ? `<span class="pc__badge">${icon('i-shield')}${esc(p.badge)}</span>` : ''}
@@ -1338,4 +1340,5 @@
   loadRate();
   loadCatalog();
 })();
+
 

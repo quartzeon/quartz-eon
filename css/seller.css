@@ -96,6 +96,17 @@
 .pp-logo { display: flex; }
 .pp-photo--logo { width: 96px; height: 96px; background: #fff; }
 .pp-photo--logo img { object-fit: contain; padding: 6px; }
+.pp-logo-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+.pp-picker { padding: 28px clamp(18px, 4vw, 32px) 24px; display: grid; gap: 14px; }
+.pp-picker__search { position: relative; }
+.pp-picker__search .i { position: absolute; left: 14px; top: 50%; width: 18px; height: 18px; transform: translateY(-50%); color: var(--ink-3); pointer-events: none; }
+.pp-picker__search input { width: 100%; min-height: 48px; padding: 12px 14px 12px 42px; border: 1.5px solid var(--line); border-radius: 12px; background: var(--card); font: inherit; font-size: 15px; color: inherit; }
+.pp-logo-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(104px, 1fr)); gap: 10px; min-height: 120px; }
+.pp-logo-item { display: grid; gap: 8px; justify-items: center; padding: 12px 8px; border: 1.5px solid var(--line); border-radius: 12px; background: var(--paper); color: inherit; cursor: pointer; text-align: center; }
+.pp-logo-item:hover, .pp-logo-item:focus-visible { border-color: var(--ink); }
+.pp-logo-item__img { display: grid; place-items: center; width: 56px; height: 56px; border-radius: 12px; background: #fff; }
+.pp-logo-item__img img { width: 32px; height: 32px; object-fit: contain; }
+.pp-logo-item__name { font-size: 12px; line-height: 1.25; overflow-wrap: anywhere; }
 .pp-rows { display: grid; gap: 8px; margin-bottom: 8px; }
 .pp-rowitem { display: grid; grid-template-columns: minmax(80px, 1fr) minmax(80px, 1fr) auto; gap: 8px; align-items: center; }
 .pp-rowitem--info { grid-template-columns: 130px minmax(0, 1fr) auto; }

@@ -21,6 +21,10 @@
   const rupees = (n) => `Rs. ${Math.round(Number(n)).toLocaleString('en-US')}`;
   const storage = { set(key, value) { try { window.localStorage.setItem(key, value); } catch (e) { /* storage unavailable */ } } };
   const photoUrl = (path) => sb.storage.from(BUCKET).getPublicUrl(path).data.publicUrl;
+  /* A logo is either an uploaded file (a storage path) or one picked from the brand library, saved as "si:<name>". */
+  const LIB = 'si:';
+  const isFile = (value) => !!value && !String(value).startsWith(LIB);
+  const logoUrl = (value) => (String(value).startsWith(LIB) ? ('https://cdn.simpleicons.org/' + encodeURIComponent(String(value).slice(LIB.length))) : photoUrl(value));
 
   /* ---------- Theme ---------- */
   const themeButton = byId('theme-toggle');
@@ -127,7 +131,7 @@
   }
 
   function productRow(p) {
-    const cover = p.theme === 'plan' && p.logo ? p.logo : (Array.isArray(p.images) && p.images.length ? p.images[0] : '');
+    const cover = p.theme === 'plan' && p.logo ? logoUrl(p.logo) : (Array.isArray(p.images) && p.images.length ? photoUrl(p.images[0]) : '');
     const options = Array.isArray(p.options) ? p.options : [];
     const sold = isSoldOut(p);
     const badges = [
@@ -138,7 +142,7 @@
     return `
       <article class="prod-row pp-row" style="--h:${Number(sellerRow.hue) || 0}">
         <div class="prod-row__main">
-          <span class="prod-row__art pp-thumb">${cover ? `<img src="${esc(photoUrl(cover))}" alt="" loading="lazy">` : art(p.icon)}</span>
+          <span class="prod-row__art pp-thumb">${cover ? `<img src="${esc(cover)}" alt="" loading="lazy">` : art(p.icon)}</span>
           <div class="prod-row__text">
             <p class="prod-row__name">${esc(p.name)} ${badges}</p>
             <p class="prod-row__meta">${esc(p.category)} &middot; ${esc(price)} &middot; ${esc(stockLine(p))}</p>
@@ -183,7 +187,7 @@
   async function deleteProduct(p) {
     const { error } = await sb.from('products').delete().eq('id', p.id);
     if (error) { toast(`Could not delete: ${error.message}`); return; }
-    const files = (Array.isArray(p.images) ? p.images : []).concat(p.logo ? [p.logo] : []);
+    const files = (Array.isArray(p.images) ? p.images : []).concat(isFile(p.logo) ? [p.logo] : []);
     if (files.length) sb.storage.from(BUCKET).remove(files).catch(() => {});
     products = products.filter((row) => row.id !== p.id);
     renderList();
@@ -274,7 +278,7 @@
 
   /* Photos uploaded in this edit but never saved are removed again when the editor is cancelled. */
   function discardNewPhotos() {
-    const fresh = images.filter((path) => !originalImages.includes(path)).concat(logo && logo !== originalLogo ? [logo] : []);
+    const fresh = images.filter((path) => !originalImages.includes(path)).concat(isFile(logo) && logo !== originalLogo ? [logo] : []);
     if (fresh.length) sb.storage.from(BUCKET).remove(fresh).catch(() => {});
     images = originalImages.slice();
     logo = originalLogo;
@@ -439,14 +443,14 @@
 
   function renderLogo() {
     byId('pp-logo').innerHTML = logo
-      ? `<figure class="pp-photo pp-photo--logo"><img src="${esc(photoUrl(logo))}" alt="Logo"><button class="pp-photo__btn pp-photo__btn--x" type="button" data-remove-logo aria-label="Remove the logo" title="Remove">${icon('i-close')}</button></figure>`
+      ? `<figure class="pp-photo pp-photo--logo"><img src="${esc(logoUrl(logo))}" alt="Logo"><button class="pp-photo__btn pp-photo__btn--x" type="button" data-remove-logo aria-label="Remove the logo" title="Remove">${icon('i-close')}</button></figure>`
       : '';
-    byId('pp-logo-label').textContent = logo ? 'Change the logo' : 'Add a logo';
+    byId('pp-logo-label').textContent = 'Upload my own';
   }
 
   byId('pp-logo').addEventListener('click', (event) => {
     if (!event.target.closest('[data-remove-logo]')) return;
-    if (logo && logo !== originalLogo) sb.storage.from(BUCKET).remove([logo]).catch(() => {});
+    if (isFile(logo) && logo !== originalLogo) sb.storage.from(BUCKET).remove([logo]).catch(() => {});
     logo = '';
     renderLogo();
   });
@@ -463,7 +467,7 @@
       const path = `${sellerRow.id}/${Date.now()}-logo-${Math.random().toString(36).slice(2, 8)}.jpg`;
       const { error } = await sb.storage.from(BUCKET).upload(path, blob, { contentType: 'image/jpeg' });
       if (error) throw error;
-      if (logo && logo !== originalLogo) sb.storage.from(BUCKET).remove([logo]).catch(() => {});
+      if (isFile(logo) && logo !== originalLogo) sb.storage.from(BUCKET).remove([logo]).catch(() => {});
       logo = path;
       renderLogo();
     } catch (err) {
@@ -472,6 +476,83 @@
       uploading -= 1;
     }
   });
+
+  /* ----- Brand logo library (Simple Icons): search, click a logo, done ----- */
+  const logoDialog = byId('pp-logo-dialog');
+  const LIBRARY_URL = 'https://cdn.jsdelivr.net/npm/simple-icons@latest/data/simple-icons.json';
+  const POPULAR = ['airtel', 'netflix', 'spotify', 'youtube', 'telegram', 'whatsapp', 'tiktok', 'instagram', 'facebook', 'x', 'google', 'apple',
+    'microsoft', 'disneyplus', 'hbo', 'primevideo', 'amazon', 'paypal', 'steam', 'discord', 'twitch', 'github', 'nordvpn', 'expressvpn', 'protonvpn',
+    'cloudflare', 'wireguard', 'openvpn', 'adobe', 'figma', 'notion', 'zoom', 'linkedin', 'snapchat', 'reddit', 'pinterest'];
+  const SHOW_MAX = 60;
+  let library = null;      // [{ title, slug, hex }] once loaded
+  let libraryLoading = null;
+  let searchTimer = 0;
+
+  function loadLibrary() {
+    if (library) return Promise.resolve(library);
+    if (!libraryLoading) {
+      libraryLoading = fetch(LIBRARY_URL)
+        .then((res) => { if (!res.ok) throw new Error('bad answer'); return res.json(); })
+        .then((list) => { library = list.map((i) => ({ title: i.title, slug: i.slug, hex: i.hex })); return library; })
+        .catch((err) => { libraryLoading = null; throw err; });
+    }
+    return libraryLoading;
+  }
+
+  function renderLogoGrid() {
+    const query = byId('pp-logo-search').value.trim().toLowerCase();
+    const grid = byId('pp-logo-grid');
+    if (!library) return;
+    let list;
+    if (query) {
+      const words = query.split(/\s+/);
+      list = library.filter((i) => words.every((w) => i.title.toLowerCase().includes(w) || i.slug.includes(w)));
+      list.sort((a, b) => (a.title.toLowerCase().startsWith(query) ? 0 : 1) - (b.title.toLowerCase().startsWith(query) ? 0 : 1));
+    } else {
+      list = POPULAR.map((slug) => library.find((i) => i.slug === slug)).filter(Boolean);
+    }
+    const shown = list.slice(0, SHOW_MAX);
+    byId('pp-logo-count').textContent = query
+      ? (list.length ? `${list.length} ${plural(list.length, 'logo', 'logos')} found${list.length > SHOW_MAX ? `, showing the first ${SHOW_MAX}. Type more to narrow it down.` : '.'}` : 'No logo found. Try another word, or upload your own image.')
+      : 'Popular brands. Type to search all 3,000+ logos.';
+    grid.innerHTML = shown.map((i) => `
+      <button class="pp-logo-item" type="button" data-slug="${esc(i.slug)}" title="${esc(i.title)}">
+        <span class="pp-logo-item__img"><img src="https://cdn.simpleicons.org/${encodeURIComponent(i.slug)}" alt="" loading="lazy"></span>
+        <span class="pp-logo-item__name">${esc(i.title)}</span>
+      </button>`).join('');
+  }
+
+  byId('pp-logo-library').addEventListener('click', async () => {
+    byId('pp-logo-search').value = '';
+    byId('pp-logo-grid').innerHTML = '';
+    byId('pp-logo-count').textContent = 'Loading logos…';
+    if (!logoDialog.open) logoDialog.showModal();
+    byId('pp-logo-search').focus();
+    try {
+      await loadLibrary();
+      renderLogoGrid();
+    } catch (e) {
+      byId('pp-logo-count').textContent = 'Could not load the logo library. Check your connection, or upload your own image.';
+    }
+  });
+
+  byId('pp-logo-search').addEventListener('input', () => {
+    window.clearTimeout(searchTimer);
+    searchTimer = window.setTimeout(renderLogoGrid, 120);
+  });
+
+  byId('pp-logo-grid').addEventListener('click', (event) => {
+    const item = event.target.closest('[data-slug]');
+    if (!item) return;
+    if (isFile(logo) && logo !== originalLogo) sb.storage.from(BUCKET).remove([logo]).catch(() => {});
+    logo = LIB + item.dataset.slug;
+    showBox('pp-logo-error', '');
+    renderLogo();
+    logoDialog.close();
+  });
+
+  byId('pp-logo-close').addEventListener('click', () => logoDialog.close());
+  logoDialog.addEventListener('click', (event) => { if (event.target === logoDialog) logoDialog.close(); });
 
   function renderStats() {
     byId('pp-stats').innerHTML = stats.map((s, i) => `
@@ -612,7 +693,8 @@
     const keptLogo = payload.logo;
     const removed = originalImages.filter((path) => !keptImages.includes(path))
       .concat(originalLogo && originalLogo !== keptLogo ? [originalLogo] : [])
-      .concat(logo && logo !== keptLogo ? [logo] : []);
+      .concat(logo && logo !== keptLogo ? [logo] : [])
+      .filter(isFile);
     if (removed.length) sb.storage.from(BUCKET).remove(removed).catch(() => {});
     originalImages = images.slice();
     originalLogo = keptLogo || '';
@@ -627,4 +709,5 @@
   document.title = `Your products | ${CFG.storeName}`;
   start();
 })();
+
 
