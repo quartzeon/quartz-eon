@@ -301,8 +301,9 @@
     return `
       <article class="product${p.soldOut ? ' is-soldout' : ''}" style="--h:${hueOf(p)}">
         <a class="product__art" href="${href}" aria-label="${esc(p.name)}">
-          ${p.images.length ? `<img class="product__photo" src="${esc(photoUrl(p.images[0]))}" alt="" loading="lazy">` : art(p.icon)}
-          ${p.type ? `<span class="badge">${esc(p.type)}</span>` : ''}
+          ${p.theme === 'plan' && p.logo ? `<img class="product__logo" src="${esc(photoUrl(p.logo))}" alt="" loading="lazy">`
+            : p.images.length ? `<img class="product__photo" src="${esc(photoUrl(p.images[0]))}" alt="" loading="lazy">` : art(p.icon)}
+          ${p.theme === 'plan' && p.badge ? `<span class="badge">${esc(p.badge)}</span>` : p.type ? `<span class="badge">${esc(p.type)}</span>` : ''}
           ${p.soldOut ? '<span class="badge badge--soldout">Sold out</span>' : ''}
         </a>
         <div class="product__info">
@@ -350,6 +351,11 @@
         soldOut: !!p.sold_out,
         vpnDays: p.vpn_days,
         vpnGb: p.vpn_data_gb,
+        theme: p.theme === 'plan' ? 'plan' : 'standard',
+        logo: p.logo || '',
+        badge: p.badge || '',
+        stats: Array.isArray(p.stats) ? p.stats : [],
+        info: Array.isArray(p.info) ? p.info : [],
         hue: (SELLER_BY_ID.get(p.seller_id) || {}).hue || 0
       }));
       PRODUCT_BY_ID = new Map(PRODUCTS.map((p) => [p.id, p]));
@@ -638,6 +644,38 @@
     ].filter(Boolean);
 
     const state = purchaseState(p);
+
+    /* The "plan card" style: a logo, a badge, key figures, detail lines with icons, then the Buy button. */
+    if (p.theme === 'plan') {
+      const stat = (s) => `<div class="pc__stat"><strong>${esc(s.value)}</strong>${s.label ? `<span>${esc(s.label)}</span>` : ''}</div>`;
+      productView.innerHTML = `
+        <section class="sec tone tone--paper" aria-labelledby="pd-title">
+          <div class="wrap">
+            <a class="back" href="${seller.slug ? `#/store/${esc(seller.slug)}` : '#/'}">${icon('i-back')}<span>${seller.slug ? esc(seller.name) : 'All products'}</span></a>
+            <article class="pc${p.soldOut ? ' is-soldout' : ''}" style="--h:${hueOf(p)}">
+              <header class="pc__head">
+                ${p.logo ? `<img class="pc__logo" src="${esc(photoUrl(p.logo))}" alt="">` : `<span class="pc__logo pc__logo--art">${art(p.icon)}</span>`}
+                <div>
+                  <h1 class="pc__title" id="pd-title">${esc(p.name)}</h1>
+                  ${p.badge ? `<span class="pc__badge">${icon('i-shield')}${esc(p.badge)}</span>` : ''}
+                </div>
+              </header>
+              <div class="pc__stats">
+                ${p.stats.map(stat).join('')}
+                <div class="pc__stat pc__stat--price"><div class="product__price pd__price" id="pd-price">${priceHtml(p, page.option)}</div></div>
+              </div>
+              ${p.info.length ? `<ul class="pc__info">${p.info.map((row) => `<li>${icon(`i-${esc(row.icon)}`)}<span>${esc(row.text)}</span></li>`).join('')}</ul>` : ''}
+              ${!p.options.length && !p.soldOut && p.stockLeft != null ? `<p class="pd__stock">${p.stockLeft === 1 ? 'Only 1 left' : `${p.stockLeft} left`}</p>` : ''}
+              ${options}
+              <button class="btn btn--ink btn--block pd__buy pc__buy" type="button" id="pd-buy" ${state.disabled ? 'disabled' : ''}>${state.text}</button>
+              ${p.description ? `<div class="pd__desc">${paragraphs(p.description)}</div>` : ''}
+              <ul class="buy__list">${perks.map((text) => `<li>${icon('i-check')}<span>${esc(text)}</span></li>`).join('')}</ul>
+            </article>
+          </div>
+        </section>`;
+      return;
+    }
+
     productView.innerHTML = `
       <section class="sec tone tone--paper" aria-labelledby="pd-title">
         <div class="wrap">

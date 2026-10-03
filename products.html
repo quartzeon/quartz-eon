@@ -35,6 +35,13 @@
     <symbol id="i-star" viewBox="0 0 24 24"><path d="M12 3.5l2.6 5.4 5.9.8-4.3 4.1 1 5.9L12 16.9l-5.2 2.8 1-5.9L3.5 9.7l5.9-.8z"/></symbol>
     <symbol id="i-trash" viewBox="0 0 24 24"><path d="M5 7h14M9 7V5.5A1.5 1.5 0 0 1 10.5 4h3A1.5 1.5 0 0 1 15 5.5V7M7 7l1 13h8l1-13"/></symbol>
     <symbol id="i-back" viewBox="0 0 24 24"><path d="M19 12H5M11 6l-6 6 6 6"/></symbol>
+    <symbol id="i-bolt" viewBox="0 0 24 24"><path d="M13 3L5 13.5h6L10 21l8-10.5h-6z"/></symbol>
+    <symbol id="i-server" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="6.5" rx="2"/><rect x="4" y="13.5" width="16" height="6.5" rx="2"/><path d="M8 7.2h.01M8 16.7h.01"/></symbol>
+    <symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M12 11v5M12 8h.01"/></symbol>
+    <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 3l7 3v6c0 5-3.5 7.5-7 9-3.5-1.5-7-4-7-9V6z"/></symbol>
+    <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></symbol>
+    <symbol id="i-globe" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M3.5 12h17M12 3.5c2.5 2.6 3.7 5.4 3.7 8.5s-1.2 5.9-3.7 8.5c-2.5-2.6-3.7-5.4-3.7-8.5s1.2-5.9 3.7-8.5z"/></symbol>
+    <symbol id="i-gift" viewBox="0 0 24 24"><rect x="4" y="9" width="16" height="11" rx="2"/><path d="M4 12.5h16M12 9v11M12 9c-2.5 0-4-1-4-2.4S9.2 4.5 10.6 5C11.8 5.4 12 9 12 9zM12 9c2.5 0 4-1 4-2.4s-1.2-2.1-2.6-1.6C12.2 5.4 12 9 12 9z"/></symbol>
 
     <symbol id="a-layout" viewBox="0 0 48 48"><rect x="6" y="8" width="36" height="32" rx="4"/><path d="M6 18h36M20 18v22"/></symbol>
     <symbol id="a-book" viewBox="0 0 48 48"><path d="M10 6h24a4 4 0 0 1 4 4v28H14a4 4 0 0 1-4-4z"/><path d="M10 34a4 4 0 0 1 4-4h24"/><path d="M18 14h14M18 20h10"/></symbol>
@@ -107,6 +114,52 @@
         <input type="hidden" name="productId" value="">
 
         <section class="dash-card">
+          <h2 class="dash-card__title">Page style</h2>
+          <p class="admin-lead">Choose how this product looks to customers.</p>
+          <div class="pp-themes" role="radiogroup" aria-label="Page style">
+            <label class="pp-theme"><input type="radio" name="theme" value="standard" checked>
+              <span class="pp-theme__name">Photos</span>
+              <span class="pp-theme__text">A big photo (or several), title, description and price. Best for e-books, templates, courses.</span>
+            </label>
+            <label class="pp-theme"><input type="radio" name="theme" value="plan">
+              <span class="pp-theme__name">Plan card</span>
+              <span class="pp-theme__text">A card with a logo, a badge, key figures (like 100 GB, 30 DAYS) and detail lines with icons. Best for VPN and premium accounts.</span>
+            </label>
+          </div>
+        </section>
+
+        <section class="dash-card" id="pp-plan-card" hidden>
+          <h2 class="dash-card__title">Plan card details</h2>
+          <div class="auth__form">
+            <div class="field">
+              <span class="pp-label">Logo or icon</span>
+              <div class="pp-logo" id="pp-logo"></div>
+              <label class="btn btn--ghost btn--sm pp-upload" for="pp-logo-input"><svg class="i" aria-hidden="true" focusable="false"><use href="#i-plus"/></svg><span id="pp-logo-label">Add a logo</span></label>
+              <input id="pp-logo-input" type="file" accept="image/jpeg,image/png,image/webp" hidden>
+              <p class="field__hint">A square image works best (for example the company’s logo). It shows at the top of the card and in the shop.</p>
+              <p class="field__error" id="pp-logo-error" hidden></p>
+            </div>
+            <div class="field">
+              <label for="pp-badge">Badge</label>
+              <input id="pp-badge" name="badge" type="text" maxlength="40" placeholder="For example Torrent Restricted">
+              <p class="field__hint">Optional. A short label under the title.</p>
+            </div>
+            <div class="field">
+              <span class="pp-label">Key figures (up to 3)</span>
+              <div class="pp-rows" id="pp-stats"></div>
+              <button class="btn btn--ghost btn--sm" type="button" id="pp-add-stat"><svg class="i" aria-hidden="true" focusable="false"><use href="#i-plus"/></svg><span>Add a key figure</span></button>
+              <p class="field__hint">A big value with a small label, for example 100 and GB, or 30 and DAYS. The price is shown next to them.</p>
+            </div>
+            <div class="field">
+              <span class="pp-label">Detail lines (up to 6)</span>
+              <div class="pp-rows" id="pp-info"></div>
+              <button class="btn btn--ghost btn--sm" type="button" id="pp-add-info"><svg class="i" aria-hidden="true" focusable="false"><use href="#i-plus"/></svg><span>Add a detail line</span></button>
+            </div>
+            <p class="field__error" id="pp-plan-error" hidden></p>
+          </div>
+        </section>
+
+        <section class="dash-card">
           <h2 class="dash-card__title">What customers see</h2>
           <div class="auth__form">
             <div class="field">
@@ -120,7 +173,7 @@
               <p class="field__hint">Optional. If you leave it empty, customers just see the title and photos.</p>
             </div>
 
-            <div class="field">
+            <div class="field" id="pp-photos-field">
               <span class="pp-label">Photos</span>
               <div class="pp-photos" id="pp-photos"></div>
               <label class="btn btn--ghost btn--sm pp-upload" for="pp-photo-input" id="pp-upload-label">

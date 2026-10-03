@@ -12,7 +12,7 @@ window.QE_CONFIG = {
   sellerMonthlyFee: 500,
 
   // Category chips, and the categories a seller can pick when adding a product.
-  categories: ['VPN', 'Templates', 'E-books', 'Courses', 'Software', 'Design assets'],
+  categories: ['VPN', 'Premium accounts', 'Templates', 'E-books', 'Courses', 'Software', 'Design assets'],
 
   // The bot's username (without the @). Sellers open it from their dashboard to connect Telegram.
   telegramBot: 'quartzeon_alerts_bot',

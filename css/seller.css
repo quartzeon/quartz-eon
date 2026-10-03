@@ -87,6 +87,23 @@
 .pp-photo__btn--x { right: 6px; }
 .pp-photo__btn--star { left: 6px; }
 .pp-upload { align-self: flex-start; cursor: pointer; }
+.pp-themes { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 14px; }
+.pp-theme { display: grid; gap: 6px; padding: 14px 16px; border: 1.5px solid var(--line); border-radius: var(--radius); background: var(--paper); cursor: pointer; position: relative; }
+.pp-theme:has(input:checked) { border-color: var(--ink); background: var(--card); }
+.pp-theme input { position: absolute; top: 14px; right: 14px; accent-color: var(--ink); width: 17px; height: 17px; margin: 0; }
+.pp-theme__name { font: 700 16px/1.2 var(--font-display); }
+.pp-theme__text { font-size: 13px; line-height: 1.45; color: var(--ink-2); padding-right: 24px; }
+.pp-logo { display: flex; }
+.pp-photo--logo { width: 96px; height: 96px; background: #fff; }
+.pp-photo--logo img { object-fit: contain; padding: 6px; }
+.pp-rows { display: grid; gap: 8px; margin-bottom: 8px; }
+.pp-rowitem { display: grid; grid-template-columns: minmax(80px, 1fr) minmax(80px, 1fr) auto; gap: 8px; align-items: center; }
+.pp-rowitem--info { grid-template-columns: 130px minmax(0, 1fr) auto; }
+.pp-rowitem input, .pp-rowitem select {
+  width: 100%; min-height: 44px; padding: 10px 12px; border: 1.5px solid var(--line); border-radius: 12px;
+  background: var(--card); font-family: inherit; font-size: 15px; color: inherit;
+}
+@media (max-width: 640px) { .pp-themes { grid-template-columns: 1fr; } .pp-rowitem--info { grid-template-columns: 1fr auto; } .pp-rowitem--info select { grid-column: 1 / -1; } }
 .pp-options { display: grid; gap: 12px; margin-bottom: 12px; }
 .pp-option { display: grid; grid-template-columns: minmax(0, 2fr) repeat(auto-fit, minmax(90px, 1fr)); gap: 10px 12px; align-items: end; padding: 14px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--paper); position: relative; padding-right: 54px; }
 .pp-option .field label { font-size: 12px; }

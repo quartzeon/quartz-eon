@@ -1,4 +1,4 @@
-/* Quartz Eon: the seller's product panel. Everything about the products in one place: the title, description,
+﻿/* Quartz Eon: the seller's product panel. Everything about the products in one place: the title, description,
    photos, price, options (each with its own price and stock), stock, "show how many are left" and "sold out".
    Log in on seller.html first; this page sends anyone who is not a logged in seller there. */
 (function () {
@@ -127,7 +127,7 @@
   }
 
   function productRow(p) {
-    const cover = Array.isArray(p.images) && p.images.length ? p.images[0] : '';
+    const cover = p.theme === 'plan' && p.logo ? p.logo : (Array.isArray(p.images) && p.images.length ? p.images[0] : '');
     const options = Array.isArray(p.options) ? p.options : [];
     const sold = isSoldOut(p);
     const badges = [
@@ -183,7 +183,8 @@
   async function deleteProduct(p) {
     const { error } = await sb.from('products').delete().eq('id', p.id);
     if (error) { toast(`Could not delete: ${error.message}`); return; }
-    if (Array.isArray(p.images) && p.images.length) sb.storage.from(BUCKET).remove(p.images).catch(() => {});
+    const files = (Array.isArray(p.images) ? p.images : []).concat(p.logo ? [p.logo] : []);
+    if (files.length) sb.storage.from(BUCKET).remove(files).catch(() => {});
     products = products.filter((row) => row.id !== p.id);
     renderList();
     toast('Product deleted');
@@ -195,6 +196,12 @@
   let originalImages = [];  // what was saved before this edit, to clean up removed photos
   let opts = [];            // option rows: { label, price, stock, days, gb } as text from the boxes
   let uploading = 0;
+  let logo = '';            // the plan card's logo path
+  let originalLogo = '';
+  let stats = [];          // plan card key figures: { value, label }
+  let info = [];           // plan card detail lines: { icon, text }
+  const ICONS = [['bolt', 'Lightning'], ['server', 'Server'], ['info', 'Info'], ['shield', 'Shield'], ['clock', 'Clock'], ['check', 'Tick'], ['star', 'Star'], ['globe', 'Globe'], ['gift', 'Gift']];
+  const theme = () => (form.elements.theme.value === 'plan' ? 'plan' : 'standard');
 
   const isVpn = () => form.elements.icon.value === 'vpn';
 
@@ -222,6 +229,11 @@
       form.elements.showStock.checked = !!p.show_stock;
       form.elements.soldOut.checked = !!p.sold_out;
       form.elements.hidden.checked = p.status === 'hidden';
+      form.elements.theme.value = p.theme === 'plan' ? 'plan' : 'standard';
+      form.elements.badge.value = p.badge || '';
+      logo = p.logo || '';
+      stats = (Array.isArray(p.stats) ? p.stats : []).map((s) => ({ value: s.value || '', label: s.label || '' }));
+      info = (Array.isArray(p.info) ? p.info : []).map((i) => ({ icon: i.icon || 'info', text: i.text || '' }));
       images = Array.isArray(p.images) ? p.images.slice() : [];
       opts = (Array.isArray(p.options) ? p.options : []).map((o) => ({
         label: o.label || '', price: o.price == null ? '' : String(o.price), stock: o.stock == null ? '' : String(o.stock),
@@ -230,8 +242,17 @@
     } else {
       images = [];
       opts = [];
+      logo = '';
+      stats = [];
+      info = [];
     }
     originalImages = images.slice();
+    originalLogo = logo;
+    showBox('pp-plan-error', '');
+    showBox('pp-logo-error', '');
+    renderLogo();
+    renderStats();
+    renderInfo();
     renderPhotos();
     renderOptions();
     syncSections();
@@ -253,15 +274,18 @@
 
   /* Photos uploaded in this edit but never saved are removed again when the editor is cancelled. */
   function discardNewPhotos() {
-    const fresh = images.filter((path) => !originalImages.includes(path));
+    const fresh = images.filter((path) => !originalImages.includes(path)).concat(logo && logo !== originalLogo ? [logo] : []);
     if (fresh.length) sb.storage.from(BUCKET).remove(fresh).catch(() => {});
     images = originalImages.slice();
+    logo = originalLogo;
   }
 
   /* Shows only the sections that matter: the single price box or the options, the VPN plan or the delivery text. */
   function syncSections() {
     const hasOptions = opts.length > 0;
     byId('pp-simple-price').hidden = hasOptions;
+    byId('pp-plan-card').hidden = theme() !== 'plan';
+    byId('pp-photos-field').hidden = theme() === 'plan';
     byId('pp-vpn-card').hidden = !isVpn();
     byId('pp-delivery-card').hidden = isVpn();
     byId('pp-vpn-simple').hidden = hasOptions;
@@ -312,13 +336,13 @@
   });
 
   /* Shrinks a photo to at most 1400 pixels so shop pages stay fast. */
-  function shrink(file) {
+  function shrink(file, limit) {
     return new Promise((resolve, reject) => {
       const img = new Image();
       const url = URL.createObjectURL(file);
       img.onload = () => {
         URL.revokeObjectURL(url);
-        const scale = Math.min(1, 1400 / Math.max(img.width, img.height));
+        const scale = Math.min(1, (limit || 1400) / Math.max(img.width, img.height));
         const canvas = document.createElement('canvas');
         canvas.width = Math.max(1, Math.round(img.width * scale));
         canvas.height = Math.max(1, Math.round(img.height * scale));
@@ -410,6 +434,85 @@
     if (last) last.focus();
   });
 
+  /* ----- Plan card: logo, key figures and detail lines ----- */
+  form.querySelectorAll('input[name="theme"]').forEach((radio) => radio.addEventListener('change', syncSections));
+
+  function renderLogo() {
+    byId('pp-logo').innerHTML = logo
+      ? `<figure class="pp-photo pp-photo--logo"><img src="${esc(photoUrl(logo))}" alt="Logo"><button class="pp-photo__btn pp-photo__btn--x" type="button" data-remove-logo aria-label="Remove the logo" title="Remove">${icon('i-close')}</button></figure>`
+      : '';
+    byId('pp-logo-label').textContent = logo ? 'Change the logo' : 'Add a logo';
+  }
+
+  byId('pp-logo').addEventListener('click', (event) => {
+    if (!event.target.closest('[data-remove-logo]')) return;
+    if (logo && logo !== originalLogo) sb.storage.from(BUCKET).remove([logo]).catch(() => {});
+    logo = '';
+    renderLogo();
+  });
+
+  byId('pp-logo-input').addEventListener('change', async (event) => {
+    const file = (event.target.files || [])[0];
+    event.target.value = '';
+    showBox('pp-logo-error', '');
+    if (!file) return;
+    if (!/^image\/(jpeg|png|webp)$/.test(file.type)) { showBox('pp-logo-error', 'Use a JPG, PNG or WebP image.'); return; }
+    uploading += 1;
+    try {
+      const blob = await shrink(file, 600);
+      const path = `${sellerRow.id}/${Date.now()}-logo-${Math.random().toString(36).slice(2, 8)}.jpg`;
+      const { error } = await sb.storage.from(BUCKET).upload(path, blob, { contentType: 'image/jpeg' });
+      if (error) throw error;
+      if (logo && logo !== originalLogo) sb.storage.from(BUCKET).remove([logo]).catch(() => {});
+      logo = path;
+      renderLogo();
+    } catch (err) {
+      showBox('pp-logo-error', (err && err.message) || 'Could not upload the logo.');
+    } finally {
+      uploading -= 1;
+    }
+  });
+
+  function renderStats() {
+    byId('pp-stats').innerHTML = stats.map((s, i) => `
+      <div class="pp-rowitem" data-index="${i}">
+        <input data-field="value" type="text" maxlength="12" value="${esc(s.value)}" placeholder="100" aria-label="Value ${i + 1}">
+        <input data-field="label" type="text" maxlength="14" value="${esc(s.label)}" placeholder="GB" aria-label="Label ${i + 1}">
+        <button class="icon-btn icon-btn--sm icon-btn--danger" type="button" data-remove-stat="${i}" aria-label="Remove this key figure">${icon('i-trash')}</button>
+      </div>`).join('');
+    byId('pp-add-stat').hidden = stats.length >= 3;
+  }
+
+  function renderInfo() {
+    byId('pp-info').innerHTML = info.map((row, i) => `
+      <div class="pp-rowitem pp-rowitem--info" data-index="${i}">
+        <select data-field="icon" aria-label="Icon ${i + 1}">${ICONS.map(([id, name]) => `<option value="${id}"${row.icon === id ? ' selected' : ''}>${name}</option>`).join('')}</select>
+        <input data-field="text" type="text" maxlength="140" value="${esc(row.text)}" placeholder="For example Monthly capacity: 7.80 TB left" aria-label="Detail line ${i + 1}">
+        <button class="icon-btn icon-btn--sm icon-btn--danger" type="button" data-remove-info="${i}" aria-label="Remove this line">${icon('i-trash')}</button>
+      </div>`).join('');
+    byId('pp-add-info').hidden = info.length >= 6;
+  }
+
+  byId('pp-add-stat').addEventListener('click', () => { stats.push({ value: '', label: '' }); renderStats(); });
+  byId('pp-add-info').addEventListener('click', () => { info.push({ icon: 'info', text: '' }); renderInfo(); });
+
+  byId('pp-stats').addEventListener('input', (event) => {
+    const row = event.target.closest('[data-index]');
+    if (row && event.target.dataset.field) stats[Number(row.dataset.index)][event.target.dataset.field] = event.target.value;
+  });
+  byId('pp-info').addEventListener('input', (event) => {
+    const row = event.target.closest('[data-index]');
+    if (row && event.target.dataset.field) info[Number(row.dataset.index)][event.target.dataset.field] = event.target.value;
+  });
+  byId('pp-stats').addEventListener('click', (event) => {
+    const remove = event.target.closest('[data-remove-stat]');
+    if (remove) { stats.splice(Number(remove.dataset.removeStat), 1); renderStats(); }
+  });
+  byId('pp-info').addEventListener('click', (event) => {
+    const remove = event.target.closest('[data-remove-info]');
+    if (remove) { info.splice(Number(remove.dataset.removeInfo), 1); renderInfo(); }
+  });
+
   /* ----- Save ----- */
   form.addEventListener('submit', async (event) => {
     event.preventDefault();
@@ -458,6 +561,14 @@
         if (vpnGb == null || Number.isNaN(vpnGb) || vpnGb < 0) { showFieldError(f.vpnGb, 'Enter 0 or more.'); ok = false; }
       }
     }
+    showBox('pp-plan-error', '');
+    const plan = theme() === 'plan';
+    const cleanStats = stats.map((s) => ({ value: s.value.trim(), label: s.label.trim() })).filter((s) => s.value || s.label);
+    const cleanInfo = info.map((row) => ({ icon: row.icon, text: row.text.trim() })).filter((row) => row.text);
+    if (plan) {
+      if (cleanStats.some((s) => !s.value)) { showBox('pp-plan-error', 'Every key figure needs a value.'); ok = false; }
+      else if (!logo) { showBox('pp-plan-error', 'Add a logo or icon for the plan card (or choose the Photos style).'); ok = false; }
+    }
     if (uploading) { showBox('pp-form-error', 'Wait for the photos to finish uploading.'); ok = false; }
     if (!ok) return;
 
@@ -470,7 +581,12 @@
       price,
       stock: opts.length ? null : stock,
       options,
-      images,
+      images: plan ? [] : images,
+      theme: plan ? 'plan' : 'standard',
+      logo: plan && logo ? logo : null,
+      badge: plan ? f.badge.value.trim().slice(0, 40) : '',
+      stats: plan ? cleanStats : [],
+      info: plan ? cleanInfo : [],
       sold_out: f.soldOut.checked,
       show_stock: f.showStock.checked,
       status: f.hidden.checked ? 'hidden' : 'active',
@@ -492,9 +608,14 @@
     }
 
     /* Photos that were taken off this product are deleted from storage. */
-    const removed = originalImages.filter((path) => !images.includes(path));
+    const keptImages = payload.images;
+    const keptLogo = payload.logo;
+    const removed = originalImages.filter((path) => !keptImages.includes(path))
+      .concat(originalLogo && originalLogo !== keptLogo ? [originalLogo] : [])
+      .concat(logo && logo !== keptLogo ? [logo] : []);
     if (removed.length) sb.storage.from(BUCKET).remove(removed).catch(() => {});
     originalImages = images.slice();
+    originalLogo = keptLogo || '';
 
     if (editingId) products = products.map((p) => (p.id === editingId ? result.data : p));
     else products.unshift(result.data);
@@ -506,3 +627,4 @@
   document.title = `Your products | ${CFG.storeName}`;
   start();
 })();
+
