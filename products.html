@@ -262,6 +262,83 @@
           <p class="field__hint" id="pp-vpn-options-note" hidden>Each option above has its own length and data limit.</p>
         </section>
 
+        <section class="dash-card" id="pp-vpn-client-card" hidden>
+          <h2 class="dash-card__title">VPN client settings</h2>
+          <p class="admin-lead">These are used when a client is created on your panel after you approve a payment. The customer then gets a ready connection link built with the values below.</p>
+          <p class="note" id="pp-vpn-panel-note" hidden>You have not connected your VPN panel yet. Save your panel address and API token under <a href="seller.html#vpn-card">VPN panel connection</a> on your dashboard, or deliveries will fail.</p>
+          <div class="auth__form">
+            <div class="field-row">
+              <div class="field">
+                <label for="pp-vpn-inbound">Inbound ID</label>
+                <input id="pp-vpn-inbound" name="vpnInbound" type="number" min="1" step="1" inputmode="numeric" placeholder="Your panel default">
+                <p class="field__hint">Empty uses the inbound set on your dashboard (or your first inbound).</p>
+                <p class="field__error" id="pp-vpn-inbound-error" hidden></p>
+              </div>
+              <div class="field">
+                <label for="pp-vpn-flow">Flow</label>
+                <select id="pp-vpn-flow" name="vpnFlow">
+                  <option value="">None</option>
+                  <option value="xtls-rprx-vision">xtls-rprx-vision</option>
+                  <option value="xtls-rprx-vision-udp443">xtls-rprx-vision-udp443</option>
+                </select>
+                <p class="field__hint">Only for VLESS with TLS or Reality.</p>
+              </div>
+            </div>
+            <div class="field-row">
+              <div class="field">
+                <label for="pp-vpn-limit-ip">Device (IP) limit</label>
+                <input id="pp-vpn-limit-ip" name="vpnLimitIp" type="number" min="0" step="1" inputmode="numeric" value="0">
+                <p class="field__hint">0 means no limit.</p>
+                <p class="field__error" id="pp-vpn-limit-ip-error" hidden></p>
+              </div>
+              <div class="field">
+                <label for="pp-vpn-prefix">Client name prefix</label>
+                <input id="pp-vpn-prefix" name="vpnPrefix" type="text" maxlength="20" autocomplete="off" spellcheck="false" placeholder="qe">
+                <p class="field__hint">Clients are named like "qe-1a2b3c4d" on your panel.</p>
+                <p class="field__error" id="pp-vpn-prefix-error" hidden></p>
+              </div>
+            </div>
+            <label class="check-row"><input id="pp-vpn-first-use" name="vpnFirstUse" type="checkbox"><span>Start counting the days from the first connection (not from approval)</span></label>
+
+            <h3 class="dash-card__subtitle">Connection link</h3>
+            <p class="field__hint">Leave a box empty to keep the value from your inbound.</p>
+            <div class="field-row">
+              <div class="field">
+                <label for="pp-vpn-sni">SNI</label>
+                <input id="pp-vpn-sni" name="vpnSni" type="text" maxlength="253" autocomplete="off" spellcheck="false" placeholder="www.example.com">
+                <p class="field__error" id="pp-vpn-sni-error" hidden></p>
+              </div>
+              <div class="field">
+                <label for="pp-vpn-host">Host header</label>
+                <input id="pp-vpn-host" name="vpnHost" type="text" maxlength="253" autocomplete="off" spellcheck="false" placeholder="For WebSocket / HTTP">
+                <p class="field__error" id="pp-vpn-host-error" hidden></p>
+              </div>
+            </div>
+            <div class="field-row">
+              <div class="field">
+                <label for="pp-vpn-address">Server address</label>
+                <input id="pp-vpn-address" name="vpnAddress" type="text" maxlength="253" autocomplete="off" spellcheck="false" placeholder="Your panel's host name">
+                <p class="field__error" id="pp-vpn-address-error" hidden></p>
+              </div>
+              <div class="field">
+                <label for="pp-vpn-port">Port</label>
+                <input id="pp-vpn-port" name="vpnPort" type="number" min="1" max="65535" step="1" inputmode="numeric" placeholder="Inbound port">
+                <p class="field__error" id="pp-vpn-port-error" hidden></p>
+              </div>
+            </div>
+            <div class="field">
+              <label for="pp-vpn-remark">Link name</label>
+              <input id="pp-vpn-remark" name="vpnRemark" type="text" maxlength="40" autocomplete="off" placeholder="The product title">
+              <p class="field__hint">The name the customer sees in their VPN app.</p>
+            </div>
+            <div class="field">
+              <label for="pp-vpn-note">Message to the customer</label>
+              <textarea id="pp-vpn-note" name="vpnNote" rows="3" maxlength="500" placeholder="For example: use the v2rayNG app, import the link, then connect."></textarea>
+              <p class="field__hint">Shown under the connection link after you approve the payment.</p>
+            </div>
+          </div>
+        </section>
+
         <section class="dash-card" id="pp-delivery-card">
           <h2 class="dash-card__title">What the customer gets after paying</h2>
           <div class="auth__form">

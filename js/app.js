@@ -1099,7 +1099,11 @@
   function orderCard(o) {
     let detail = '';
     if (o.status === 'paid') {
-      if (o.delivery) detail = `<div class="order__delivery"><p class="order__label">Your purchase</p><pre>${esc(o.delivery)}</pre></div>`;
+      if (o.delivery) {
+        const link = (o.delivery.match(/^(?:vless|vmess|trojan):\/\/\S+$/m) || [''])[0];
+        const copy = link ? `<button class="btn btn--ink btn--sm order__copy" type="button" data-copy-link="${esc(link)}">Copy connection link</button>` : '';
+        detail = `<div class="order__delivery"><p class="order__label">Your purchase</p><pre>${esc(o.delivery)}</pre>${copy}</div>`;
+      }
       else if (o.is_vpn) detail = '<p class="note">Your VPN access is being set up. Check back in a few minutes; if it does not appear, contact the seller.</p>';
       else detail = '<p class="note">Payment confirmed. The seller has not added download details yet, so please contact them.</p>';
     } else if (o.status === 'awaiting_review') {
@@ -1461,6 +1465,13 @@
 
   document.addEventListener('click', (event) => {
     const target = event.target;
+    const copyButton = target.closest('[data-copy-link]');
+    if (copyButton) {
+      const done = () => { copyButton.textContent = 'Copied'; window.setTimeout(() => { copyButton.textContent = 'Copy connection link'; }, 2000); };
+      if (navigator.clipboard) navigator.clipboard.writeText(copyButton.dataset.copyLink).then(done, () => { copyButton.textContent = 'Select the link above and copy it'; });
+      else copyButton.textContent = 'Select the link above and copy it';
+      return;
+    }
     if (target.closest('[data-login-first]')) {
       if (buyDialog.open) buyDialog.close();
       openAuth('customer', 'login');

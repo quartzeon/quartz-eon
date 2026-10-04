@@ -543,6 +543,7 @@ dialog::backdrop { background: rgb(8 12 16 / .55); }
 .order__meta { font-size: 14px; color: var(--ink-2); }
 .order__label { margin-bottom: 6px; font: 500 12px/1 var(--font-mono); letter-spacing: .06em; text-transform: uppercase; color: var(--ink-2); }
 .order__delivery pre { margin: 0; padding: 14px 16px; border-radius: var(--radius); background: var(--paper); font: 400 14px/1.5 var(--font-mono); white-space: pre-wrap; overflow-wrap: anywhere; user-select: all; }
+.order__copy { margin-top: 10px; }
 .order__status {
   display: inline-flex; padding: 3px 10px; border-radius: 999px;
   font: 500 11px/1.4 var(--font-mono); letter-spacing: .06em; text-transform: uppercase;

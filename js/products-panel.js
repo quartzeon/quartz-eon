@@ -99,6 +99,7 @@
     byId('pp-app').hidden = false;
     fillCategories();
     loadProducts();
+    checkPanel();
   }
 
   function fillCategories() {
@@ -209,6 +210,66 @@
 
   const isVpn = () => form.elements.icon.value === 'vpn';
 
+  /* ---------- VPN client settings (used when a client is created on the seller's panel) ---------- */
+  let hasPanel = null; // whether the seller saved their panel connection; null until known
+
+  async function checkPanel() {
+    const { data } = await sb.from('seller_vpn_config').select('seller_id').eq('seller_id', sellerRow.id).maybeSingle();
+    hasPanel = !!data;
+    if (!byId('pp-editor-view').hidden) syncSections();
+  }
+
+  function fillVpnSettings(raw) {
+    const v = raw && typeof raw === 'object' ? raw : {};
+    const f = form.elements;
+    f.vpnInbound.value = v.inbound_id || '';
+    f.vpnFlow.value = ['xtls-rprx-vision', 'xtls-rprx-vision-udp443'].includes(v.flow) ? v.flow : '';
+    f.vpnLimitIp.value = v.limit_ip || 0;
+    f.vpnPrefix.value = v.prefix || '';
+    f.vpnFirstUse.checked = !!v.start_on_first_use;
+    f.vpnSni.value = v.sni || '';
+    f.vpnHost.value = v.host || '';
+    f.vpnAddress.value = v.address || '';
+    f.vpnPort.value = v.port || '';
+    f.vpnRemark.value = v.remark || '';
+    f.vpnNote.value = v.note || '';
+  }
+
+  /* Reads and checks the VPN client boxes. Returns the settings object, or null when something is wrong. */
+  function readVpnSettings() {
+    const f = form.elements;
+    let ok = true;
+    const hostLike = /^[A-Za-z0-9.-]*$/;
+    const inbound = readInt(f.vpnInbound.value);
+    if (Number.isNaN(inbound) || (inbound != null && inbound < 1)) { showFieldError(f.vpnInbound, 'Enter the inbound number, or leave it empty.'); ok = false; }
+    const limitIp = readInt(f.vpnLimitIp.value);
+    if (Number.isNaN(limitIp) || (limitIp != null && (limitIp < 0 || limitIp > 100))) { showFieldError(f.vpnLimitIp, 'Enter 0 to 100.'); ok = false; }
+    const prefix = f.vpnPrefix.value.trim();
+    if (!/^[A-Za-z0-9_-]*$/.test(prefix)) { showFieldError(f.vpnPrefix, 'Use only letters, numbers, - and _.'); ok = false; }
+    const sni = f.vpnSni.value.trim();
+    if (!hostLike.test(sni)) { showFieldError(f.vpnSni, 'Enter a host name like www.example.com.'); ok = false; }
+    const host = f.vpnHost.value.trim();
+    if (!/^[A-Za-z0-9.,-]*$/.test(host)) { showFieldError(f.vpnHost, 'Enter a host name like www.example.com.'); ok = false; }
+    const address = f.vpnAddress.value.trim();
+    if (!/^[A-Za-z0-9.:\[\]-]*$/.test(address)) { showFieldError(f.vpnAddress, 'Enter a host name or IP address only (no http://).'); ok = false; }
+    const port = readInt(f.vpnPort.value);
+    if (Number.isNaN(port) || (port != null && (port < 1 || port > 65535))) { showFieldError(f.vpnPort, 'Enter a port from 1 to 65535.'); ok = false; }
+    if (!ok) return null;
+    return {
+      inbound_id: inbound || null,
+      flow: f.vpnFlow.value,
+      limit_ip: limitIp || 0,
+      prefix,
+      start_on_first_use: f.vpnFirstUse.checked,
+      sni,
+      host,
+      address,
+      port: port || null,
+      remark: f.vpnRemark.value.trim().slice(0, 40),
+      note: f.vpnNote.value.trim().slice(0, 500)
+    };
+  }
+
   function openEditor(p) {
     const editing = !!p;
     form.reset();
@@ -230,6 +291,7 @@
       form.elements.vpnDays.value = p.vpn_days || 30;
       form.elements.vpnGb.value = p.vpn_data_gb || 0;
       form.elements.deliveryInfo.value = p.delivery_info || '';
+      fillVpnSettings(p.vpn_settings);
       form.elements.showStock.checked = !!p.show_stock;
       form.elements.soldOut.checked = !!p.sold_out;
       form.elements.hidden.checked = p.status === 'hidden';
@@ -291,6 +353,8 @@
     byId('pp-plan-card').hidden = theme() !== 'plan';
     byId('pp-photos-field').hidden = theme() === 'plan';
     byId('pp-vpn-card').hidden = !isVpn();
+    byId('pp-vpn-client-card').hidden = !isVpn();
+    byId('pp-vpn-panel-note').hidden = !(isVpn() && hasPanel === false);
     byId('pp-delivery-card').hidden = isVpn();
     byId('pp-vpn-simple').hidden = hasOptions;
     byId('pp-vpn-options-note').hidden = !(isVpn() && hasOptions);
@@ -669,6 +733,8 @@
       if (cleanStats.some((s) => !s.value)) { showBox('pp-plan-error', 'Every key figure needs a value.'); ok = false; }
       else if (!logo) { showBox('pp-plan-error', 'Add a logo or icon for the plan card (or choose the Photos style).'); ok = false; }
     }
+    const vpnSettings = vpn ? readVpnSettings() : {};
+    if (!vpnSettings) ok = false;
     if (uploading) { showBox('pp-form-error', 'Wait for the photos to finish uploading.'); ok = false; }
     if (!ok) return;
 
@@ -692,7 +758,8 @@
       status: f.hidden.checked ? 'hidden' : 'active',
       delivery_info: vpn ? '' : f.deliveryInfo.value.trim(),
       vpn_days: vpn && !opts.length ? vpnDays : 30,
-      vpn_data_gb: vpn && !opts.length ? vpnGb : 0
+      vpn_data_gb: vpn && !opts.length ? vpnGb : 0,
+      vpn_settings: vpnSettings
     };
 
     const editingId = f.productId.value;
