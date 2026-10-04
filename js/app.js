@@ -313,7 +313,7 @@
           <div class="pc__stat pc__stat--price"><div class="product__price pd__price">${priceHtml(p)}</div></div>
         </div>
         ${p.info.length ? `<ul class="pc__info">${p.info.map((row) => `<li>${icon(`i-${esc(row.icon)}`)}<span>${esc(row.text)}</span></li>`).join('')}</ul>` : ''}
-        ${showSeller ? `<p class="product__seller">by ${seller.slug ? `<a href="#/store/${esc(seller.slug)}">${esc(seller.name)}</a>` : esc(seller.name)}</p>` : ''}
+        ${showSeller ? `<p class="product__seller">by ${seller.slug ? `<a href="#/store/${esc(seller.slug)}">${esc(seller.name)}</a>${verifiedBadge(seller)}` : esc(seller.name)}</p>` : ''}
         <div class="pc__foot">
           <a class="link" href="${href}">Details &rarr;</a>
           <a class="btn ${p.soldOut ? 'btn--ghost' : 'btn--ink'} pc__buy" href="${href}">${p.soldOut ? 'Sold out' : 'Buy now'}</a>
@@ -325,7 +325,7 @@
     if (p.theme === 'plan') return planTile(p, showSeller);
     const seller = sellerOf(p);
     const sellerLine = showSeller
-      ? `<p class="product__seller">by ${seller.slug ? `<a href="#/store/${esc(seller.slug)}">${esc(seller.name)}</a>` : esc(seller.name)}</p>`
+      ? `<p class="product__seller">by ${seller.slug ? `<a href="#/store/${esc(seller.slug)}">${esc(seller.name)}</a>${verifiedBadge(seller)}` : esc(seller.name)}</p>`
       : '';
     const href = `#/product/${esc(p.id)}`;
     return `
@@ -363,7 +363,7 @@
     if (stores.error || products.error) {
       catalog.status = 'error';
     } else {
-      SELLERS = stores.data.map((s) => ({ id: s.id, slug: s.store_slug, name: s.store_name, about: s.about, hue: s.hue, logo: s.logo || '', whatsapp: s.contact_whatsapp || '', telegram: s.contact_telegram || '', facebook: s.social_facebook || '', instagram: s.social_instagram || '', website: s.social_website || '', availabilityMode: s.availability_mode || 'none', availabilityHours: Array.isArray(s.availability_hours) ? s.availability_hours : [] }));
+      SELLERS = stores.data.map((s) => ({ id: s.id, slug: s.store_slug, name: s.store_name, about: s.about, hue: s.hue, logo: s.logo || '', whatsapp: s.contact_whatsapp || '', telegram: s.contact_telegram || '', facebook: s.social_facebook || '', instagram: s.social_instagram || '', website: s.social_website || '', verified: !!s.verified, availabilityMode: s.availability_mode || 'none', availabilityHours: Array.isArray(s.availability_hours) ? s.availability_hours : [] }));
       SELLER_BY_ID = new Map(SELLERS.map((s) => [s.id, s]));
       SELLER_BY_SLUG = new Map(SELLERS.map((s) => [s.slug, s]));
       PRODUCTS = products.data.map((p) => ({
@@ -423,6 +423,12 @@
     byId('clear-filters').hidden = action !== 'clear';
     byId('retry-load').hidden = action !== 'retry';
     byId('empty').hidden = false;
+  }
+
+  /* The blue tick (like Telegram's) next to a store whose monthly fee is paid. */
+  function verifiedBadge(seller, large) {
+    if (!seller || !seller.verified) return '';
+    return `<span class="vbadge${large ? ' vbadge--lg' : ''}" title="Verified store" aria-label="Verified store"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 1.8l2.4 1.7 2.9-.2 1.1 2.7 2.5 1.5-.5 2.9 1.2 2.7-1.9 2.2-.2 2.9-2.8.9-1.8 2.3-2.7-1.1-2.7 1.1-1.8-2.3-2.8-.9-.2-2.9L2.3 12.4l1.2-2.7-.5-2.9 2.5-1.5 1.1-2.7 2.9.2z" fill="currentColor" stroke="none"/><path d="M8 12.3l2.6 2.6L16 9.5" fill="none" stroke="#fff" stroke-width="2"/></svg></span>`;
   }
 
   /* ---------- How to reach a seller ---------- */
@@ -526,7 +532,7 @@
         <a class="seller-chip" href="#/store/${esc(s.slug)}" style="--h:${hueOf(s)}">
           ${sellerLogoHtml(s, 'seller-chip__logo')}
           <span class="seller-chip__text">
-            <span class="seller-chip__name">${(availabilityOf(s) || {}).online ? '<i class="presence-dot" title="Online now" aria-label="Online now"></i>' : ''}${esc(s.name)}</span>
+            <span class="seller-chip__name">${(availabilityOf(s) || {}).online ? '<i class="presence-dot" title="Online now" aria-label="Online now"></i>' : ''}${esc(s.name)}${verifiedBadge(s)}</span>
             <span class="seller-chip__count">${counts.get(s.id)} ${plural(counts.get(s.id), 'product', 'products')}</span>
           </span>
         </a>`).join('')}</div>`;
@@ -634,7 +640,7 @@
             ${sellerLogoHtml(seller, `store-avatar${seller.logo ? ' store-avatar--img' : ''}`)}
             <div>
               <p class="eyebrow">Seller store</p>
-              <h1 class="store-title" id="store-title">${esc(seller.name)}</h1>
+              <h1 class="store-title" id="store-title">${esc(seller.name)}${verifiedBadge(seller, true)}</h1>
               ${seller.about ? `<p class="store-about">${esc(seller.about)}</p>` : ''}
               ${presenceHtml(seller, true)}
               ${socialLinksHtml(seller)}
@@ -827,7 +833,7 @@
             <div class="pd__info">
               <p class="product__cat">${esc(p.category)}</p>
               <h1 class="pd__title" id="pd-title">${esc(p.name)}</h1>
-              <p class="product__seller">by ${seller.slug ? `<a href="#/store/${esc(seller.slug)}">${esc(seller.name)}</a>` : esc(seller.name)}</p>
+              <p class="product__seller">by ${seller.slug ? `<a href="#/store/${esc(seller.slug)}">${esc(seller.name)}</a>${verifiedBadge(seller)}` : esc(seller.name)}</p>
               <p class="product__price pd__price" id="pd-price">${priceHtml(p, page.option)}</p>
               ${!p.options.length && !p.soldOut && p.stockLeft != null ? `<p class="pd__stock">${p.stockLeft === 1 ? 'Only 1 left' : `${p.stockLeft} left`}</p>` : ''}
               ${options}

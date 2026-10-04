@@ -137,7 +137,7 @@
     loadSales();
     loadBank();
     loadTelegram();
-    loadOwnerBank();
+    loadFee();
   });
 
   /* ---------- Status banner ---------- */
@@ -153,7 +153,8 @@
     let text;
     if (s.status === 'pending') text = `Your store is waiting for approval. You can still set up your store and add products now — they will go live once approved.`;
     else if (s.status === 'suspended') text = `Your store is hidden from customers. Contact the site owner to reactivate it.`;
-    else text = `Your store is live. Store fee: ${CFG.sellerMonthlyFee ? `Rs. ${CFG.sellerMonthlyFee} / month` : '—'}. Free until ${formatDate(s.free_until)}.`;
+    else if (s.paid_until && s.paid_until >= new Date().toISOString().slice(0, 10)) text = `Your store is live and Verified until ${formatDate(s.paid_until)}.`;
+    else text = `Your store is live. Free trial until ${formatDate(s.free_until)}. Pay the monthly store fee below to get the Verified badge.`;
     byId('status-banner').innerHTML = `${badge}<p>${text}${s.status === 'approved' ? ` <a href="index.html#/store/${esc(s.store_slug)}" target="_blank" rel="noopener">View your store &rarr;</a>` : ''}</p>`;
   }
 
@@ -659,21 +660,91 @@
     toast('Telegram disconnected');
   });
 
-  /* ---------- The owner's bank details, to pay the monthly store fee ---------- */
-  async function loadOwnerBank() {
-    const { data } = await sb.rpc('get_owner_bank');
-    const bank = Array.isArray(data) ? data[0] : null;
-    if (!bank || !bank.account_number) return;
-    byId('fee-card').hidden = false;
-    byId('fee-lead').textContent = CFG.sellerMonthlyFee
-      ? `The store fee is Rs. ${Number(CFG.sellerMonthlyFee).toLocaleString('en-US')} per month. Pay it to this account and keep the slip.`
-      : 'Pay the store fee to this account and keep the slip.';
-    byId('fee-bank').innerHTML = [['Bank', bank.bank_name], ['Account name', bank.account_name], ['Account number', bank.account_number], ['Branch', bank.branch]]
-      .filter((row) => row[1])
-      .map(([k, v]) => `<div><dt>${esc(k)}</dt><dd>${esc(v)}</dd></div>`).join('');
-    byId('fee-note').hidden = !bank.note;
-    byId('fee-note').textContent = bank.note || '';
+  /* ---------- The monthly store fee and the Verified badge ---------- */
+  const todayIso = () => new Date().toISOString().slice(0, 10);
+  const FEE_STATUS = { awaiting_review: ['pending', 'Waiting for review'], approved: ['approved', 'Approved'], rejected: ['suspended', 'Not accepted'] };
+  let feeSettings = { monthly_fee: CFG.sellerMonthlyFee || 500, fee_required: false };
+
+  function paintFeeStatus() {
+    const paidUntil = sellerRow.paid_until;
+    const today = todayIso();
+    let html;
+    if (paidUntil && paidUntil >= today) html = `<span class="verified-pill">${verifiedIcon()} Verified</span> until ${esc(formatDate(paidUntil))}`;
+    else if (sellerRow.free_until && sellerRow.free_until >= today) html = `Free trial until ${esc(formatDate(sellerRow.free_until))}. Pay the fee to get the <strong>Verified</strong> badge.`;
+    else html = feeSettings.fee_required
+      ? '<strong>Your fee is due.</strong> Your store is hidden from the shop until you pay.'
+      : 'Your fee has not been paid. Pay it to get the <strong>Verified</strong> badge.';
+    byId('fee-status').innerHTML = html;
+    byId('fee-lead').textContent = `The store fee is Rs. ${Number(feeSettings.monthly_fee).toLocaleString('en-US')} per month. Pay it to the account below, then send us the slip.`;
   }
 
+  function verifiedIcon() {
+    return '<svg class="verified-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 1.8l2.4 1.7 2.9-.2 1.1 2.7 2.5 1.5-.5 2.9 1.2 2.7-1.9 2.2-.2 2.9-2.8.9-1.8 2.3-2.7-1.1-2.7 1.1-1.8-2.3-2.8-.9-.2-2.9L2.3 12.4l1.2-2.7-.5-2.9 2.5-1.5 1.1-2.7 2.9.2z" fill="currentColor" stroke="none"/><path d="M8 12.3l2.6 2.6L16 9.5" fill="none" stroke="#fff" stroke-width="2"/></svg>';
+  }
+
+  async function loadFee() {
+    const [{ data: settings }, { data: bankData }, { data: payments }] = await Promise.all([
+      sb.from('site_settings').select('*').maybeSingle(),
+      sb.rpc('get_owner_bank'),
+      sb.from('fee_payments').select('*').eq('seller_id', sellerRow.id).order('created_at', { ascending: false }).limit(10)
+    ]);
+    if (settings) feeSettings = settings;
+    paintFeeStatus();
+    const bank = Array.isArray(bankData) ? bankData[0] : null;
+    const hasBank = !!(bank && bank.account_number);
+    byId('fee-bank').hidden = !hasBank;
+    byId('fee-bank').innerHTML = hasBank
+      ? [['Bank', bank.bank_name], ['Account name', bank.account_name], ['Account number', bank.account_number], ['Branch', bank.branch]]
+        .filter((row) => row[1]).map(([k, v]) => `<div><dt>${esc(k)}</dt><dd>${esc(v)}</dd></div>`).join('')
+      : '';
+    byId('fee-note').hidden = !(hasBank && bank.note);
+    byId('fee-note').textContent = hasBank && bank.note ? bank.note : '';
+    if (!hasBank) {
+      byId('fee-lead').textContent += ' The site owner has not added bank details yet, so please contact them.';
+    }
+    byId('fee-history').innerHTML = (payments || []).map((p) => {
+      const [badgeClass, label] = FEE_STATUS[p.status] || ['pending', p.status];
+      return `
+        <article class="prod-row">
+          <div class="prod-row__main"><div class="prod-row__text">
+            <p class="prod-row__name">Rs. ${Number(p.amount_lkr).toLocaleString('en-US')} <span class="status-badge status-badge--${badgeClass}">${esc(label)}</span></p>
+            <p class="prod-row__meta">${esc(formatDate(p.created_at))}${p.reference ? ` &middot; ${esc(p.reference)}` : ''}</p>
+          </div></div>
+        </article>`;
+    }).join('');
+  }
+
+  byId('fee-form').addEventListener('submit', async (event) => {
+    event.preventDefault();
+    const form = byId('fee-form');
+    const file = form.elements.receipt.files[0];
+    const errorBox = byId('fee-form-error');
+    errorBox.hidden = true;
+    showFieldError(form.elements.receipt, '');
+    if (!file) { showFieldError(form.elements.receipt, 'Attach the payment slip (a photo or a PDF).'); return; }
+    if (!/^(image\/(jpeg|png|webp)|application\/pdf)$/.test(file.type)) { showFieldError(form.elements.receipt, 'Use a JPG, PNG, WebP or PDF file.'); return; }
+    if (file.size > 5 * 1024 * 1024) { showFieldError(form.elements.receipt, 'That file is over 5 MB.'); return; }
+    const button = form.querySelector('button[type="submit"]');
+    button.disabled = true;
+    try {
+      const safeName = file.name.toLowerCase().replace(/[^a-z0-9.]+/g, '-').slice(-60);
+      const path = `${sellerRow.id}/fee-${Date.now()}-${safeName}`;
+      const { error: uploadError } = await sb.storage.from('receipts').upload(path, file, { contentType: file.type });
+      if (uploadError) throw uploadError;
+      const { data: paymentId, error } = await sb.rpc('submit_fee_payment', { p_reference: form.elements.reference.value.trim(), p_receipt_path: path });
+      if (error) { sb.storage.from('receipts').remove([path]).catch(() => {}); throw error; }
+      /* Tell the owner on Telegram, with the slip and Approve / Reject buttons. */
+      sb.functions.invoke('notify', { body: { kind: 'fee_payment', id: paymentId } }).catch(() => {});
+      form.reset();
+      toast('Slip sent. You will be verified once the owner approves it.');
+      loadFee();
+    } catch (err) {
+      errorBox.textContent = (err && err.message) || 'Something went wrong. Please try again.';
+      errorBox.hidden = false;
+    } finally {
+      button.disabled = false;
+    }
+  });
   document.title = `Seller dashboard | ${CFG.storeName}`;
 })();
+

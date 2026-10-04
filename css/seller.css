@@ -97,6 +97,11 @@
 .pp-theme input { position: absolute; top: 14px; right: 14px; accent-color: var(--ink); width: 17px; height: 17px; margin: 0; }
 .pp-theme__name { font: 700 16px/1.2 var(--font-display); }
 .pp-theme__text { font-size: 13px; line-height: 1.45; color: var(--ink-2); padding-right: 24px; }
+.fee-status { margin-bottom: 10px; font-size: 16px; }
+.verified-pill { display: inline-flex; align-items: center; gap: 6px; padding: 4px 12px 4px 8px; border-radius: 999px; background: hsl(205 85% 92%); color: hsl(208 75% 36%); font-weight: 700; }
+.verified-icon { width: 18px; height: 18px; color: hsl(207 80% 52%); }
+#fee-card .auth__form { margin-top: 18px; max-width: 560px; }
+#fee-card .prod-list { margin-top: 18px; }
 #availability-card { grid-column: 1 / -1; }
 #availability-card .auth__form { max-width: 760px; }
 .av-modes { grid-template-columns: repeat(4, minmax(0, 1fr)); }

@@ -126,6 +126,8 @@
       loadOrders();
       loadOwnerBank();
       loadBrands();
+      loadFees();
+      loadFeeSettings();
     } else {
       showPanel('denied', session.user.email);
     }
@@ -181,7 +183,7 @@
           <span class="seller-row__avatar">${icon('i-store')}</span>
           <div class="seller-row__text">
             <p class="seller-row__name"><a href="index.html#/store/${esc(s.store_slug)}" target="_blank" rel="noopener">${esc(s.store_name)}</a> ${badge}</p>
-            <p class="seller-row__meta">${esc(s.email)} &middot; /store/${esc(s.store_slug)} &middot; joined ${formatDate(s.created_at)} &middot; free until ${formatDate(s.free_until)}</p>
+            <p class="seller-row__meta">${esc(s.email)} &middot; /store/${esc(s.store_slug)} &middot; joined ${formatDate(s.created_at)} &middot; free until ${formatDate(s.free_until)}${s.paid_until ? ` &middot; paid until ${formatDate(s.paid_until)}` : ''}</p>
           </div>
         </div>
         <div class="seller-row__actions">${actions.join('')}</div>
@@ -249,6 +251,7 @@
     byId('products-section').hidden = chip.dataset.section !== 'products';
     byId('orders-section').hidden = chip.dataset.section !== 'orders';
     byId('settings-section').hidden = chip.dataset.section !== 'settings';
+    byId('fees-section').hidden = chip.dataset.section !== 'fees';
   });
 
   /* ---------- Products list (moderation: hide, show again, delete) ---------- */
@@ -505,6 +508,108 @@
     byId('owner-bank-saved').hidden = false;
     byId('owner-bank-saved').textContent = 'Saved just now.';
     toast('Bank details saved');
+  });
+
+  /* ---------- Store fees: check a seller's slip, approve (adds 30 days and the Verified badge) or reject ---------- */
+  let feePayments = [];
+  let feeFilter = 'awaiting_review';
+  const FEE_BADGE = { awaiting_review: ['pending', 'Waiting for review'], approved: ['approved', 'Approved'], rejected: ['suspended', 'Not accepted'] };
+
+  async function loadFees() {
+    const { data, error } = await sb.from('fee_payments').select('*').order('created_at', { ascending: false });
+    if (error) { toast(`Could not load fee payments: ${error.message}`); return; }
+    feePayments = data || [];
+    renderFees();
+  }
+
+  function feeRow(p) {
+    const [badgeClass, label] = FEE_BADGE[p.status] || ['pending', p.status];
+    const store = sellers.find((s) => s.id === p.seller_id);
+    const actions = [];
+    if (p.receipt_path) actions.push(`<button class="btn btn--ghost btn--sm" type="button" data-fee-slip="${esc(p.id)}"><span>View slip</span></button>`);
+    if (p.status === 'awaiting_review') {
+      actions.push(`<button class="btn btn--ink btn--sm" type="button" data-fee-approve="${esc(p.id)}">${icon('i-check')}<span>Approve</span></button>`);
+      actions.push(`<button class="btn btn--ghost btn--sm" type="button" data-fee-reject="${esc(p.id)}">${icon('i-pause')}<span>Reject</span></button>`);
+    }
+    return `
+      <article class="seller-row" style="--h:${Number(store && store.hue) || 0}">
+        <div class="seller-row__main">
+          <span class="seller-row__avatar">${icon('i-store')}</span>
+          <div class="seller-row__text">
+            <p class="seller-row__name">${esc(store ? store.store_name : 'Unknown store')} <span class="status-badge status-badge--${badgeClass}">${esc(label)}</span></p>
+            <p class="seller-row__meta">Rs. ${Number(p.amount_lkr).toLocaleString('en-US')} &middot; ${esc(store ? store.email : '')} &middot; ${formatDate(p.created_at)}${p.reference ? ` &middot; Reference: ${esc(p.reference)}` : ''}</p>
+          </div>
+        </div>
+        <div class="seller-row__actions">${actions.join('')}</div>
+      </article>`;
+  }
+
+  function renderFees() {
+    const list = feeFilter === 'all' ? feePayments : feePayments.filter((p) => p.status === feeFilter);
+    byId('fees-list').innerHTML = list.map(feeRow).join('');
+    byId('fees-list').hidden = list.length === 0;
+    byId('fees-empty').hidden = list.length > 0;
+    const waiting = feePayments.filter((p) => p.status === 'awaiting_review').length;
+    byId('fees-count').textContent = `${feePayments.length} ${plural(feePayments.length, 'payment', 'payments')}${waiting ? ` · ${waiting} waiting` : ''}`;
+  }
+
+  byId('fee-status-tabs').addEventListener('click', (event) => {
+    const chip = event.target.closest('[data-fstatus]');
+    if (!chip) return;
+    feeFilter = chip.dataset.fstatus;
+    byId('fee-status-tabs').querySelectorAll('.chip').forEach((c) => c.setAttribute('aria-pressed', String(c === chip)));
+    renderFees();
+  });
+
+  byId('fees-list').addEventListener('click', async (event) => {
+    const approve = event.target.closest('[data-fee-approve]');
+    if (approve) {
+      const { error } = await sb.rpc('approve_fee_payment', { p_id: approve.dataset.feeApprove });
+      if (error) { toast(`Could not approve: ${error.message}`); return; }
+      toast('Approved. The store is verified for 30 more days');
+      loadFees(); loadSellers();
+      return;
+    }
+    const reject = event.target.closest('[data-fee-reject]');
+    if (reject) {
+      if (!window.confirm('Reject this payment?')) return;
+      const { error } = await sb.rpc('reject_fee_payment', { p_id: reject.dataset.feeReject });
+      if (error) { toast(`Could not reject: ${error.message}`); return; }
+      toast('Payment rejected');
+      loadFees();
+      return;
+    }
+    const slip = event.target.closest('[data-fee-slip]');
+    if (slip) {
+      const payment = feePayments.find((p) => p.id === slip.dataset.feeSlip);
+      if (!payment || !payment.receipt_path) return;
+      const popup = window.open('', '_blank');
+      const { data, error } = await sb.storage.from('receipts').createSignedUrl(payment.receipt_path, 300);
+      if (error || !data) { if (popup) popup.close(); toast('Could not open the slip.'); return; }
+      if (popup) popup.location.href = data.signedUrl; else window.location.href = data.signedUrl;
+    }
+  });
+
+  /* The monthly fee amount, and whether unpaid stores are hidden. */
+  const feeSettingsForm = byId('fee-settings-form');
+
+  async function loadFeeSettings() {
+    const { data } = await sb.from('site_settings').select('*').maybeSingle();
+    if (!data) return;
+    feeSettingsForm.elements.monthlyFee.value = data.monthly_fee;
+    feeSettingsForm.elements.feeRequired.checked = !!data.fee_required;
+  }
+
+  feeSettingsForm.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    const f = feeSettingsForm.elements;
+    byId('fee-settings-error').hidden = true;
+    const amount = Number(f.monthlyFee.value);
+    if (!Number.isInteger(amount) || amount < 1) { showFieldError(f.monthlyFee, 'Enter the fee in whole rupees.'); return; }
+    showFieldError(f.monthlyFee, '');
+    const { error } = await sb.from('site_settings').update({ monthly_fee: amount, fee_required: f.feeRequired.checked }).eq('id', true);
+    if (error) { byId('fee-settings-error').textContent = error.message; byId('fee-settings-error').hidden = false; return; }
+    toast('Fee settings saved');
   });
 
   /* ---------- Brand logos: uploaded once here, picked by every seller ---------- */

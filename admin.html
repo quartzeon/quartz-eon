@@ -95,6 +95,7 @@
       <button class="chip" type="button" data-section="sellers" aria-pressed="true">Sellers</button>
       <button class="chip" type="button" data-section="products" aria-pressed="false">Products</button>
       <button class="chip" type="button" data-section="orders" aria-pressed="false">Orders</button>
+      <button class="chip" type="button" data-section="fees" aria-pressed="false">Fees</button>
       <button class="chip" type="button" data-section="settings" aria-pressed="false">Settings</button>
     </div>
 
@@ -157,6 +158,24 @@
       <p class="empty__title admin-empty" id="orders-empty" hidden>No orders here yet</p>
     </div>
 
+    <div id="fees-section" hidden>
+      <header class="admin-app__head">
+        <div>
+          <p class="eyebrow">Owner access</p>
+          <h1 class="admin-title">Store fees</h1>
+        </div>
+        <p class="admin-count" id="fees-count" aria-live="polite"></p>
+      </header>
+      <div class="admin-tabs" id="fee-status-tabs" role="group" aria-label="Filter by status">
+        <button class="chip" type="button" data-fstatus="awaiting_review" aria-pressed="true">Waiting for review</button>
+        <button class="chip" type="button" data-fstatus="approved" aria-pressed="false">Approved</button>
+        <button class="chip" type="button" data-fstatus="rejected" aria-pressed="false">Not accepted</button>
+        <button class="chip" type="button" data-fstatus="all" aria-pressed="false">All</button>
+      </div>
+      <div class="admin-list" id="fees-list"></div>
+      <p class="empty__title admin-empty" id="fees-empty" hidden>No fee payments here yet</p>
+    </div>
+
     <div id="settings-section" hidden>
       <header class="admin-app__head">
         <div>
@@ -194,6 +213,22 @@
           <p class="field__error" id="owner-bank-error" hidden></p>
           <p class="field__hint" id="owner-bank-saved" hidden></p>
           <button class="btn btn--ink" type="submit">Save bank details</button>
+        </form>
+      </div>
+
+      <div class="settings-card settings-card--spaced">
+        <h2 class="settings-card__title">Monthly store fee</h2>
+        <p class="admin-lead">Sellers pay this each month. An approved payment gives the store 30 more days and the <strong>Verified</strong> badge.</p>
+        <form class="auth__form" id="fee-settings-form" novalidate>
+          <div class="field">
+            <label for="fee-amount">Fee per month (Rs.)</label>
+            <input id="fee-amount" name="monthlyFee" type="number" min="1" step="1" inputmode="numeric">
+            <p class="field__error" id="fee-amount-error" hidden></p>
+          </div>
+          <label class="check-row"><input id="fee-required" name="feeRequired" type="checkbox"><span>Require the fee: hide a store from the shop when its free trial is over and the fee is not paid</span></label>
+          <p class="field__hint">Leave this off while you are starting. Turn it on when you want sellers to pay. Stores that are hidden can still log in and pay.</p>
+          <p class="field__error" id="fee-settings-error" hidden></p>
+          <button class="btn btn--ink" type="submit">Save</button>
         </form>
       </div>
 

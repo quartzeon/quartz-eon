@@ -248,12 +248,27 @@
           <button class="btn btn--ghost" type="button" id="telegram-disconnect" hidden>Disconnect</button>
         </div>
       </section>
-
-      <section class="dash-card" id="fee-card" aria-labelledby="fee-title" hidden>
-        <h2 class="dash-card__title" id="fee-title">Store fee: pay to the site owner</h2>
+      <section class="dash-card" id="fee-card" aria-labelledby="fee-title">
+        <h2 class="dash-card__title" id="fee-title">Store fee and Verified badge</h2>
+        <p class="fee-status" id="fee-status"></p>
         <p class="admin-lead" id="fee-lead"></p>
-        <dl class="pay__bank" id="fee-bank"></dl>
+        <dl class="pay__bank" id="fee-bank" hidden></dl>
         <p class="field__hint" id="fee-note" hidden></p>
+        <form class="auth__form" id="fee-form" novalidate>
+          <div class="field">
+            <label for="fee-reference">Transfer reference (optional)</label>
+            <input id="fee-reference" name="reference" type="text" maxlength="100" autocomplete="off" placeholder="For example the reference on your bank slip">
+          </div>
+          <div class="field">
+            <label for="fee-receipt">Photo or PDF of the payment slip</label>
+            <input id="fee-receipt" name="receipt" type="file" accept="image/jpeg,image/png,image/webp,application/pdf">
+            <p class="field__error" id="fee-receipt-error" hidden></p>
+          </div>
+          <p class="field__error" id="fee-form-error" hidden></p>
+          <button class="btn btn--ink" type="submit">I have paid, send the slip</button>
+          <p class="field__hint">The site owner checks the slip. Once approved, your store is <strong>Verified</strong> and can sell for 30 more days.</p>
+        </form>
+        <div class="prod-list" id="fee-history"></div>
       </section>
 
       <section class="dash-card vpn-card" id="vpn-card" aria-labelledby="vpn-title">
@@ -302,5 +317,6 @@
 <script src="js/seller-dashboard.js"></script>
 </body>
 </html>
+
 
 
