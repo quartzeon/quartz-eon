@@ -644,6 +644,12 @@ dialog::backdrop { background: rgb(8 12 16 / .55); }
 .legal-note a { color: inherit; text-underline-offset: 2px; }
 .legal-note a:hover { color: var(--ink); }
 
+/* "I agree to the Terms" tick box above the checkout button */
+.field .agree { display: flex; align-items: flex-start; gap: 10px; font-size: 14px; font-weight: 400; line-height: 1.45; color: var(--ink-2); cursor: pointer; }
+.field .agree input { flex: none; width: 18px; height: 18px; min-height: 0; margin: 1px 0 0; padding: 0; accent-color: var(--ink); cursor: pointer; }
+.field .agree input[aria-invalid="true"] { outline: 2px solid var(--danger); outline-offset: 2px; }
+.field .agree a { color: var(--ink); text-underline-offset: 2px; }
+
 /* ---------- Legal pages (terms.html, privacy.html) ---------- */
 .legal { max-width: 760px; padding-block: clamp(32px, 5vw, 56px) 72px; }
 .legal h1 { font: 800 clamp(2rem, 5vw, 2.8rem)/1.05 var(--font-display); letter-spacing: -.03em; }

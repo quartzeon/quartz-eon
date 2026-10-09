@@ -1090,9 +1090,15 @@
           <input id="bank-receipt" name="receipt" type="file" accept="image/jpeg,image/png,image/webp,application/pdf" aria-describedby="bank-receipt-error">
           <p class="field__error" id="bank-receipt-error" hidden></p>
         </div>
+        <div class="field">
+          <label class="agree">
+            <input id="bank-agree" name="agree" type="checkbox" aria-describedby="bank-agree-error">
+            <span>I agree to the <a href="terms.html" target="_blank" rel="noopener">Terms of Service</a> and <a href="privacy.html" target="_blank" rel="noopener">Privacy Policy</a>.</span>
+          </label>
+          <p class="field__error" id="bank-agree-error" hidden></p>
+        </div>
         <p class="field__error" id="pay-error" hidden></p>
         <button class="btn btn--ink btn--block" type="submit">I have paid, send for review</button>
-        ${legalNote('placing an order')}
       </form>`;
   }
 
@@ -1157,10 +1163,12 @@
     errorBox.hidden = true;
     showFieldError(form.elements.reference, '');
     showFieldError(form.elements.receipt, '');
+    showFieldError(form.elements.agree, '');
     let ok = true;
     if (reference.length < 3) { showFieldError(form.elements.reference, 'Enter the reference from your bank transfer.'); ok = false; }
     if (file && !RECEIPT_TYPES.includes(file.type)) { showFieldError(form.elements.receipt, 'Use a JPG, PNG, WebP or PDF file.'); ok = false; }
     else if (file && file.size > RECEIPT_MAX) { showFieldError(form.elements.receipt, 'That file is over 5 MB.'); ok = false; }
+    if (!form.elements.agree.checked) { showFieldError(form.elements.agree, 'Tick the box to agree to the Terms before placing your order.'); ok = false; }
     if (!ok) return;
 
     const button = form.querySelector('button[type="submit"]');
