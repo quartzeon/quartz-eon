@@ -264,6 +264,9 @@ section[id] { scroll-margin-top: 76px; }
 /* Account menu: same shape as the log in menu, shown once a session is loaded */
 .account__dot { width: 8px; height: 8px; flex: none; border-radius: 50%; background: #3FB27F; }
 .account__dot.is-pending { background: #D9A32B; }
+.account__dot.is-news { background: #5B7CFA; box-shadow: 0 0 0 3px rgba(91, 124, 250, .3); }
+.count-badge { padding: 0 8px; border-radius: 999px; background: #5B7CFA; color: #fff; font-size: 12px; font-weight: 600; line-height: 20px; }
+.count-badge[hidden] { display: none; }
 .account__email { margin-bottom: 4px; font-size: 15px; font-weight: 600; overflow-wrap: anywhere; }
 .login__panel .note { margin: 4px 0; }
 

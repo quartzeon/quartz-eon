@@ -179,6 +179,46 @@
   /* status: 'idle' | 'loading' | 'ready' | 'error' */
   const ordersState = { status: 'idle', rows: [], reviews: new Map(), editing: new Set() };
 
+  /* ---------- "Your order was approved" badge ----------
+     Remembers in this browser which finished orders the customer has already seen, and marks
+     "My orders" when a seller approves or rejects one. Looks again every minute while one is waiting. */
+  const updates = { count: 0, timer: 0 };
+  const seenKey = () => `qe-seen-orders:${session.user.id}`;
+
+  function paintOrderUpdates() {
+    const badge = byId('account-orders-count');
+    badge.hidden = !updates.count;
+    badge.textContent = `${updates.count} new`;
+    byId('account-dot').classList.toggle('is-news', updates.count > 0);
+  }
+
+  /* Marks every finished order in the list as seen. */
+  function markOrdersSeen(rows) {
+    storage.set(seenKey(), JSON.stringify(rows.filter((o) => o.status !== 'awaiting_review').map((o) => o.id)));
+    updates.count = 0;
+    paintOrderUpdates();
+  }
+
+  async function checkOrderUpdates() {
+    window.clearTimeout(updates.timer);
+    updates.count = 0;
+    paintOrderUpdates();
+    if (!session) return;
+    const { data } = await sb.from('orders').select('id, status').eq('customer_id', session.user.id);
+    if (!session || !data) return;
+    const saved = storage.get(seenKey());
+    /* The first time in this browser nothing counts as new; on the My orders page everything is seen. */
+    if (saved === null || view.name === 'orders') {
+      markOrdersSeen(data);
+    } else {
+      let seen;
+      try { seen = new Set(JSON.parse(saved)); } catch (e) { seen = new Set(); }
+      updates.count = data.filter((o) => o.status !== 'awaiting_review' && !seen.has(o.id)).length;
+      paintOrderUpdates();
+    }
+    if (data.some((o) => o.status === 'awaiting_review')) updates.timer = window.setTimeout(checkOrderUpdates, 60000);
+  }
+
   sb.auth.onAuthStateChange(async (event, newSession) => {
     session = newSession;
     if (session) {
@@ -198,6 +238,7 @@
     }
     ordersState.status = 'idle';
     if (view.name === 'orders') renderOrders();
+    checkOrderUpdates();
   });
 
   /* ---------- Money: prices are in rupees, dollars are worked out from the live rate ---------- */
@@ -1184,6 +1225,7 @@
     ordersState.status = error ? 'error' : 'ready';
     ordersState.rows = data || [];
     ordersState.reviews = new Map(((reviews && reviews.data) || []).map((r) => [r.order_id, r]));
+    if (!error && view.name === 'orders') markOrdersSeen(ordersState.rows);
     /* Do not wipe a review someone is in the middle of writing. */
     if (!(silent && ordersView.querySelector('form[data-dirty]'))) renderOrders();
     /* While a transfer is waiting for the seller, look again every 20 seconds so approval shows up by itself. */
