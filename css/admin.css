@@ -96,3 +96,12 @@
   .toast { animation: toast-in .2s ease-out; }
 }
 @keyframes toast-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+
+/* ---------- Flat look ----------
+   The dashboards use a squarer, flatter style than the shop: small corners, no pill or round shapes. */
+:root { --radius: 6px; --radius-l: 8px; }
+.btn, .btn--sm, .icon-btn, .chip, .tabs, .tab, .login__btn, .count-badge, .admin-tag, .status-badge, .verified-pill, .presence,
+.field input, .field select, .field textarea, .pp-photo, .pp-photo__tag, .pp-photo__btn, .pp-theme, .pp-option, .pp-logo-item, .pp-logo-item__img,
+.pp-picker__search input, .pp-rowitem input, .pp-rowitem select, .av-row, .av-row input[type="time"], .dash-nav, .dash-nav a,
+.prod-row__art, .seller-row__avatar, .admin-icon, .brand-item, .brand-item img, .note, .pay__bank, .toast, .fee-box { border-radius: 4px; }
+.btn:hover { transform: none; }

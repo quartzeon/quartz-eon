@@ -216,3 +216,25 @@
   .dash-nav { position: static; flex-direction: row; overflow-x: auto; }
   .dash-nav a { white-space: nowrap; }
 }
+
+/* ---------- Flat look ----------
+   The dashboards use a squarer, flatter style than the shop: small corners, no pill or round shapes. */
+:root { --radius: 6px; --radius-l: 8px; }
+.btn, .btn--sm, .icon-btn, .chip, .tabs, .tab, .login__btn, .count-badge, .admin-tag, .status-badge, .verified-pill, .presence,
+.field input, .field select, .field textarea, .pp-photo, .pp-photo__tag, .pp-photo__btn, .pp-theme, .pp-option, .pp-logo-item, .pp-logo-item__img,
+.pp-picker__search input, .pp-rowitem input, .pp-rowitem select, .av-row, .av-row input[type="time"], .dash-nav, .dash-nav a,
+.prod-row__art, .seller-row__avatar, .admin-icon, .brand-item, .brand-item img, .note, .pay__bank, .toast, .fee-box { border-radius: 4px; }
+.btn:hover { transform: none; }
+
+/* Store fee: this month / time left / paid until */
+.fee-summary { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin: 14px 0 18px; }
+.fee-box { display: grid; gap: 4px; padding: 12px 14px; border: 1px solid var(--line); border-left-width: 4px; background: var(--paper); }
+.fee-box span { font: 500 11px/1.3 var(--font-mono); letter-spacing: .06em; text-transform: uppercase; color: var(--ink-2); }
+.fee-box strong { font: 700 18px/1.2 var(--font-display); }
+.fee-box--ok { border-left-color: hsl(150 45% 40%); }
+.fee-box--warn { border-left-color: hsl(35 90% 50%); }
+.fee-box--bad { border-left-color: var(--danger); }
+.fee-box--bad strong { color: var(--danger); }
+.fee-summary__note { grid-column: 1 / -1; font-size: 14px; color: var(--ink-2); }
+@media (max-width: 640px) { .fee-summary { grid-template-columns: 1fr; } }
+.nav-flag { margin-left: 6px; padding: 1px 6px; border-radius: 3px; background: var(--danger); color: #fff; font: 600 11px/1.5 var(--font-mono); }

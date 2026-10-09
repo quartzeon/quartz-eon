@@ -100,6 +100,11 @@
     fillCategories();
     loadProducts();
     checkPanel();
+    /* "Add a new product" on the seller's store page links here as products.html#new. */
+    if (window.location.hash === '#new') {
+      history.replaceState(null, '', window.location.pathname);
+      openEditor(null);
+    }
   }
 
   function fillCategories() {

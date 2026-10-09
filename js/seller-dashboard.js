@@ -147,14 +147,38 @@
     return Number.isNaN(d.getTime()) ? value : d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
   }
 
+  /* Whole days from today (this device's date) to a YYYY-MM-DD date; negative once it has passed. */
+  function daysUntil(iso) {
+    if (!iso) return null;
+    const [y, m, d] = String(iso).slice(0, 10).split('-').map(Number);
+    const now = new Date();
+    return Math.round((Date.UTC(y, m - 1, d) - Date.UTC(now.getFullYear(), now.getMonth(), now.getDate())) / 86400000);
+  }
+  const dayWord = (n) => `${n} ${n === 1 ? 'day' : 'days'}`;
+  const leftText = (n) => (n === 0 ? 'last day today' : `${dayWord(n)} left`);
+
+  /* Where the store stands with the monthly fee: paid (Verified), free trial, or due. */
+  function feeState(row) {
+    const paid = daysUntil(row.paid_until);
+    if (paid !== null && paid >= 0) return { kind: 'paid', days: paid, until: row.paid_until };
+    const trial = daysUntil(row.free_until);
+    if (trial !== null && trial >= 0) return { kind: 'trial', days: trial, until: row.free_until };
+    const ended = row.paid_until || row.free_until || '';
+    return { kind: 'due', days: ended ? -daysUntil(ended) : null, until: ended };
+  }
+
   function renderStatusBanner() {
     const s = sellerRow;
     const badge = `<span class="status-badge status-badge--${s.status}">${s.status}</span>`;
     let text;
     if (s.status === 'pending') text = `Your store is waiting for approval. You can still set up your store and add products now — they will go live once approved.`;
     else if (s.status === 'suspended') text = `Your store is hidden from customers. Contact the site owner to reactivate it.`;
-    else if (s.paid_until && s.paid_until >= new Date().toISOString().slice(0, 10)) text = `Your store is live and Verified until ${formatDate(s.paid_until)}.`;
-    else text = `Your store is live. Free trial until ${formatDate(s.free_until)}. Pay the monthly store fee below to get the Verified badge.`;
+    else {
+      const fee = feeState(s);
+      if (fee.kind === 'paid') text = `Your store is live and Verified until ${formatDate(fee.until)} (${leftText(fee.days)}).`;
+      else if (fee.kind === 'trial') text = `Your store is live. Free trial until ${formatDate(fee.until)} (${leftText(fee.days)}). Pay the monthly store fee to get the Verified badge.`;
+      else text = 'Your store is live, but this month\'s store fee is not paid. See Store fee.';
+    }
     byId('status-banner').innerHTML = `${badge}<p>${text}${s.status === 'approved' ? ` <a href="index.html#/store/${esc(s.store_slug)}" target="_blank" rel="noopener">View your store &rarr;</a>` : ''}</p>`;
   }
 
@@ -714,21 +738,36 @@
   });
 
   /* ---------- The monthly store fee and the Verified badge ---------- */
-  const todayIso = () => new Date().toISOString().slice(0, 10);
   const FEE_STATUS = { awaiting_review: ['pending', 'Waiting for review'], approved: ['approved', 'Approved'], rejected: ['suspended', 'Not accepted'] };
   let feeSettings = { monthly_fee: CFG.sellerMonthlyFee || 500, fee_required: false };
 
-  function paintFeeStatus() {
-    const paidUntil = sellerRow.paid_until;
-    const today = todayIso();
+  function paintFeeStatus(payments) {
+    const fee = feeState(sellerRow);
     let html;
-    if (paidUntil && paidUntil >= today) html = `<span class="verified-pill">${verifiedIcon()} Verified</span> until ${esc(formatDate(paidUntil))}`;
-    else if (sellerRow.free_until && sellerRow.free_until >= today) html = `Free trial until ${esc(formatDate(sellerRow.free_until))}. Pay the fee to get the <strong>Verified</strong> badge.`;
+    if (fee.kind === 'paid') html = `<span class="verified-pill">${verifiedIcon()} Verified</span> until ${esc(formatDate(fee.until))}`;
+    else if (fee.kind === 'trial') html = `Free trial until ${esc(formatDate(fee.until))}. Pay the fee to get the <strong>Verified</strong> badge.`;
     else html = feeSettings.fee_required
       ? '<strong>Your fee is due.</strong> Your store is hidden from the shop until you pay.'
       : 'Your fee has not been paid. Pay it to get the <strong>Verified</strong> badge.';
     byId('fee-status').innerHTML = html;
     byId('fee-lead').textContent = `The store fee is Rs. ${Number(feeSettings.monthly_fee).toLocaleString('en-US')} per month. Pay it to the account below, then send us the slip.`;
+
+    /* Three figures: is this month paid, how long is left, and until when. */
+    const soon = fee.kind !== 'due' && fee.days <= 5;
+    const month = { paid: ['Paid', 'ok'], trial: ['Free trial', soon ? 'warn' : 'ok'], due: ['Not paid', 'bad'] }[fee.kind];
+    const left = fee.kind === 'due'
+      ? (fee.days ? `Ended ${dayWord(fee.days)} ago` : 'Ended today')
+      : (fee.days === 0 ? 'Last day today' : dayWord(fee.days));
+    const waiting = (payments || []).find((p) => p.status === 'awaiting_review');
+    byId('fee-summary').innerHTML = `
+      <div class="fee-box fee-box--${month[1]}"><span>This month</span><strong>${month[0]}</strong></div>
+      <div class="fee-box fee-box--${fee.kind === 'due' ? 'bad' : soon ? 'warn' : 'ok'}"><span>Time left</span><strong>${esc(left)}</strong></div>
+      <div class="fee-box"><span>${fee.kind === 'due' ? 'Ended on' : fee.kind === 'trial' ? 'Trial ends' : 'Paid until'}</span><strong>${fee.until ? esc(formatDate(fee.until)) : '-'}</strong></div>
+      ${waiting ? `<p class="fee-summary__note">Your slip from ${esc(formatDate(waiting.created_at))} is waiting for review. The days are added once the site owner approves it.</p>`
+        : soon || fee.kind === 'due' ? '<p class="fee-summary__note">Pay the fee below to keep your store Verified.</p>' : ''}`;
+    const flag = byId('fee-nav-flag');
+    flag.hidden = !(soon || fee.kind === 'due');
+    flag.textContent = fee.kind === 'due' ? 'Due' : dayWord(fee.days);
   }
 
   function verifiedIcon() {
@@ -742,7 +781,7 @@
       sb.from('fee_payments').select('*').eq('seller_id', sellerRow.id).order('created_at', { ascending: false }).limit(10)
     ]);
     if (settings) feeSettings = settings;
-    paintFeeStatus();
+    paintFeeStatus(payments);
     const bank = Array.isArray(bankData) ? bankData[0] : null;
     const hasBank = !!(bank && bank.account_number);
     byId('fee-bank').hidden = !hasBank;

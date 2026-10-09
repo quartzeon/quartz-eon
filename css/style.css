@@ -503,6 +503,12 @@ section[id] { scroll-margin-top: 76px; }
 .store-title { font: 800 clamp(2rem, 1.2rem + 3vw, 3.2rem)/1 var(--font-display); letter-spacing: -.04em; text-wrap: balance; }
 .store-about { max-width: 52ch; margin-top: 12px; color: var(--ink-2); }
 .store-meta { margin-top: 12px; font: 500 12px/1.4 var(--font-mono); letter-spacing: .06em; text-transform: uppercase; color: var(--ink-2); }
+/* Only the store's own seller sees this bar */
+.own-store { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px 20px; margin-top: 24px; padding: 14px 16px; border: 1px solid var(--line); border-radius: 6px; background: var(--card); }
+.own-store__fee { font-size: 14px; font-weight: 600; color: var(--ink-2); }
+.own-store__fee--due { color: var(--danger); }
+.own-store__actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.own-store .btn { border-radius: 4px; }
 
 /* ---------- Buy dialog ---------- */
 html:has(dialog[open]) { overflow: hidden; }

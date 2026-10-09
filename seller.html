@@ -114,7 +114,7 @@
       <a href="#products-card" data-dash-tab="products-card">Products</a>
       <a href="#availability-card" data-dash-tab="availability-card">Availability</a>
       <a href="#bank-card" data-dash-tab="bank-card">Bank details</a>
-      <a href="#fee-card" data-dash-tab="fee-card">Store fee</a>
+      <a href="#fee-card" data-dash-tab="fee-card">Store fee <span class="nav-flag" id="fee-nav-flag" hidden></span></a>
       <a href="#vpn-card" data-dash-tab="vpn-card">VPN panel</a>
     </nav>
     <div class="dash-grid">
@@ -263,6 +263,7 @@
       <section class="dash-card" id="fee-card" aria-labelledby="fee-title">
         <h2 class="dash-card__title" id="fee-title">Store fee and Verified badge</h2>
         <p class="fee-status" id="fee-status"></p>
+        <div class="fee-summary" id="fee-summary"></div>
         <p class="admin-lead" id="fee-lead"></p>
         <dl class="pay__bank" id="fee-bank" hidden></dl>
         <p class="field__hint" id="fee-note" hidden></p>

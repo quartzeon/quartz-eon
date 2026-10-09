@@ -238,6 +238,7 @@
     }
     ordersState.status = 'idle';
     if (view.name === 'orders') renderOrders();
+    if (view.name === 'store') renderStore();
     checkOrderUpdates();
   });
 
@@ -715,6 +716,7 @@
               <p class="store-meta">${list.length} ${plural(list.length, 'product', 'products')}${categories.length ? ` &middot; ${esc(categories.join(', '))}` : ''}</p>
             </div>
           </div>
+          ${ownStoreBar(seller)}
         </div>
       </section>
       <section class="sec tone tone--paper" aria-label="Products from ${esc(seller.name)}">
@@ -724,6 +726,33 @@
             : '<p class="note">This seller has no products yet.</p>'}
         </div>
       </section>`;
+  }
+
+  /* Only the seller who owns this store sees this bar: add a product, and how long the store fee lasts. */
+  function ownStoreBar(seller) {
+    if (!session || !sellerRow || sellerRow.id !== seller.id) return '';
+    const daysTo = (iso) => {
+      if (!iso) return null;
+      const [y, m, d] = String(iso).slice(0, 10).split('-').map(Number);
+      const now = new Date();
+      return Math.round((Date.UTC(y, m - 1, d) - Date.UTC(now.getFullYear(), now.getMonth(), now.getDate())) / 86400000);
+    };
+    const days = (n) => (n === 0 ? 'last day today' : `${n} ${plural(n, 'day', 'days')} left`);
+    const paid = daysTo(sellerRow.paid_until);
+    const trial = daysTo(sellerRow.free_until);
+    const fee = paid !== null && paid >= 0 ? `Store fee paid, ${days(paid)}`
+      : trial !== null && trial >= 0 ? `Free trial, ${days(trial)}`
+      : 'Store fee not paid this month';
+    const due = !(paid !== null && paid >= 0) && !(trial !== null && trial >= 0);
+    return `
+      <div class="own-store">
+        <p class="own-store__fee${due ? ' own-store__fee--due' : ''}">${esc(fee)}</p>
+        <div class="own-store__actions">
+          <a class="btn btn--ink btn--sm" href="products.html#new">${icon('i-plus')}<span>Add a new product</span></a>
+          <a class="btn btn--ghost btn--sm" href="products.html">Manage products</a>
+          <a class="btn btn--ghost btn--sm" href="seller.html#fee-card">Store fee</a>
+        </div>
+      </div>`;
   }
 
   function renderCurrentView() {
