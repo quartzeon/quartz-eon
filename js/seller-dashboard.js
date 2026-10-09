@@ -327,11 +327,16 @@
     toggle.setAttribute('aria-pressed', String(show));
   });
 
+  /* The saved API token is never sent back to the browser: an empty box keeps the saved one. */
+  let hasVpnToken = false;
+  const SAVED_TOKEN_HINT = 'Saved and hidden. Leave empty to keep it.';
+
   async function loadVpnConfig() {
-    const { data } = await sb.from('seller_vpn_config').select('*').eq('seller_id', sellerRow.id).maybeSingle();
+    const { data } = await sb.from('seller_vpn_config').select('panel_url, inbound_id, sub_url_base, updated_at').eq('seller_id', sellerRow.id).maybeSingle();
+    hasVpnToken = !!data;
+    vpnForm.elements.apiToken.placeholder = data ? SAVED_TOKEN_HINT : '';
     if (data) {
       vpnForm.elements.panelUrl.value = data.panel_url;
-      vpnForm.elements.apiToken.value = data.api_token;
       vpnForm.elements.inboundId.value = data.inbound_id || '';
       vpnForm.elements.subUrlBase.value = data.sub_url_base || '';
       byId('vpn-saved-note').hidden = false;
@@ -350,17 +355,16 @@
     const apiToken = vpnForm.elements.apiToken.value.trim();
     let ok = true;
     if (!/^https?:\/\/.+/i.test(panelUrl)) { showFieldError(vpnForm.elements.panelUrl, 'Enter a full address, starting with http:// or https://'); ok = false; }
-    if (!apiToken) { showFieldError(vpnForm.elements.apiToken, 'Enter your panel’s API token.'); ok = false; }
+    if (!apiToken && !hasVpnToken) { showFieldError(vpnForm.elements.apiToken, 'Enter your panel’s API token.'); ok = false; }
     if (!ok) return;
 
     const submitButton = vpnForm.querySelector('button[type="submit"]');
     submitButton.disabled = true;
-    const { error } = await sb.from('seller_vpn_config').upsert({
-      seller_id: sellerRow.id,
-      panel_url: panelUrl,
-      api_token: apiToken,
-      inbound_id: vpnForm.elements.inboundId.value.trim(),
-      sub_url_base: vpnForm.elements.subUrlBase.value.trim()
+    const { error } = await sb.rpc('save_my_vpn_config', {
+      p_panel_url: panelUrl,
+      p_api_token: apiToken,
+      p_inbound_id: vpnForm.elements.inboundId.value.trim(),
+      p_sub_url_base: vpnForm.elements.subUrlBase.value.trim()
     });
     submitButton.disabled = false;
     if (error) {
@@ -370,6 +374,9 @@
     }
     byId('vpn-saved-note').hidden = false;
     byId('vpn-saved-note').textContent = 'Saved just now.';
+    hasVpnToken = true;
+    vpnForm.elements.apiToken.value = '';
+    vpnForm.elements.apiToken.placeholder = SAVED_TOKEN_HINT;
     toast('VPN panel settings saved');
   });
 
