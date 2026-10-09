@@ -625,7 +625,32 @@ dialog::backdrop { background: rgb(8 12 16 / .55); }
 .footer__top { display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between; gap: 24px; }
 .footer__blurb { max-width: 34ch; margin-top: 16px; color: var(--footer-ink-2); }
 .footer__up { color: var(--footer-ink); font-size: 15px; text-underline-offset: 3px; }
-.footer__base { margin-top: 40px; padding-top: 22px; border-top: 1px solid var(--footer-line); color: var(--footer-ink-2); font-size: 13px; }
+.footer__base {
+  display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 10px 24px;
+  margin-top: 40px; padding-top: 22px; border-top: 1px solid var(--footer-line); color: var(--footer-ink-2); font-size: 13px;
+}
+.footer__links { display: flex; flex-wrap: wrap; gap: 6px 20px; }
+.footer__links a { color: var(--footer-ink-2); text-underline-offset: 3px; }
+.footer__links a:hover { color: var(--footer-ink); }
+/* The slim footer on the dashboards and legal pages has no top part */
+.footer--slim { padding-block: 0 24px; }
+.footer--slim .footer__base { margin-top: 0; border-top: 0; }
+
+/* "By ... you agree to our Terms" line under sign up, log in and checkout buttons */
+.legal-note { font-size: 12.5px; line-height: 1.5; color: var(--ink-2); text-align: center; }
+.legal-note a { color: inherit; text-underline-offset: 2px; }
+.legal-note a:hover { color: var(--ink); }
+
+/* ---------- Legal pages (terms.html, privacy.html) ---------- */
+.legal { max-width: 760px; padding-block: clamp(32px, 5vw, 56px) 72px; }
+.legal h1 { font: 800 clamp(2rem, 5vw, 2.8rem)/1.05 var(--font-display); letter-spacing: -.03em; }
+.legal__date { margin-top: 10px; font: 500 13px/1.4 var(--font-mono); color: var(--ink-2); }
+.legal__intro { margin-top: 22px; font-size: 17px; }
+.legal h2 { margin-top: 36px; font: 700 1.3rem/1.2 var(--font-display); letter-spacing: -.01em; }
+.legal p, .legal ul { margin-top: 12px; }
+.legal ul { padding-left: 1.3em; list-style: disc; }
+.legal li + li { margin-top: 6px; }
+.legal a { text-underline-offset: 3px; }
 
 /* ---------- Responsive ---------- */
 @media (max-width: 600px) {

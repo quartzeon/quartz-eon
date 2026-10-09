@@ -309,7 +309,6 @@
       ? `<p><button class="rating rating--link" type="button" data-jump-reviews>${inner}</button></p>`
       : `<p><a class="rating rating--link" href="#/product/${esc(p.id)}">${inner}</a></p>`;
   }
-  }
 
   /* ---------- Product cards ---------- */
   /* A "plan card" product in a list: the same card as on its page (logo, badge, key figures, detail lines), then Details and Buy now. */
@@ -1050,6 +1049,7 @@
         </div>
         <p class="field__error" id="pay-error" hidden></p>
         <button class="btn btn--ink btn--block" type="submit">I have paid, send for review</button>
+        ${legalNote('placing an order')}
       </form>`;
   }
 
@@ -1327,6 +1327,11 @@
   const SLUG_RE = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
   const slugify = (text) => text.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 30).replace(/-+$/, '');
 
+  /* A short line under a submit button that links to the Terms and the Privacy Policy. */
+  function legalNote(action) {
+    return `<p class="legal-note">By ${action} you agree to our <a href="terms.html" target="_blank" rel="noopener">Terms of Service</a> and <a href="privacy.html" target="_blank" rel="noopener">Privacy Policy</a>.</p>`;
+  }
+
   function fieldHtml({ id, name, label, type = 'text', autocomplete = 'off', placeholder = '' }) {
     return `
       <div class="field">
@@ -1364,6 +1369,7 @@
         <form class="auth__form" id="auth-form" novalidate>
           ${email}
           <button class="btn btn--ink btn--block" type="submit">Email me a log in link</button>
+          ${legalNote('logging in')}
         </form>`;
     }
     if (auth.mode === 'signup') {
@@ -1383,6 +1389,7 @@
           ${passwordHtml('new-password', 'At least 8 characters.')}
           <p class="auth__hint">Your store is reviewed before it goes live. After approval, the store fee is ${esc(CFG.currencySymbol)} ${rupeeNumber(CFG.sellerMonthlyFee)} per month.</p>
           <button class="btn btn--ink btn--block" type="submit">Create seller account</button>
+          ${legalNote('creating an account')}
         </form>`;
     }
     if (auth.mode === 'forgot') {
