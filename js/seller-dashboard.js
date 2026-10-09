@@ -480,7 +480,13 @@
   byId('sales-list').addEventListener('click', (event) => {
     const t = event.target;
     const approve = t.closest('[data-order-approve]');
-    if (approve) { approveSale(approve.dataset.orderApprove); return; }
+    if (approve) {
+      /* A slip photo can be faked: make the seller check the bank first. */
+      const o = sales.find((s) => s.id === approve.dataset.orderApprove);
+      const money = o ? `Rs. ${Number(o.amount_lkr).toLocaleString('en-US')}${o.reference ? ` (reference ${o.reference})` : ''}` : 'the money';
+      if (window.confirm(`Did ${money} really arrive in your bank account?\n\nCheck your bank app or statement first. A slip photo can be faked. Once approved, the product is delivered and this cannot be undone.`)) approveSale(approve.dataset.orderApprove);
+      return;
+    }
     const reject = t.closest('[data-order-reject]');
     if (reject) { if (window.confirm('Reject this order? The customer will see it as not accepted.')) rejectSale(reject.dataset.orderReject); return; }
     const retry = t.closest('[data-order-retry]');
