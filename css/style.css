@@ -718,10 +718,13 @@ dialog::backdrop { background: rgb(8 12 16 / .55); }
 .star-input label:hover,
 .star-input label:hover ~ label { color: hsl(42 95% 50%); }
 .star-input input:focus-visible + label { outline: 3px solid var(--focus); outline-offset: 1px; border-radius: 6px; }
-.review-form textarea {
+.review-form textarea,
+.review-form select {
   width: 100%; padding: 12px 14px; border: 1.5px solid var(--line); border-radius: 12px;
   background: var(--card); color: inherit; font: inherit; font-size: 15px; line-height: 1.5; resize: vertical;
 }
 .review-form__actions { display: flex; align-items: center; gap: 16px; }
+.order__report-btn { justify-self: start; margin-top: 10px; color: var(--ink-2); font-size: 13px; }
+.order__report { margin-top: 12px; }
 .rating--link { display: inline-flex; padding: 0; border: 0; background: none; font: inherit; font-size: 13px; color: var(--ink-2); cursor: pointer; }
 .rating--link:hover span { color: var(--ink); text-decoration: underline; text-underline-offset: 3px; }

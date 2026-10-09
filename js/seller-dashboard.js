@@ -383,6 +383,7 @@
   /* ---------- Orders for this store: check the transfer, approve or reject ---------- */
   const SALE_STATUS = { awaiting_review: ['pending', 'Waiting for review'], paid: ['approved', 'Paid'], rejected: ['suspended', 'Not accepted'] };
   let sales = [];
+  let openReports = new Map(); /* order id -> the customer's open problem report */
 
   function saleRow(o) {
     const [badgeClass, label] = SALE_STATUS[o.status] || ['pending', o.status];
@@ -396,7 +397,9 @@
       actions.push(`<button class="btn btn--ink btn--sm" type="button" data-order-retry="${esc(o.id)}">${icon('i-play')}<span>Retry VPN delivery</span></button>`);
     }
     const reference = o.method === 'bank' && o.reference ? ` &middot; Reference: ${esc(o.reference)}` : '';
-    const problem = o.delivery_error && !o.delivery ? `<p class="prod-row__meta order-problem">VPN delivery failed: ${esc(o.delivery_error)}</p>` : '';
+    const report = openReports.get(o.id);
+    const problem = (o.delivery_error && !o.delivery ? `<p class="prod-row__meta order-problem">VPN delivery failed: ${esc(o.delivery_error)}</p>` : '') +
+      (report ? `<p class="prod-row__meta order-problem">Customer reported a problem: ${esc(report.message)}</p>` : '');
     return `
       <article class="prod-row">
         <div class="prod-row__main">
@@ -419,11 +422,15 @@
   }
 
   async function loadSales() {
-    const { data, error } = await sb.from('orders').select('*').eq('seller_id', sellerRow.id).order('created_at', { ascending: false }).limit(100);
+    const [{ data, error }, reports] = await Promise.all([
+      sb.from('orders').select('*').eq('seller_id', sellerRow.id).order('created_at', { ascending: false }).limit(100),
+      sb.from('order_reports').select('order_id, message').eq('seller_id', sellerRow.id).eq('status', 'open')
+    ]);
     if (error) {
       toast(`Could not load orders: ${error.message}`);
       return;
     }
+    openReports = new Map(((reports && reports.data) || []).map((r) => [r.order_id, r]));
     sales = data || [];
     renderSales();
   }

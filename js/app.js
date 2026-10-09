@@ -177,7 +177,7 @@
   }
 
   /* status: 'idle' | 'loading' | 'ready' | 'error' */
-  const ordersState = { status: 'idle', rows: [], reviews: new Map(), editing: new Set() };
+  const ordersState = { status: 'idle', rows: [], reviews: new Map(), editing: new Set(), reports: new Map(), reporting: new Set() };
 
   /* ---------- "Your order was approved" badge ----------
      Remembers in this browser which finished orders the customer has already seen, and marks
@@ -1217,10 +1217,13 @@
       ordersState.status = 'loading';
       renderOrders();
     }
-    const [{ data, error }, reviews] = await Promise.all([
+    const [{ data, error }, reviews, reports] = await Promise.all([
       sb.from('orders').select('*').eq('customer_id', session.user.id).order('created_at', { ascending: false }),
-      sb.from('reviews').select('*').eq('customer_id', session.user.id)
+      sb.from('reviews').select('*').eq('customer_id', session.user.id),
+      sb.from('order_reports').select('*').eq('customer_id', session.user.id).order('created_at', { ascending: true })
     ]);
+    /* The newest report of each order wins. */
+    ordersState.reports = new Map(((reports && reports.data) || []).map((r) => [r.order_id, r]));
     if (!session) return;
     ordersState.status = error ? 'error' : 'ready';
     ordersState.rows = data || [];
@@ -1264,6 +1267,38 @@
       </form>`;
   }
 
+  /* "Report a problem": the open or resolved report, a form to write one, or the button that opens it. */
+  const REPORT_REASONS = [
+    ['not_received', 'I did not receive my purchase'],
+    ['not_working', 'It does not work'],
+    ['wrong_item', 'It is not what was described'],
+    ['refund', 'I want a refund'],
+    ['other', 'Something else']
+  ];
+
+  function orderReportHtml(o) {
+    const r = ordersState.reports.get(o.id);
+    if (r && r.status === 'open') {
+      return `<p class="note order__report">Problem reported on ${esc(formatDate(r.created_at.slice(0, 10)))}. The seller and ${esc(CFG.storeName)} have been told and will contact you by email.</p>`;
+    }
+    if (ordersState.reporting.has(o.id)) {
+      const options = REPORT_REASONS.map(([value, label]) => `<option value="${value}">${esc(label)}</option>`).join('');
+      return `
+        <form class="order__review review-form" data-report-order="${esc(o.id)}" novalidate>
+          <p class="order__label">Report a problem</p>
+          <select name="reason" aria-label="What went wrong?"><option value="">What went wrong?</option>${options}</select>
+          <textarea name="message" rows="3" maxlength="1000" placeholder="Tell us what happened. The seller and ${esc(CFG.storeName)} will read it."></textarea>
+          <p class="review-form__note note" hidden></p>
+          <div class="review-form__actions">
+            <button class="btn btn--ink btn--sm" type="submit">Send report</button>
+            <button class="link" type="button" data-report-cancel="${esc(o.id)}">Cancel</button>
+          </div>
+        </form>`;
+    }
+    const before = r ? `<p class="note">Your last report was marked resolved.</p>` : '';
+    return `${before}<button class="link order__report-btn" type="button" data-report-open="${esc(o.id)}">Report a problem</button>`;
+  }
+
   function orderCard(o) {
     let detail = '';
     if (o.status === 'paid') {
@@ -1289,6 +1324,7 @@
         <p class="order__meta">${price} &middot; ${esc(formatDate(o.created_at.slice(0, 10)))}</p>
         ${detail}
         ${orderReviewHtml(o)}
+        ${orderReportHtml(o)}
       </article>`;
   }
 
@@ -1319,11 +1355,21 @@
   }
 
   ordersView.addEventListener('input', (event) => {
-    const form = event.target.closest('form[data-review-order]');
+    const form = event.target.closest('form[data-review-order], form[data-report-order]');
     if (form) form.dataset.dirty = '1';
   });
 
   ordersView.addEventListener('click', (event) => {
+    const openReport = event.target.closest('[data-report-open]');
+    if (openReport) {
+      ordersState.reporting.add(openReport.dataset.reportOpen);
+      renderOrders();
+      const field = ordersView.querySelector(`form[data-report-order="${CSS.escape(openReport.dataset.reportOpen)}"] select`);
+      if (field) field.focus();
+      return;
+    }
+    const cancelReport = event.target.closest('[data-report-cancel]');
+    if (cancelReport) { ordersState.reporting.delete(cancelReport.dataset.reportCancel); renderOrders(); return; }
     const edit = event.target.closest('[data-edit-review]');
     if (edit) { ordersState.editing.add(edit.dataset.editReview); renderOrders(); return; }
     const cancel = event.target.closest('[data-cancel-review]');
@@ -1331,6 +1377,28 @@
   });
 
   ordersView.addEventListener('submit', async (event) => {
+    const reportForm = event.target.closest('form[data-report-order]');
+    if (reportForm) {
+      event.preventDefault();
+      const note = reportForm.querySelector('.review-form__note');
+      const say = (text) => { note.textContent = text; note.hidden = !text; };
+      const reason = reportForm.elements.reason.value;
+      const message = reportForm.elements.message.value.trim();
+      if (!reason) { say('Choose what went wrong.'); return; }
+      if (message.length < 10) { say('Please describe the problem in a few words (at least 10 characters).'); return; }
+      say('');
+      const button = reportForm.querySelector('button[type="submit"]');
+      button.disabled = true;
+      const orderId = reportForm.dataset.reportOrder;
+      const { data: reportId, error } = await sb.rpc('report_order_problem', { p_order_id: orderId, p_reason: reason, p_message: message });
+      button.disabled = false;
+      if (error) { say(error.message || 'Could not send your report. Please try again.'); return; }
+      sb.functions.invoke('notify', { body: { kind: 'order_report', id: reportId } }).catch(() => {});
+      ordersState.reporting.delete(orderId);
+      await loadOrders(true);
+      renderOrders();
+      return;
+    }
     const form = event.target.closest('form[data-review-order]');
     if (!form) return;
     event.preventDefault();

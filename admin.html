@@ -95,6 +95,7 @@
       <button class="chip" type="button" data-section="sellers" aria-pressed="true">Sellers</button>
       <button class="chip" type="button" data-section="products" aria-pressed="false">Products</button>
       <button class="chip" type="button" data-section="orders" aria-pressed="false">Orders</button>
+      <button class="chip" type="button" data-section="reports" aria-pressed="false">Reports</button>
       <button class="chip" type="button" data-section="fees" aria-pressed="false">Fees</button>
       <button class="chip" type="button" data-section="settings" aria-pressed="false">Settings</button>
     </div>
@@ -156,6 +157,19 @@
 
       <div class="admin-list" id="orders-list"></div>
       <p class="empty__title admin-empty" id="orders-empty" hidden>No orders here yet</p>
+    </div>
+
+    <div id="reports-section" hidden>
+      <header class="admin-app__head">
+        <div>
+          <p class="eyebrow">Owner access</p>
+          <h1 class="admin-title">Problem reports</h1>
+        </div>
+        <p class="admin-count" id="reports-count" aria-live="polite"></p>
+      </header>
+      <p class="admin-lead">Customers report a problem from My orders. Contact the customer and the seller by email, then mark the report resolved.</p>
+      <div class="admin-list" id="reports-list"></div>
+      <p class="empty__title admin-empty" id="reports-empty" hidden>No problem reports</p>
     </div>
 
     <div id="fees-section" hidden>

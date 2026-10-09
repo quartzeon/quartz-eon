@@ -123,7 +123,7 @@
       showPanel('app');
       await loadSellers();
       loadProducts();
-      loadOrders();
+      loadOrders().then(loadReports); /* reports show the order's product name */
       loadOwnerBank();
       loadBrands();
       loadFees();
@@ -250,6 +250,7 @@
     byId('sellers-section').hidden = chip.dataset.section !== 'sellers';
     byId('products-section').hidden = chip.dataset.section !== 'products';
     byId('orders-section').hidden = chip.dataset.section !== 'orders';
+    byId('reports-section').hidden = chip.dataset.section !== 'reports';
     byId('settings-section').hidden = chip.dataset.section !== 'settings';
     byId('fees-section').hidden = chip.dataset.section !== 'fees';
   });
@@ -467,6 +468,59 @@
     if (retry) { retryDelivery(retry.dataset.orderRetry); return; }
     const slip = t.closest('[data-slip]');
     if (slip) viewSlip(slip.dataset.slip);
+  });
+
+  /* ---------- Problem reports from customers ---------- */
+  const REPORT_REASON = { not_received: 'Did not receive the purchase', not_working: 'It does not work', wrong_item: 'Not what was described', refund: 'Wants a refund', other: 'Something else' };
+  let reports = [];
+
+  async function loadReports() {
+    const { data, error } = await sb.from('order_reports').select('*').order('created_at', { ascending: false }).limit(200);
+    if (error) { toast(`Could not load reports: ${error.message}`); return; }
+    const ids = Array.from(new Set((data || []).map((r) => r.customer_id)));
+    let emailById = {};
+    if (ids.length) {
+      const { data: people } = await sb.from('profiles').select('id, email').in('id', ids);
+      emailById = Object.fromEntries((people || []).map((p) => [p.id, p.email]));
+    }
+    reports = (data || []).map((r) => Object.assign({ customer_email: emailById[r.customer_id] || '' }, r));
+    renderReports();
+  }
+
+  function reportRow(r) {
+    const store = sellers.find((s) => s.id === r.seller_id);
+    const order = orders.find((o) => o.id === r.order_id);
+    const open = r.status === 'open';
+    return `
+      <article class="seller-row" style="--h:${Number(store && store.hue) || 0}">
+        <div class="seller-row__main">
+          <span class="seller-row__avatar">${icon('i-store')}</span>
+          <div class="seller-row__text">
+            <p class="seller-row__name">${esc(REPORT_REASON[r.reason] || r.reason)} <span class="status-badge status-badge--${open ? 'pending' : 'approved'}">${open ? 'Open' : 'Resolved'}</span></p>
+            <p class="seller-row__meta">${esc(r.customer_email)} &middot; ${esc(order ? order.product_name : 'Order')} &middot; ${esc(store ? store.store_name : 'Unknown store')} &middot; ${formatDate(r.created_at)}</p>
+            <p class="seller-row__meta">${esc(r.message).replace(/\n/g, '<br>')}</p>
+          </div>
+        </div>
+        <div class="seller-row__actions">${open ? `<button class="btn btn--ink btn--sm" type="button" data-report-resolve="${esc(r.id)}">${icon('i-check')}<span>Mark resolved</span></button>` : ''}</div>
+      </article>`;
+  }
+
+  function renderReports() {
+    const open = reports.filter((r) => r.status === 'open').length;
+    byId('reports-list').innerHTML = reports.map(reportRow).join('');
+    byId('reports-list').hidden = reports.length === 0;
+    byId('reports-empty').hidden = reports.length > 0;
+    byId('reports-count').textContent = `${reports.length} ${plural(reports.length, 'report', 'reports')} · ${open} open`;
+  }
+
+  byId('reports-list').addEventListener('click', async (event) => {
+    const resolve = event.target.closest('[data-report-resolve]');
+    if (!resolve) return;
+    resolve.disabled = true;
+    const { error } = await sb.from('order_reports').update({ status: 'resolved', resolved_at: new Date().toISOString() }).eq('id', resolve.dataset.reportResolve);
+    if (error) { resolve.disabled = false; toast(`Could not update: ${error.message}`); return; }
+    toast('Report marked resolved');
+    loadReports();
   });
 
   /* ---------- Settings: the owner's bank details, shown only to sellers (to pay the store fee) ---------- */
