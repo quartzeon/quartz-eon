@@ -46,11 +46,8 @@
   :root:not([data-theme="light"]) .status-badge--suspended { background: hsl(0 35% 20%); color: hsl(0 75% 78%); }
 }
 
-/* Status banner at the top of the dashboard */
-.status-banner {
-  display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px; margin-bottom: 28px;
-  padding: 16px 20px; border: 1px solid var(--line); border-radius: var(--radius-l); background: var(--card);
-}
+/* Status line at the top of the dashboard content: plain text, no box */
+.status-banner { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; }
 .status-banner p { color: var(--ink-2); font-size: 14px; }
 .status-banner a { color: var(--ink); text-decoration: underline; text-underline-offset: 3px; }
 
@@ -58,9 +55,11 @@
 .dash-grid { display: grid; grid-template-columns: minmax(0, .85fr) minmax(0, 1.15fr); gap: 24px; align-items: start; }
 .vpn-card, .sales-card { grid-column: 1 / -1; }
 .vpn-card .auth__form { max-width: 560px; }
-.dash-card { padding: 24px clamp(18px, 3vw, 28px); border: 1px solid var(--line); border-radius: var(--radius-l); background: var(--card); }
-.dash-card__head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 8px 16px; margin-bottom: 4px; }
+/* A dashboard section is not a boxed card: just a title with a thin line under it, then its content */
+.dash-card { padding: 0; border: 0; background: none; }
+.dash-card__head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 8px 16px; }
 .dash-card__title { font: 700 20px/1.2 var(--font-display); letter-spacing: -.015em; margin-bottom: 18px; }
+.dash-card > .dash-card__title, .dash-card > .dash-card__head { margin-bottom: 18px; padding-bottom: 14px; border-bottom: 1px solid var(--line); }
 .dash-card__head .dash-card__title { margin-bottom: 0; }
 .dash-card .auth__form { margin-top: 18px; }
 
@@ -70,13 +69,13 @@
 
 /* ---------- Product panel (products.html) ---------- */
 .pp-head-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 18px; }
-.pp-list { display: grid; gap: 12px; }
+.pp-list { display: grid; }
 .pp-thumb { overflow: hidden; }
 .pp-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .pp-row .prod-row__actions { flex-wrap: wrap; align-items: center; }
 .pp-back { display: inline-flex; align-items: center; gap: 8px; margin-bottom: 14px; }
 .pp-back .i { width: 18px; height: 18px; }
-.pp-form { display: grid; gap: 20px; max-width: 760px; }
+.pp-form { display: grid; gap: 44px; max-width: 760px; }
 .pp-form .dash-card .auth__form { margin-top: 14px; }
 .pp-form__actions { display: flex; align-items: center; gap: 16px; padding-bottom: 24px; }
 .pp-label { font-size: 13px; font-weight: 600; }
@@ -91,12 +90,14 @@
 .pp-photo__btn--x { right: 6px; }
 .pp-photo__btn--star { left: 6px; }
 .pp-upload { align-self: flex-start; cursor: pointer; }
-.pp-themes { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 14px; }
-.pp-theme { display: grid; gap: 6px; padding: 14px 16px; border: 1.5px solid var(--line); border-radius: var(--radius); background: var(--paper); cursor: pointer; position: relative; }
-.pp-theme:has(input:checked) { border-color: var(--ink); background: var(--card); }
-.pp-theme input { position: absolute; top: 14px; right: 14px; accent-color: var(--ink); width: 17px; height: 17px; margin: 0; }
-.pp-theme__name { font: 700 16px/1.2 var(--font-display); }
-.pp-theme__text { font-size: 13px; line-height: 1.45; color: var(--ink-2); padding-right: 24px; }
+/* Choices (page style, availability) are a plain radio list: the chosen one gets a soft shade, no boxes */
+.pp-themes { display: grid; gap: 2px; max-width: 560px; margin-top: 14px; }
+.pp-theme { display: grid; gap: 2px; padding: 10px 12px 10px 42px; border-radius: 6px; cursor: pointer; position: relative; }
+.pp-theme:hover { background: color-mix(in srgb, var(--ink) 4%, transparent); }
+.pp-theme:has(input:checked) { background: color-mix(in srgb, var(--ink) 8%, transparent); }
+.pp-theme input { position: absolute; top: 12px; left: 14px; accent-color: var(--ink); width: 17px; height: 17px; margin: 0; }
+.pp-theme__name { font: 600 15px/1.3 var(--font-body); }
+.pp-theme__text { font-size: 13px; line-height: 1.45; color: var(--ink-2); }
 .fee-status { margin-bottom: 10px; font-size: 16px; }
 .verified-pill { display: inline-flex; align-items: center; gap: 6px; padding: 4px 12px 4px 8px; border-radius: 999px; background: hsl(205 85% 92%); color: hsl(208 75% 36%); font-weight: 700; }
 .verified-icon { width: 18px; height: 18px; color: hsl(207 80% 52%); }
@@ -104,16 +105,13 @@
 #fee-card .prod-list { margin-top: 18px; }
 #availability-card { grid-column: 1 / -1; }
 #availability-card .auth__form { max-width: 760px; }
-.av-modes { grid-template-columns: repeat(4, minmax(0, 1fr)); }
-.av-hours { display: grid; gap: 8px; max-width: 560px; }
-.av-row { display: grid; grid-template-columns: 96px auto minmax(0, 1fr) minmax(0, 1fr); align-items: center; gap: 10px; padding: 8px 12px; border: 1px solid var(--line); border-radius: 12px; background: var(--paper); }
+.av-hours { display: grid; max-width: 560px; border-top: 1px solid var(--line); }
+.av-row { display: grid; grid-template-columns: 96px auto minmax(0, 1fr) minmax(0, 1fr); align-items: center; gap: 10px; padding: 8px 2px; border-bottom: 1px solid var(--line); }
 .av-row__day { font-weight: 600; font-size: 14px; }
 .av-row input[type="time"] { width: 100%; min-width: 0; min-height: 42px; padding: 8px 10px; border: 1.5px solid var(--line); border-radius: 10px; background: var(--card); font: inherit; font-size: 14px; color: inherit; }
 .av-row input[type="time"]:disabled { opacity: .4; }
 .av-row .check-row { font-size: 13px; white-space: nowrap; }
-@media (max-width: 1100px) { .av-modes { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @media (max-width: 640px) {
-  .av-modes { grid-template-columns: 1fr; }
   .av-row { grid-template-columns: 1fr auto; }
   .av-row input[type="time"] { grid-column: auto; }
   .av-row .av-row__day { grid-column: 1; }
@@ -139,7 +137,7 @@
   width: 100%; min-height: 44px; padding: 10px 12px; border: 1.5px solid var(--line); border-radius: 12px;
   background: var(--card); font-family: inherit; font-size: 15px; color: inherit;
 }
-@media (max-width: 640px) { .pp-themes { grid-template-columns: 1fr; } .pp-rowitem--info { grid-template-columns: 1fr auto; } .pp-rowitem--info select { grid-column: 1 / -1; } }
+@media (max-width: 640px) { .pp-rowitem--info { grid-template-columns: 1fr auto; } .pp-rowitem--info select { grid-column: 1 / -1; } }
 .pp-options { display: grid; gap: 12px; margin-bottom: 12px; }
 .pp-option { display: grid; grid-template-columns: minmax(0, 2fr) repeat(auto-fit, minmax(90px, 1fr)); gap: 10px 12px; align-items: end; padding: 14px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--paper); position: relative; padding-right: 54px; }
 .pp-option .field label { font-size: 12px; }
@@ -160,12 +158,13 @@
 .prod-form__title { font: 600 15px/1.2 var(--font-display); letter-spacing: -.01em; }
 .prod-form__actions { display: flex; align-items: center; gap: 16px; }
 
-/* Product rows */
-.prod-list { display: grid; gap: 12px; }
+/* Product, order and payment rows: a plain list split by thin lines, not a stack of boxes */
+.prod-list { display: grid; }
 .prod-row {
   display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 12px 16px;
-  padding: 14px 16px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--paper);
+  padding: 14px 2px; border-bottom: 1px solid var(--line);
 }
+.prod-row:first-child { border-top: 1px solid var(--line); }
 .prod-row__main { display: flex; align-items: center; gap: 12px; min-width: 0; }
 .prod-row__art {
   display: grid; place-items: center; flex: none; width: 42px; height: 42px; border-radius: 11px;
@@ -204,17 +203,35 @@
 /* A small heading inside a dashboard card (product editor: VPN connection link) */
 .dash-card__subtitle { margin: 8px 0 0; font-size: 16px; font-weight: 600; }
 
-/* Seller dashboard: a side menu on the left, one section shown at a time */
-.dash-layout { display: grid; grid-template-columns: 220px minmax(0, 1fr); gap: 24px; align-items: start; }
-.dash-layout .dash-grid { grid-template-columns: minmax(0, 1fr); }
-.dash-nav { position: sticky; top: 96px; display: flex; flex-direction: column; gap: 4px; padding: 10px; border: 1px solid var(--ink-line); border-radius: var(--radius); }
-.dash-nav a { padding: 10px 14px; border-radius: 10px; color: var(--ink-2); font-weight: 500; text-decoration: none; }
-.dash-nav a:hover { background: var(--paper); color: var(--ink); }
-.dash-nav a[aria-current="page"] { background: var(--ink); color: var(--paper); }
+/* Seller dashboard: a side menu on the left (icon + label, groups split by thin lines, like the Supabase
+   dashboard), one section shown at a time on the right. A single line separates the two, no boxes. */
+.dash-layout { display: grid; grid-template-columns: 224px minmax(0, 1fr); align-items: start; }
+.dash-layout .dash-grid {
+  grid-template-columns: minmax(0, 1fr); gap: 28px; min-height: 60vh;
+  padding-left: clamp(24px, 4vw, 48px); border-left: 1px solid var(--line);
+}
+.dash-nav { position: sticky; top: 96px; display: flex; flex-direction: column; padding-right: 16px; }
+.dash-nav__group { display: grid; gap: 2px; padding-block: 10px; }
+.dash-nav__group:first-child { padding-top: 0; }
+.dash-nav__group + .dash-nav__group { border-top: 1px solid var(--line); }
+.dash-nav a {
+  display: flex; align-items: center; gap: 12px; padding: 8px 12px; border-radius: 6px;
+  color: var(--ink-2); font-size: 15px; font-weight: 500; line-height: 1.3; text-decoration: none;
+}
+.dash-nav a .i { width: 19px; height: 19px; stroke-width: 1.7; color: var(--ink-3); }
+.dash-nav a:hover { background: color-mix(in srgb, var(--ink) 5%, transparent); color: var(--ink); }
+.dash-nav a[aria-current="page"] { background: color-mix(in srgb, var(--ink) 9%, transparent); color: var(--ink); font-weight: 600; }
+.dash-nav a:hover .i, .dash-nav a[aria-current="page"] .i { color: var(--ink); }
 @media (max-width: 860px) {
   .dash-layout { grid-template-columns: minmax(0, 1fr); }
-  .dash-nav { position: static; flex-direction: row; overflow-x: auto; }
-  .dash-nav a { white-space: nowrap; }
+  .dash-layout .dash-grid { padding-left: 0; border-left: 0; min-height: 0; }
+  .dash-nav {
+    position: static; flex-direction: row; overflow-x: auto; margin-bottom: 24px; padding: 0 0 8px;
+    border-bottom: 1px solid var(--line); scrollbar-width: thin;
+  }
+  .dash-nav__group { display: flex; padding: 0; }
+  .dash-nav__group + .dash-nav__group { border-top: 0; margin-left: 6px; padding-left: 6px; border-left: 1px solid var(--line); }
+  .dash-nav a { padding: 8px 10px; gap: 8px; white-space: nowrap; }
 }
 
 /* ---------- Flat look ----------
@@ -222,19 +239,24 @@
 :root { --radius: 6px; --radius-l: 8px; }
 .btn, .btn--sm, .icon-btn, .chip, .tabs, .tab, .login__btn, .count-badge, .admin-tag, .status-badge, .verified-pill, .presence,
 .field input, .field select, .field textarea, .pp-photo, .pp-photo__tag, .pp-photo__btn, .pp-theme, .pp-option, .pp-logo-item, .pp-logo-item__img,
-.pp-picker__search input, .pp-rowitem input, .pp-rowitem select, .av-row, .av-row input[type="time"], .dash-nav, .dash-nav a,
-.prod-row__art, .seller-row__avatar, .admin-icon, .brand-item, .brand-item img, .note, .pay__bank, .toast, .fee-box { border-radius: 4px; }
+.pp-picker__search input, .pp-rowitem input, .pp-rowitem select, .av-row input[type="time"],
+.prod-row__art, .seller-row__avatar, .admin-icon, .brand-item, .brand-item img, .note, .pay__bank, .toast { border-radius: 4px; }
 .btn:hover { transform: none; }
 
-/* Store fee: this month / time left / paid until */
-.fee-summary { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin: 14px 0 18px; }
-.fee-box { display: grid; gap: 4px; padding: 12px 14px; border: 1px solid var(--line); border-left-width: 4px; background: var(--paper); }
+/* Store fee: this month / time left / paid until, as three plain figures split by thin lines */
+.fee-summary { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); margin: 14px 0 18px; border-block: 1px solid var(--line); }
+.fee-box { display: grid; gap: 4px; padding: 14px 18px; }
+.fee-box:first-child { padding-left: 2px; }
+.fee-box + .fee-box { border-left: 1px solid var(--line); }
 .fee-box span { font: 500 11px/1.3 var(--font-mono); letter-spacing: .06em; text-transform: uppercase; color: var(--ink-2); }
-.fee-box strong { font: 700 18px/1.2 var(--font-display); }
-.fee-box--ok { border-left-color: hsl(150 45% 40%); }
-.fee-box--warn { border-left-color: hsl(35 90% 50%); }
-.fee-box--bad { border-left-color: var(--danger); }
+.fee-box strong { font: 700 20px/1.2 var(--font-display); }
+.fee-box--ok strong { color: hsl(150 50% 38%); }
+.fee-box--warn strong { color: hsl(32 90% 46%); }
 .fee-box--bad strong { color: var(--danger); }
-.fee-summary__note { grid-column: 1 / -1; font-size: 14px; color: var(--ink-2); }
-@media (max-width: 640px) { .fee-summary { grid-template-columns: 1fr; } }
-.nav-flag { margin-left: 6px; padding: 1px 6px; border-radius: 3px; background: var(--danger); color: #fff; font: 600 11px/1.5 var(--font-mono); }
+.fee-summary__note { grid-column: 1 / -1; padding: 12px 2px; border-top: 1px solid var(--line); font-size: 14px; color: var(--ink-2); }
+@media (max-width: 640px) {
+  .fee-summary { grid-template-columns: 1fr; }
+  .fee-box { padding-inline: 2px; }
+  .fee-box + .fee-box { border-left: 0; border-top: 1px solid var(--line); }
+}
+.nav-flag { margin-left: auto; padding: 1px 6px; border-radius: 3px; background: var(--danger); color: #fff; font: 600 11px/1.5 var(--font-mono); }

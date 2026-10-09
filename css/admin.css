@@ -27,14 +27,21 @@
 /* Dashboard head and status filter */
 .admin-app__head { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 12px 24px; margin-bottom: 22px; }
 .admin-count { font: 500 13px/1 var(--font-mono); letter-spacing: .04em; color: var(--ink-2); }
-.admin-tabs { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 28px; }
+/* Status filters are plain text tabs with a line under the chosen one, not boxed chips */
+.admin-tabs { display: flex; flex-wrap: wrap; gap: 4px 22px; margin-bottom: 8px; border-bottom: 1px solid var(--line); }
+.admin-tabs .chip {
+  min-height: 0; margin-bottom: -1px; padding: 8px 2px; border: 0; border-bottom: 2px solid transparent; border-radius: 0;
+  background: none; color: var(--ink-2); font-weight: 500;
+}
+.admin-tabs .chip:hover { color: var(--ink); }
+.admin-tabs .chip[aria-pressed="true"] { background: none; border-bottom-color: var(--ink); color: var(--ink); font-weight: 600; }
 .admin-empty { margin-top: 24px; color: var(--ink-2); }
 
-/* Seller rows */
-.admin-list { display: grid; gap: 14px; }
+/* Seller, product, order and fee rows: a plain list split by thin lines, not a stack of boxes */
+.admin-list { display: grid; }
 .seller-row {
   display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 14px 20px;
-  padding: 18px 20px; border: 1px solid var(--line); border-radius: var(--radius-l); background: var(--card);
+  padding: 16px 2px; border-bottom: 1px solid var(--line);
 }
 .seller-row__main { display: flex; align-items: center; gap: 14px; min-width: 0; }
 .seller-row__avatar {
@@ -43,17 +50,17 @@
 }
 .seller-row__avatar .i { width: 22px; height: 22px; }
 .seller-row__avatar .art { width: 26px; height: 26px; }
-.admin-tabs--sections { margin-bottom: 20px; padding-bottom: 20px; border-bottom: 1px solid var(--line); }
 .seller-row__text { min-width: 0; }
 .seller-row__name { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; font: 700 17px/1.25 var(--font-display); letter-spacing: -.01em; }
 .seller-row__meta { margin-top: 2px; font-size: 13px; color: var(--ink-2); overflow-wrap: anywhere; }
 .seller-row__actions { display: flex; flex-wrap: wrap; gap: 8px; }
-.settings-card { max-width: 620px; padding: 24px clamp(18px, 3vw, 28px); border: 1px solid var(--line); border-radius: var(--radius-l); background: var(--card); }
-.settings-card__title { margin-bottom: 8px; font: 700 20px/1.2 var(--font-display); letter-spacing: -.015em; }
+/* Settings: plain sections, each a title with a thin line under it, no boxes */
+.settings-card { max-width: 620px; }
+.settings-card__title { margin-bottom: 10px; padding-bottom: 12px; border-bottom: 1px solid var(--line); font: 700 20px/1.2 var(--font-display); letter-spacing: -.015em; }
 .settings-card .auth__form { margin-top: 18px; }
-.settings-card--spaced { margin-top: 24px; }
+.settings-card--spaced { margin-top: 48px; }
 .brand-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 10px; margin-top: 18px; }
-.brand-item { position: relative; display: grid; gap: 8px; justify-items: center; padding: 12px 8px; border: 1px solid var(--line); border-radius: 12px; background: var(--paper); text-align: center; }
+.brand-item { position: relative; display: grid; gap: 8px; justify-items: center; padding: 12px 8px; border: 1px solid var(--line); border-radius: 12px; text-align: center; }
 .brand-item img { width: 64px; height: 64px; object-fit: contain; border-radius: 10px; background: #fff; }
 .brand-item span { font-size: 13px; overflow-wrap: anywhere; }
 .brand-item button { position: absolute; top: 6px; right: 6px; }
@@ -102,6 +109,34 @@
 :root { --radius: 6px; --radius-l: 8px; }
 .btn, .btn--sm, .icon-btn, .chip, .tabs, .tab, .login__btn, .count-badge, .admin-tag, .status-badge, .verified-pill, .presence,
 .field input, .field select, .field textarea, .pp-photo, .pp-photo__tag, .pp-photo__btn, .pp-theme, .pp-option, .pp-logo-item, .pp-logo-item__img,
-.pp-picker__search input, .pp-rowitem input, .pp-rowitem select, .av-row, .av-row input[type="time"], .dash-nav, .dash-nav a,
-.prod-row__art, .seller-row__avatar, .admin-icon, .brand-item, .brand-item img, .note, .pay__bank, .toast, .fee-box { border-radius: 4px; }
+.pp-picker__search input, .pp-rowitem input, .pp-rowitem select, .av-row input[type="time"],
+.prod-row__art, .seller-row__avatar, .admin-icon, .brand-item, .brand-item img, .note, .pay__bank, .toast { border-radius: 4px; }
 .btn:hover { transform: none; }
+
+/* Side menu on the left (icon + label, groups split by thin lines, like the Supabase dashboard),
+   the chosen section on the right. Same look as the seller dashboard in seller.css. */
+.dash-layout { display: grid; grid-template-columns: 224px minmax(0, 1fr); align-items: start; }
+.dash-main { min-width: 0; min-height: 60vh; padding-left: clamp(24px, 4vw, 48px); border-left: 1px solid var(--line); }
+.dash-nav { position: sticky; top: 96px; display: flex; flex-direction: column; padding-right: 16px; }
+.dash-nav__group { display: grid; gap: 2px; padding-block: 10px; }
+.dash-nav__group:first-child { padding-top: 0; }
+.dash-nav__group + .dash-nav__group { border-top: 1px solid var(--line); }
+.dash-nav button {
+  display: flex; align-items: center; gap: 12px; width: 100%; padding: 8px 12px; border: 0; border-radius: 6px;
+  background: none; color: var(--ink-2); font-size: 15px; font-weight: 500; line-height: 1.3; text-align: left;
+}
+.dash-nav button .i { width: 19px; height: 19px; stroke-width: 1.7; color: var(--ink-3); }
+.dash-nav button:hover { background: color-mix(in srgb, var(--ink) 5%, transparent); color: var(--ink); }
+.dash-nav button[aria-pressed="true"] { background: color-mix(in srgb, var(--ink) 9%, transparent); color: var(--ink); font-weight: 600; }
+.dash-nav button:hover .i, .dash-nav button[aria-pressed="true"] .i { color: var(--ink); }
+@media (max-width: 860px) {
+  .dash-layout { grid-template-columns: minmax(0, 1fr); }
+  .dash-main { padding-left: 0; border-left: 0; min-height: 0; }
+  .dash-nav {
+    position: static; flex-direction: row; overflow-x: auto; margin-bottom: 24px; padding: 0 0 8px;
+    border-bottom: 1px solid var(--line); scrollbar-width: thin;
+  }
+  .dash-nav__group { display: flex; padding: 0; }
+  .dash-nav__group + .dash-nav__group { border-top: 0; margin-left: 6px; padding-left: 6px; border-left: 1px solid var(--line); }
+  .dash-nav button { width: auto; padding: 8px 10px; gap: 8px; white-space: nowrap; }
+}

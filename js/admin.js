@@ -246,7 +246,7 @@
   byId('section-tabs').addEventListener('click', (event) => {
     const chip = event.target.closest('[data-section]');
     if (!chip) return;
-    byId('section-tabs').querySelectorAll('.chip').forEach((c) => c.setAttribute('aria-pressed', String(c === chip)));
+    byId('section-tabs').querySelectorAll('[data-section]').forEach((c) => c.setAttribute('aria-pressed', String(c === chip)));
     byId('sellers-section').hidden = chip.dataset.section !== 'sellers';
     byId('products-section').hidden = chip.dataset.section !== 'products';
     byId('orders-section').hidden = chip.dataset.section !== 'orders';
