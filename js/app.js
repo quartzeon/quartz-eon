@@ -1,4 +1,4 @@
-﻿/* Quartz Eon storefront: plain JavaScript, no build step.
+/* Quartz Eon storefront: plain JavaScript, no build step.
    Products and stores are read from Supabase (the public_products and public_stores views), and
    accounts use Supabase too — customer email-link log in, seller email/password log in, sign up
    and password reset, and an account menu that replaces the Log in button once someone is signed
@@ -662,7 +662,8 @@
   const ordersView = byId('orders-view');
   const productView = byId('product-view');
   const view = { name: 'home', slug: '' };
-  const DEFAULT_DESCRIPTION = 'Quartz Eon is a marketplace for digital products: templates, e-books, courses, software and design assets from independent sellers.';
+  const DEFAULT_DESCRIPTION = 'Buy VPN plans, premium accounts, e-books and other digital products from independent sellers in Sri Lanka. Pay the seller by bank transfer and get your product online.';
+  const HOME_TITLE = `${CFG.storeName} | VPN plans, premium accounts and digital products in Sri Lanka`;
 
   const initials = (name) => name.split(/\s+/).filter((w) => /[A-Za-z0-9]/.test(w.charAt(0))).slice(0, 2).map((w) => w.charAt(0)).join('').toUpperCase();
 
@@ -752,7 +753,7 @@
     const item = view.name === 'product' ? PRODUCT_BY_ID.get(view.slug) : null;
     document.title = view.name === 'store' && seller ? `${seller.name} | ${CFG.storeName}`
       : item ? `${item.name} | ${CFG.storeName}`
-      : view.name === 'orders' ? `My orders | ${CFG.storeName}` : CFG.storeName;
+      : view.name === 'orders' ? `My orders | ${CFG.storeName}` : HOME_TITLE;
     const description = item ? (item.description || DEFAULT_DESCRIPTION).slice(0, 160)
       : view.name === 'store' && seller && seller.about ? seller.about : DEFAULT_DESCRIPTION;
     const meta = document.querySelector('meta[name="description"]');
@@ -1005,6 +1006,37 @@
   const checkout = { productId: '', option: null, method: '' };
   let paypalSdk = null;
 
+  /* Phone photos of a slip are often over 5 MB, so photos are made smaller (still easy to read) before upload.
+     PDFs are sent as they are. Resolves to the file or a smaller JPEG, whichever is smaller. */
+  function shrinkSlip(file) {
+    if (!/^image\//.test(file.type)) return Promise.resolve(file);
+    return new Promise((resolve) => {
+      const img = new Image();
+      const url = URL.createObjectURL(file);
+      img.onload = () => {
+        URL.revokeObjectURL(url);
+        const scale = Math.min(1, 2000 / Math.max(img.width, img.height));
+        const canvas = document.createElement('canvas');
+        canvas.width = Math.max(1, Math.round(img.width * scale));
+        canvas.height = Math.max(1, Math.round(img.height * scale));
+        const ctx = canvas.getContext('2d');
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        canvas.toBlob((blob) => resolve(blob && blob.size < file.size ? blob : file), 'image/jpeg', 0.85);
+      };
+      img.onerror = () => { URL.revokeObjectURL(url); resolve(file); };
+      img.src = url;
+    });
+  }
+
+  /* The server refuses a slip (row-level security) once an account has uploaded 20 slips in a day. */
+  function slipUploadMessage(error) {
+    const text = (error && error.message) || '';
+    if (/row-level security|policy/i.test(text)) return 'You have sent too many slips today. Please try again tomorrow, or contact quartzeon@gmail.com.';
+    return text || 'Could not upload the slip. Please try again.';
+  }
+
   /* Works out a readable message from a Supabase function reply, whichever way it failed. */
   async function functionError(error, data) {
     if (data && data.error) return data.error;
@@ -1167,7 +1199,7 @@
     let ok = true;
     if (reference.length < 3) { showFieldError(form.elements.reference, 'Enter the reference from your bank transfer.'); ok = false; }
     if (file && !RECEIPT_TYPES.includes(file.type)) { showFieldError(form.elements.receipt, 'Use a JPG, PNG, WebP or PDF file.'); ok = false; }
-    else if (file && file.size > RECEIPT_MAX) { showFieldError(form.elements.receipt, 'That file is over 5 MB.'); ok = false; }
+    else if (file && file.type === 'application/pdf' && file.size > RECEIPT_MAX) { showFieldError(form.elements.receipt, 'That PDF is over 5 MB. Send a photo of the slip instead.'); ok = false; }
     if (!form.elements.agree.checked) { showFieldError(form.elements.agree, 'Tick the box to agree to the Terms before placing your order.'); ok = false; }
     if (!ok) return;
 
@@ -1177,13 +1209,19 @@
     try {
       let receiptPath = null;
       if (file) {
-        const safeName = file.name.toLowerCase().replace(/[^a-z0-9.]+/g, '-').slice(-60);
+        const slip = await shrinkSlip(file);
+        if (slip.size > RECEIPT_MAX) throw new Error('That photo is too large even after making it smaller. Try a smaller photo or a screenshot.');
+        let safeName = file.name.toLowerCase().replace(/[^a-z0-9.]+/g, '-').slice(-60);
+        if (slip !== file) safeName = safeName.replace(/\.[a-z0-9]+$/, '') + '.jpg';
         receiptPath = `${session.user.id}/${Date.now()}-${safeName}`;
-        const { error: uploadError } = await sb.storage.from('receipts').upload(receiptPath, file, { contentType: file.type });
-        if (uploadError) throw uploadError;
+        const { error: uploadError } = await sb.storage.from('receipts').upload(receiptPath, slip, { contentType: slip.type || file.type });
+        if (uploadError) throw new Error(slipUploadMessage(uploadError));
       }
       const { data: orderId, error } = await sb.rpc('create_bank_order', { p_product_id: p.id, p_option: checkout.option, p_reference: reference, p_receipt_path: receiptPath });
-      if (error) throw error;
+      if (error) {
+        if (receiptPath) sb.storage.from('receipts').remove([receiptPath]).catch(() => {});
+        throw error;
+      }
       loadCatalog(); /* the stock changed, so the shop shows the new numbers */
       /* Tell the owner (Telegram) there is a transfer to check. Failure here changes nothing for the customer. */
       sb.functions.invoke('notify', { body: { kind: 'bank_order', id: orderId } }).catch(() => {});

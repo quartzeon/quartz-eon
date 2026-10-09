@@ -172,6 +172,30 @@
     byId('store-logo-label').textContent = sellerRow.logo ? 'Change the logo' : 'Upload a logo';
   }
 
+  /* Phone photos of a fee slip are often over 5 MB, so photos are made smaller (still easy to read) before upload.
+     PDFs are sent as they are. Resolves to the file or a smaller JPEG, whichever is smaller. */
+  function shrinkSlip(file) {
+    if (!/^image\//.test(file.type)) return Promise.resolve(file);
+    return new Promise((resolve) => {
+      const img = new Image();
+      const url = URL.createObjectURL(file);
+      img.onload = () => {
+        URL.revokeObjectURL(url);
+        const scale = Math.min(1, 2000 / Math.max(img.width, img.height));
+        const canvas = document.createElement('canvas');
+        canvas.width = Math.max(1, Math.round(img.width * scale));
+        canvas.height = Math.max(1, Math.round(img.height * scale));
+        const ctx = canvas.getContext('2d');
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        canvas.toBlob((blob) => resolve(blob && blob.size < file.size ? blob : file), 'image/jpeg', 0.85);
+      };
+      img.onerror = () => { URL.revokeObjectURL(url); resolve(file); };
+      img.src = url;
+    });
+  }
+
   /* A logo is shrunk to 600 pixels on a white background (JPEG has no transparency). */
   function shrinkLogo(file) {
     return new Promise((resolve, reject) => {
@@ -745,14 +769,20 @@
     showFieldError(form.elements.receipt, '');
     if (!file) { showFieldError(form.elements.receipt, 'Attach the payment slip (a photo or a PDF).'); return; }
     if (!/^(image\/(jpeg|png|webp)|application\/pdf)$/.test(file.type)) { showFieldError(form.elements.receipt, 'Use a JPG, PNG, WebP or PDF file.'); return; }
-    if (file.size > 5 * 1024 * 1024) { showFieldError(form.elements.receipt, 'That file is over 5 MB.'); return; }
+    if (file.type === 'application/pdf' && file.size > 5 * 1024 * 1024) { showFieldError(form.elements.receipt, 'That PDF is over 5 MB. Send a photo of the slip instead.'); return; }
     const button = form.querySelector('button[type="submit"]');
     button.disabled = true;
     try {
-      const safeName = file.name.toLowerCase().replace(/[^a-z0-9.]+/g, '-').slice(-60);
+      const slip = await shrinkSlip(file);
+      if (slip.size > 5 * 1024 * 1024) throw new Error('That photo is too large even after making it smaller. Try a smaller photo or a screenshot.');
+      let safeName = file.name.toLowerCase().replace(/[^a-z0-9.]+/g, '-').slice(-60);
+      if (slip !== file) safeName = safeName.replace(/\.[a-z0-9]+$/, '') + '.jpg';
       const path = `${sellerRow.id}/fee-${Date.now()}-${safeName}`;
-      const { error: uploadError } = await sb.storage.from('receipts').upload(path, file, { contentType: file.type });
-      if (uploadError) throw uploadError;
+      const { error: uploadError } = await sb.storage.from('receipts').upload(path, slip, { contentType: slip.type || file.type });
+      if (uploadError) {
+        if (/row-level security|policy/i.test(uploadError.message || '')) throw new Error('You have sent too many slips today. Please try again tomorrow.');
+        throw uploadError;
+      }
       const { data: paymentId, error } = await sb.rpc('submit_fee_payment', { p_reference: form.elements.reference.value.trim(), p_receipt_path: path });
       if (error) { sb.storage.from('receipts').remove([path]).catch(() => {}); throw error; }
       /* Tell the owner on Telegram, with the slip and Approve / Reject buttons. */
