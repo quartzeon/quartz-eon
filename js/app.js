@@ -189,7 +189,9 @@
       sellerRow = null;
     }
     paintAccountUI();
-    if (event === 'SIGNED_IN' && authDialog.open) {
+    /* The seller opened the link from a "reset your password" email: ask for the new password. */
+    if (event === 'PASSWORD_RECOVERY') openAuth('seller', 'reset');
+    if (event === 'SIGNED_IN' && authDialog.open && auth.mode !== 'reset') {
       authDialog.close();
       /* A seller who just logged in through the Seller form lands straight on their dashboard. */
       if (auth.role === 'seller' && profile && profile.role === 'seller') window.location.href = 'seller.html';
@@ -1341,10 +1343,10 @@
       </div>`;
   }
 
-  function passwordHtml(autocomplete, hint) {
+  function passwordHtml(autocomplete, hint, label = 'Password') {
     return `
       <div class="field">
-        <label for="auth-password">Password</label>
+        <label for="auth-password">${label}</label>
         <div class="pw">
           <input id="auth-password" name="password" type="password" autocomplete="${autocomplete}" aria-describedby="auth-password-error">
           <button class="pw__toggle" type="button" data-pw-toggle="auth-password" aria-pressed="false">Show</button>
@@ -1400,6 +1402,13 @@
           <p class="auth__hint"><button class="link" type="button" data-auth-mode="login">Back to log in</button></p>
         </form>`;
     }
+    if (auth.mode === 'reset') {
+      return `
+        <form class="auth__form" id="auth-form" novalidate>
+          ${passwordHtml('new-password', 'At least 8 characters.', 'New password')}
+          <button class="btn btn--ink btn--block" type="submit">Save new password</button>
+        </form>`;
+    }
     return `
       <form class="auth__form" id="auth-form" novalidate>
         ${email}
@@ -1412,14 +1421,15 @@
   function renderAuth() {
     const role = ROLES[auth.role];
     const isSeller = auth.role === 'seller';
-    const titles = { login: isSeller ? 'Welcome back' : 'Log in or sign up', signup: 'Create your store', forgot: 'Reset your password' };
+    const titles = { login: isSeller ? 'Welcome back' : 'Log in or sign up', signup: 'Create your store', forgot: 'Reset your password', reset: 'Choose a new password' };
     const subs = {
       'customer:login': 'Enter your email and we’ll send a one-time link. No password needed — the same link creates your account the first time.',
       'seller:login': 'Log in to manage your store, your products and your orders.',
       'seller:signup': 'Set up your shop in a minute. We’ll review it before it goes live.',
-      'seller:forgot': 'Enter your email and we’ll send you a link to reset your password.'
+      'seller:forgot': 'Enter your email and we’ll send you a link to reset your password.',
+      'seller:reset': 'Type the new password for your seller account.'
     };
-    const tabs = isSeller && auth.mode !== 'forgot' ? `
+    const tabs = isSeller && (auth.mode === 'login' || auth.mode === 'signup') ? `
       <div class="tabs" role="group" aria-label="Seller account">
         <button class="tab" type="button" data-auth-mode="login" aria-pressed="${auth.mode === 'login'}">Log in</button>
         <button class="tab" type="button" data-auth-mode="signup" aria-pressed="${auth.mode === 'signup'}">Sign up</button>
@@ -1438,7 +1448,7 @@
         ${tabs}
         <p class="field__error" id="auth-form-error" hidden></p>
         <div id="auth-panel">${authFormHtml()}</div>
-        <p class="auth__switch">${isSeller ? 'Buying instead?' : 'Selling your own products?'}
+        <p class="auth__switch"${auth.mode === 'reset' ? ' hidden' : ''}>${isSeller ? 'Buying instead?' : 'Selling your own products?'}
           <button class="link" type="button" data-auth-role="${isSeller ? 'customer' : 'seller'}">${isSeller ? 'Log in as a customer' : 'Log in as a seller'}</button>
         </p>
       </div>`;
@@ -1469,6 +1479,10 @@
   function checkAuth(form) {
     const f = form.elements;
     const problems = [];
+    if (auth.mode === 'reset') {
+      if (f.password.value.length < 8) problems.push([f.password, 'Use at least 8 characters.']);
+      return problems;
+    }
     if (!EMAIL_RE.test(f.email.value.trim())) problems.push([f.email, 'Enter a valid email address.']);
     if (auth.role === 'seller' && auth.mode === 'signup') {
       const storeName = f.storeName.value.trim();
@@ -1493,6 +1507,8 @@
     if (/already registered|already exists/i.test(msg)) return 'An account with that email already exists. Try logging in instead.';
     if (/email not confirmed/i.test(msg)) return 'Please confirm your email first, then log in. Check your inbox for the confirmation link.';
     if (/rate limit/i.test(msg)) return 'Too many attempts. Please wait a minute and try again.';
+    if (/should be different/i.test(msg)) return 'Choose a password that is different from your old one.';
+    if (/session missing|session not found|expired/i.test(msg)) return 'This reset link has expired or was already used. Use "Forgot your password?" to get a new one.';
     return msg || 'Something went wrong. Please try again.';
   }
 
@@ -1502,14 +1518,19 @@
       'seller:signup': needsConfirm
         ? 'Check your email and confirm your account. After confirming, log in from the Seller tab. Your store still needs to be approved before it goes live.'
         : 'Your seller account is ready. Your store still needs to be approved before it goes live.',
-      'seller:forgot': 'Check your email for a password reset link.'
+      'seller:forgot': 'Check your email for a password reset link.',
+      'seller:reset': 'Your new password is saved. Use it the next time you log in.'
     };
+    const isReset = auth.mode === 'reset';
+    const button = isReset && profile && profile.role === 'seller'
+      ? '<a class="btn btn--ink btn--block" href="seller.html">Go to my dashboard</a>'
+      : '<button class="btn btn--ink btn--block" type="button" data-close>Close</button>';
     byId('auth-panel').innerHTML = `
       <div class="auth__done">
         <span class="auth__badge">${icon('i-check')}</span>
-        <h3>Almost done</h3>
+        <h3>${isReset ? 'Password changed' : 'Almost done'}</h3>
         <p>${messages[`${auth.role}:${auth.mode}`]}</p>
-        <button class="btn btn--ink btn--block" type="button" data-close>Close</button>
+        ${button}
       </div>`;
   }
 
@@ -1571,13 +1592,17 @@
       return;
     }
 
-    const email = form.elements.email.value.trim();
+    const email = form.elements.email ? form.elements.email.value.trim() : '';
     submitButton.disabled = true;
     const originalLabel = submitButton.textContent;
     submitButton.textContent = 'Please wait…';
 
     try {
-      if (auth.role === 'customer') {
+      if (auth.mode === 'reset') {
+        const { error } = await sb.auth.updateUser({ password: form.elements.password.value });
+        if (error) throw error;
+        showAuthDone(false);
+      } else if (auth.role === 'customer') {
         const { error } = await sb.auth.signInWithOtp({ email, options: { emailRedirectTo: redirectUrl() } });
         if (error) throw error;
         showAuthDone(false);
@@ -1660,6 +1685,8 @@
   paintThemeButton();
   renderChips();
   route();
+  /* Also catches a password reset link if the PASSWORD_RECOVERY event fired before this script was ready. */
+  if (/[#&]type=recovery(&|$)/.test(window.location.hash)) openAuth('seller', 'reset');
   renderRateNote();
   loadRate();
   loadCatalog();
