@@ -300,11 +300,15 @@
     const row = icon('i-star').repeat(5);
     return `<span class="stars" role="img" aria-label="${esc(value)} out of 5 stars"><span class="stars__base">${row}</span><span class="stars__fill" style="width:${pct}%">${row}</span></span>`;
   }
-
-  /* "4.5 (12)" under a product name; nothing when there are no reviews yet. */
-  function ratingLine(p) {
+  /* "4.5 (12)" under a product name; nothing when there are no reviews yet. On a product card it opens the
+     product page; on the product page it scrolls down to the reviews. */
+  function ratingLine(p, onPage) {
     if (!p.ratingCount) return '';
-    return `<p class="rating">${starsHtml(p.ratingAvg)}<span>${p.ratingAvg.toFixed(1)} (${p.ratingCount})</span></p>`;
+    const inner = `${starsHtml(p.ratingAvg)}<span>${p.ratingAvg.toFixed(1)} (${p.ratingCount} ${plural(p.ratingCount, 'review', 'reviews')})</span>`;
+    return onPage
+      ? `<p><button class="rating rating--link" type="button" data-jump-reviews>${inner}</button></p>`
+      : `<p><a class="rating rating--link" href="#/product/${esc(p.id)}">${inner}</a></p>`;
+  }
   }
 
   /* ---------- Product cards ---------- */
@@ -827,7 +831,7 @@
                 <div>
                   <h1 class="pc__title" id="pd-title">${esc(p.name)}</h1>
                   ${p.badge ? `<span class="pc__badge">${icon('i-shield')}${esc(p.badge)}</span>` : ''}
-                  ${ratingLine(p)}
+                  ${ratingLine(p, true)}
                 </div>
               </header>
               <div class="pc__stats">
@@ -858,7 +862,7 @@
               <p class="product__cat">${esc(p.category)}</p>
               <h1 class="pd__title" id="pd-title">${esc(p.name)}</h1>
               <p class="product__seller">by ${seller.slug ? `<a href="#/store/${esc(seller.slug)}">${esc(seller.name)}</a>${verifiedBadge(seller)}` : esc(seller.name)}</p>
-              ${ratingLine(p)}
+              ${ratingLine(p, true)}
               <p class="product__price pd__price" id="pd-price">${priceHtml(p, page.option)}</p>
               ${!p.options.length && !p.soldOut && p.stockLeft != null ? `<p class="pd__stock">${p.stockLeft === 1 ? 'Only 1 left' : `${p.stockLeft} left`}</p>` : ''}
               ${options}
@@ -932,6 +936,11 @@
       const main = byId('pd-main-img');
       if (main) main.src = photoUrl(p.images[page.image]);
       productView.querySelectorAll('[data-pd-img]').forEach((b) => b.setAttribute('aria-pressed', String(b === thumb)));
+      return;
+    }
+    if (event.target.closest('[data-jump-reviews]')) {
+      const box = byId('pd-reviews');
+      if (box) box.scrollIntoView({ behavior: 'smooth', block: 'start' });
       return;
     }
     const del = event.target.closest('[data-delete-review]');

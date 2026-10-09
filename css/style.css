@@ -695,3 +695,5 @@ dialog::backdrop { background: rgb(8 12 16 / .55); }
   background: var(--card); color: inherit; font: inherit; font-size: 15px; line-height: 1.5; resize: vertical;
 }
 .review-form__actions { display: flex; align-items: center; gap: 16px; }
+.rating--link { display: inline-flex; padding: 0; border: 0; background: none; font: inherit; font-size: 13px; color: var(--ink-2); cursor: pointer; }
+.rating--link:hover span { color: var(--ink); text-decoration: underline; text-underline-offset: 3px; }
