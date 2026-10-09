@@ -471,6 +471,7 @@
   async function approveSale(id) {
     const { error } = await sb.rpc('approve_order', { p_order_id: id });
     if (error) { toast(`Could not approve: ${error.message}`); return; }
+    emailCustomer(id);
     const order = sales.find((o) => o.id === id);
     if (order && order.is_vpn) {
       const problem = await deliverVpn(id);
@@ -484,8 +485,14 @@
   async function rejectSale(id) {
     const { error } = await sb.rpc('reject_order', { p_order_id: id });
     if (error) { toast(`Could not reject: ${error.message}`); return; }
+    emailCustomer(id);
     toast('Order rejected');
     loadSales();
+  }
+
+  /* Tells the customer by email that the order was approved or rejected (the server sends it once). */
+  function emailCustomer(orderId) {
+    sb.functions.invoke('notify', { body: { kind: 'order_decided', id: orderId } }).catch(() => {});
   }
 
   async function retrySale(id) {
