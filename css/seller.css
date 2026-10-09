@@ -203,3 +203,16 @@
 
 /* A small heading inside a dashboard card (product editor: VPN connection link) */
 .dash-card__subtitle { margin: 8px 0 0; font-size: 16px; font-weight: 600; }
+
+/* Seller dashboard: a side menu on the left, one section shown at a time */
+.dash-layout { display: grid; grid-template-columns: 220px minmax(0, 1fr); gap: 24px; align-items: start; }
+.dash-layout .dash-grid { grid-template-columns: minmax(0, 1fr); }
+.dash-nav { position: sticky; top: 96px; display: flex; flex-direction: column; gap: 4px; padding: 10px; border: 1px solid var(--ink-line); border-radius: var(--radius); }
+.dash-nav a { padding: 10px 14px; border-radius: 10px; color: var(--ink-2); font-weight: 500; text-decoration: none; }
+.dash-nav a:hover { background: var(--paper); color: var(--ink); }
+.dash-nav a[aria-current="page"] { background: var(--ink); color: var(--paper); }
+@media (max-width: 860px) {
+  .dash-layout { grid-template-columns: minmax(0, 1fr); }
+  .dash-nav { position: static; flex-direction: row; overflow-x: auto; }
+  .dash-nav a { white-space: nowrap; }
+}

@@ -177,7 +177,7 @@
   }
 
   /* status: 'idle' | 'loading' | 'ready' | 'error' */
-  const ordersState = { status: 'idle', rows: [] };
+  const ordersState = { status: 'idle', rows: [], reviews: new Map(), editing: new Set() };
 
   sb.auth.onAuthStateChange(async (event, newSession) => {
     session = newSession;
@@ -293,6 +293,20 @@
     }
   }
 
+  /* ---------- Stars ---------- */
+  /* Five stars filled up to the rating (halves allowed, e.g. 4.5). */
+  function starsHtml(value) {
+    const pct = Math.max(0, Math.min(5, Number(value) || 0)) * 20;
+    const row = icon('i-star').repeat(5);
+    return `<span class="stars" role="img" aria-label="${esc(value)} out of 5 stars"><span class="stars__base">${row}</span><span class="stars__fill" style="width:${pct}%">${row}</span></span>`;
+  }
+
+  /* "4.5 (12)" under a product name; nothing when there are no reviews yet. */
+  function ratingLine(p) {
+    if (!p.ratingCount) return '';
+    return `<p class="rating">${starsHtml(p.ratingAvg)}<span>${p.ratingAvg.toFixed(1)} (${p.ratingCount})</span></p>`;
+  }
+
   /* ---------- Product cards ---------- */
   /* A "plan card" product in a list: the same card as on its page (logo, badge, key figures, detail lines), then Details and Buy now. */
   function planTile(p, showSeller) {
@@ -306,6 +320,7 @@
           <div>
             <h3 class="pc__title"><a href="${href}">${esc(p.name)}</a></h3>
             ${p.badge ? `<span class="pc__badge">${icon('i-shield')}${esc(p.badge)}</span>` : ''}
+            ${ratingLine(p)}
           </div>
         </header>
         <div class="pc__stats">
@@ -339,6 +354,7 @@
         <div class="product__info">
           <p class="product__cat">${esc(p.category)}</p>
           <h3 class="product__name"><a href="${href}">${esc(p.name)}</a></h3>
+          ${ratingLine(p)}
           ${sellerLine}
           <div class="product__buy">
             <p class="product__price">${priceHtml(p)}</p>
@@ -355,10 +371,13 @@
     const request = ++catalogRequest;
     catalog.status = 'loading';
     renderCurrentView();
-    const [stores, products] = await Promise.all([
+    const [stores, products, ratings] = await Promise.all([
       sb.from('public_stores').select('*'),
-      sb.from('public_products').select('*').order('created_at', { ascending: false })
+      sb.from('public_products').select('*').order('created_at', { ascending: false }),
+      sb.from('public_product_ratings').select('*')
     ]);
+    /* Ratings are extra: if they fail to load the shop still works, just without stars. */
+    const RATING_BY_ID = new Map(((ratings && ratings.data) || []).map((r) => [r.product_id, r]));
     if (request !== catalogRequest) return; /* a newer load has started; ignore this answer */
     if (stores.error || products.error) {
       catalog.status = 'error';
@@ -386,6 +405,8 @@
         badge: p.badge || '',
         stats: Array.isArray(p.stats) ? p.stats : [],
         info: Array.isArray(p.info) ? p.info : [],
+        ratingAvg: Number((RATING_BY_ID.get(p.id) || {}).rating_avg) || 0,
+        ratingCount: Number((RATING_BY_ID.get(p.id) || {}).rating_count) || 0,
         hue: (SELLER_BY_ID.get(p.seller_id) || {}).hue || 0
       }));
       PRODUCT_BY_ID = new Map(PRODUCTS.map((p) => [p.id, p]));
@@ -806,6 +827,7 @@
                 <div>
                   <h1 class="pc__title" id="pd-title">${esc(p.name)}</h1>
                   ${p.badge ? `<span class="pc__badge">${icon('i-shield')}${esc(p.badge)}</span>` : ''}
+                  ${ratingLine(p)}
                 </div>
               </header>
               <div class="pc__stats">
@@ -819,8 +841,10 @@
               ${p.description ? `<div class="pd__desc">${paragraphs(p.description)}</div>` : ''}
               <ul class="buy__list">${perks.map((text) => `<li>${icon('i-check')}<span>${esc(text)}</span></li>`).join('')}</ul>${contactHtml}
             </article>
+            <div class="reviews" id="pd-reviews" aria-live="polite"></div>
           </div>
         </section>`;
+      renderReviews(p);
       return;
     }
 
@@ -834,6 +858,7 @@
               <p class="product__cat">${esc(p.category)}</p>
               <h1 class="pd__title" id="pd-title">${esc(p.name)}</h1>
               <p class="product__seller">by ${seller.slug ? `<a href="#/store/${esc(seller.slug)}">${esc(seller.name)}</a>${verifiedBadge(seller)}` : esc(seller.name)}</p>
+              ${ratingLine(p)}
               <p class="product__price pd__price" id="pd-price">${priceHtml(p, page.option)}</p>
               ${!p.options.length && !p.soldOut && p.stockLeft != null ? `<p class="pd__stock">${p.stockLeft === 1 ? 'Only 1 left' : `${p.stockLeft} left`}</p>` : ''}
               ${options}
@@ -842,8 +867,52 @@
               <ul class="buy__list">${perks.map((text) => `<li>${icon('i-check')}<span>${esc(text)}</span></li>`).join('')}</ul>${contactHtml}
             </div>
           </div>
+          <div class="reviews" id="pd-reviews" aria-live="polite"></div>
         </div>
       </section>`;
+    renderReviews(p);
+  }
+
+  /* ---------- Reviews on the product page ---------- */
+  /* productId -> { status: 'loading' | 'ready' | 'error', rows } */
+  const reviewsCache = new Map();
+
+  async function loadReviews(p) {
+    reviewsCache.set(p.id, { status: 'loading', rows: [] });
+    const { data, error } = await sb.from('public_reviews').select('*').eq('product_id', p.id).order('created_at', { ascending: false }).limit(50);
+    reviewsCache.set(p.id, { status: error ? 'error' : 'ready', rows: data || [] });
+    if (view.name === 'product' && view.slug === p.id) renderReviews(p);
+  }
+
+  function reviewHtml(r) {
+    const isAdmin = profile && profile.role === 'admin';
+    return `
+      <li class="review">
+        <div class="review__head">
+          ${starsHtml(r.rating)}
+          <span class="review__who">${esc(r.reviewer)} &middot; Verified buyer &middot; ${esc(formatDate(String(r.created_at).slice(0, 10)))}</span>
+          ${isAdmin ? `<button class="link review__delete" type="button" data-delete-review="${esc(r.id)}">Delete</button>` : ''}
+        </div>
+        ${r.comment ? `<p class="review__text">${esc(r.comment).replace(/\n/g, '<br>')}</p>` : ''}
+      </li>`;
+  }
+
+  function renderReviews(p) {
+    const box = byId('pd-reviews');
+    if (!box) return;
+    const cached = reviewsCache.get(p.id);
+    if (!cached) { loadReviews(p); return; }
+    let body;
+    if (cached.status === 'loading') body = '<p class="note">Loading reviews…</p>';
+    else if (cached.status === 'error') body = '<p class="note">Could not load reviews.</p>';
+    else if (!cached.rows.length) body = '<p class="note">No reviews yet. Bought this? Rate it from My orders.</p>';
+    else body = `<ul class="review-list">${cached.rows.map(reviewHtml).join('')}</ul>`;
+    box.innerHTML = `
+      <div class="reviews__head">
+        <h2 class="reviews__title">Reviews</h2>
+        ${p.ratingCount ? `<p class="rating rating--big">${starsHtml(p.ratingAvg)}<span>${p.ratingAvg.toFixed(1)} out of 5 &middot; ${p.ratingCount} ${plural(p.ratingCount, 'review', 'reviews')}</span></p>` : ''}
+      </div>
+      ${body}`;
   }
 
   productView.addEventListener('change', (event) => {
@@ -863,6 +932,17 @@
       const main = byId('pd-main-img');
       if (main) main.src = photoUrl(p.images[page.image]);
       productView.querySelectorAll('[data-pd-img]').forEach((b) => b.setAttribute('aria-pressed', String(b === thumb)));
+      return;
+    }
+    const del = event.target.closest('[data-delete-review]');
+    if (del) {
+      if (!window.confirm('Delete this review for everyone?')) return;
+      del.disabled = true;
+      sb.from('reviews').delete().eq('id', del.dataset.deleteReview).then(({ error }) => {
+        if (error) { del.disabled = false; window.alert('Could not delete the review.'); return; }
+        reviewsCache.delete(p.id);
+        loadCatalog();
+      });
       return;
     }
     if (event.target.closest('#pd-buy') && !purchaseState(p).disabled) startCheckout(p.id, page.option);
@@ -1085,15 +1165,50 @@
       ordersState.status = 'loading';
       renderOrders();
     }
-    const { data, error } = await sb.from('orders').select('*').eq('customer_id', session.user.id).order('created_at', { ascending: false });
+    const [{ data, error }, reviews] = await Promise.all([
+      sb.from('orders').select('*').eq('customer_id', session.user.id).order('created_at', { ascending: false }),
+      sb.from('reviews').select('*').eq('customer_id', session.user.id)
+    ]);
     if (!session) return;
     ordersState.status = error ? 'error' : 'ready';
     ordersState.rows = data || [];
-    renderOrders();
+    ordersState.reviews = new Map(((reviews && reviews.data) || []).map((r) => [r.order_id, r]));
+    /* Do not wipe a review someone is in the middle of writing. */
+    if (!(silent && ordersView.querySelector('form[data-dirty]'))) renderOrders();
     /* While a transfer is waiting for the seller, look again every 20 seconds so approval shows up by itself. */
     if (view.name === 'orders' && ordersState.rows.some((o) => o.status === 'awaiting_review' || (o.status === 'paid' && o.is_vpn && !o.delivery))) {
       ordersTimer = window.setTimeout(() => loadOrders(true), 20000);
     }
+  }
+
+  /* The "Rate this purchase" part of a paid order: the saved review, or a form to write or change it. */
+  function orderReviewHtml(o) {
+    if (o.status !== 'paid' || !o.product_id) return '';
+    const r = ordersState.reviews.get(o.id);
+    if (r && !ordersState.editing.has(o.id)) {
+      return `
+        <div class="order__review">
+          <p class="order__label">Your review</p>
+          ${starsHtml(r.rating)}
+          ${r.comment ? `<p class="review__text">${esc(r.comment).replace(/\n/g, '<br>')}</p>` : ''}
+          <button class="link" type="button" data-edit-review="${esc(o.id)}">Edit review</button>
+        </div>`;
+    }
+    const current = r ? r.rating : 0;
+    const stars = [5, 4, 3, 2, 1].map((n) => `
+      <input type="radio" name="rating" id="rate-${esc(o.id)}-${n}" value="${n}" ${current === n ? 'checked' : ''}>
+      <label for="rate-${esc(o.id)}-${n}" title="${n} ${plural(n, 'star', 'stars')}">${icon('i-star')}<span class="sr-only">${n} ${plural(n, 'star', 'stars')}</span></label>`).join('');
+    return `
+      <form class="order__review review-form" data-review-order="${esc(o.id)}" novalidate>
+        <p class="order__label">${r ? 'Edit your review' : 'Rate this purchase'}</p>
+        <fieldset class="star-input"><legend class="sr-only">Your rating</legend>${stars}</fieldset>
+        <textarea name="comment" rows="3" maxlength="500" placeholder="Write a comment (optional)">${esc(r ? r.comment : '')}</textarea>
+        <p class="review-form__note note" hidden></p>
+        <div class="review-form__actions">
+          <button class="btn btn--ink btn--sm" type="submit">${r ? 'Save review' : 'Post review'}</button>
+          ${r ? `<button class="link" type="button" data-cancel-review="${esc(o.id)}">Cancel</button>` : ''}
+        </div>
+      </form>`;
   }
 
   function orderCard(o) {
@@ -1120,6 +1235,7 @@
         </div>
         <p class="order__meta">${price} &middot; ${esc(formatDate(o.created_at.slice(0, 10)))}</p>
         ${detail}
+        ${orderReviewHtml(o)}
       </article>`;
   }
 
@@ -1148,6 +1264,41 @@
         </div>
       </section>`;
   }
+
+  ordersView.addEventListener('input', (event) => {
+    const form = event.target.closest('form[data-review-order]');
+    if (form) form.dataset.dirty = '1';
+  });
+
+  ordersView.addEventListener('click', (event) => {
+    const edit = event.target.closest('[data-edit-review]');
+    if (edit) { ordersState.editing.add(edit.dataset.editReview); renderOrders(); return; }
+    const cancel = event.target.closest('[data-cancel-review]');
+    if (cancel) { ordersState.editing.delete(cancel.dataset.cancelReview); renderOrders(); }
+  });
+
+  ordersView.addEventListener('submit', async (event) => {
+    const form = event.target.closest('form[data-review-order]');
+    if (!form) return;
+    event.preventDefault();
+    const note = form.querySelector('.review-form__note');
+    const button = form.querySelector('button[type="submit"]');
+    const checked = form.querySelector('input[name="rating"]:checked');
+    const say = (text) => { note.textContent = text; note.hidden = !text; };
+    if (!checked) { say('Choose 1 to 5 stars.'); return; }
+    say('');
+    button.disabled = true;
+    const orderId = form.dataset.reviewOrder;
+    const { error } = await sb.rpc('submit_review', { p_order_id: orderId, p_rating: Number(checked.value), p_comment: form.elements.comment.value });
+    button.disabled = false;
+    if (error) { say(error.message || 'Could not save your review. Please try again.'); return; }
+    ordersState.editing.delete(orderId);
+    const order = ordersState.rows.find((o) => o.id === orderId);
+    if (order) reviewsCache.delete(order.product_id);
+    await loadOrders(true);
+    renderOrders();
+    loadCatalog(); /* refresh the star averages */
+  });
 
   /* A click on the dark backdrop closes the dialog. Page scrolling is locked in CSS while a dialog is open. */
   buyDialog.addEventListener('click', (event) => {

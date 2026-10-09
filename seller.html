@@ -106,6 +106,17 @@
 
     <div class="status-banner" id="status-banner"></div>
 
+    <div class="dash-layout">
+    <nav class="dash-nav" id="dash-nav" aria-label="Dashboard sections">
+      <a href="#sales-card" data-dash-tab="sales-card">Orders</a>
+      <a href="#telegram-card" data-dash-tab="telegram-card">Telegram alerts</a>
+      <a href="#store-card" data-dash-tab="store-card">Your store</a>
+      <a href="#products-card" data-dash-tab="products-card">Products</a>
+      <a href="#availability-card" data-dash-tab="availability-card">Availability</a>
+      <a href="#bank-card" data-dash-tab="bank-card">Bank details</a>
+      <a href="#fee-card" data-dash-tab="fee-card">Store fee</a>
+      <a href="#vpn-card" data-dash-tab="vpn-card">VPN panel</a>
+    </nav>
     <div class="dash-grid">
 
 
@@ -117,7 +128,7 @@
         <div class="prod-list" id="sales-list"></div>
         <p class="admin-empty" id="sales-empty" hidden>No orders yet.</p>
       </section>
-      <section class="dash-card" aria-labelledby="store-title">
+      <section class="dash-card" id="store-card" aria-labelledby="store-title">
         <h2 class="dash-card__title" id="store-title">Your store</h2>
         <form class="auth__form" id="store-form" novalidate>
           <div class="field">
@@ -181,7 +192,7 @@
           <button class="btn btn--ink" type="submit">Save changes</button>
         </form>
       </section>
-      <section class="dash-card" aria-labelledby="products-title">
+      <section class="dash-card" id="products-card" aria-labelledby="products-title">
         <h2 class="dash-card__title" id="products-title">Products</h2>
         <p class="admin-lead">Add and manage your products: title, description, photos, options with their own prices and stock, and sold out status.</p>
         <a class="btn btn--ink" href="products.html"><svg class="i" aria-hidden="true" focusable="false"><use href="#i-edit"/></svg><span>Manage products</span></a>
@@ -303,6 +314,7 @@
           <button class="btn btn--ink" type="submit">Save VPN settings</button>
         </form>
       </section>
+    </div>
     </div>
 
   </section>

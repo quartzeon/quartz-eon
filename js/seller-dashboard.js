@@ -616,6 +616,8 @@
   async function loadTelegram() {
     if (!telegramBot) {
       byId('telegram-card').hidden = true;
+      const tab = document.querySelector('[data-dash-tab="telegram-card"]');
+      if (tab) tab.hidden = true;
       return;
     }
     paintTelegram(await telegramConnected());
@@ -748,3 +750,28 @@
   document.title = `Seller dashboard | ${CFG.storeName}`;
 })();
 
+
+/* Seller dashboard side menu: shows one section at a time. The address ends in #<section id>, so links
+   such as seller.html#vpn-card (from the product editor) open the right section. */
+(function () {
+  'use strict';
+  const nav = document.getElementById('dash-nav');
+  if (!nav) return;
+  const links = Array.from(nav.querySelectorAll('[data-dash-tab]'));
+  const ids = links.map((a) => a.dataset.dashTab);
+  function show(id) {
+    if (!ids.includes(id)) id = ids[0];
+    ids.forEach((other) => { const el = document.getElementById(other); if (el) el.hidden = other !== id; });
+    links.forEach((a) => { if (a.dataset.dashTab === id) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current'); });
+  }
+  nav.addEventListener('click', (event) => {
+    const link = event.target.closest('[data-dash-tab]');
+    if (!link) return;
+    event.preventDefault();
+    history.replaceState(null, '', `#${link.dataset.dashTab}`);
+    show(link.dataset.dashTab);
+    window.scrollTo({ top: 0, behavior: 'instant' });
+  });
+  window.addEventListener('hashchange', () => show(location.hash.slice(1)));
+  show(location.hash.slice(1));
+})();

@@ -659,3 +659,39 @@ dialog::backdrop { background: rgb(8 12 16 / .55); }
   *, *::before, *::after { animation: none !important; transition: none !important; }
 }
 
+
+/* ---------- Ratings and reviews ---------- */
+.stars { position: relative; display: inline-flex; flex: none; vertical-align: middle; --star: hsl(42 95% 50%); }
+.stars__base, .stars__fill { display: flex; gap: 1px; }
+.stars__base { color: var(--ink-line); }
+.stars__fill { position: absolute; inset: 0 auto 0 0; overflow: hidden; color: var(--star); }
+.stars .i { width: 15px; height: 15px; fill: currentColor; stroke: currentColor; stroke-width: 1; }
+.rating { display: flex; align-items: center; gap: 6px; margin-top: 4px; font-size: 13px; color: var(--ink-2); }
+.rating--big .stars .i { width: 20px; height: 20px; }
+.rating--big { font-size: 14px; }
+
+.reviews { display: grid; gap: 16px; margin-top: 40px; max-width: 760px; }
+.reviews__head { display: grid; gap: 6px; }
+.reviews__title { font: 700 22px/1.2 var(--font-display); letter-spacing: -.01em; }
+.review-list { display: grid; gap: 12px; }
+.review { display: grid; gap: 8px; padding: 16px 18px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--card); }
+.review__head { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; }
+.review__who { font-size: 13px; color: var(--ink-2); }
+.review__delete { margin-left: auto; font-size: 13px; }
+.review__text { font-size: 15px; line-height: 1.55; overflow-wrap: anywhere; }
+
+.order__review { display: grid; gap: 10px; padding-top: 14px; border-top: 1px solid var(--line); }
+.order__review .order__label { margin-bottom: 0; }
+.star-input { display: inline-flex; flex-direction: row-reverse; justify-content: flex-end; gap: 2px; margin: 0; padding: 0; border: 0; }
+.star-input input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+.star-input label { padding: 2px; color: var(--ink-line); cursor: pointer; }
+.star-input label .i { width: 30px; height: 30px; fill: currentColor; stroke: currentColor; stroke-width: 1; }
+.star-input input:checked ~ label,
+.star-input label:hover,
+.star-input label:hover ~ label { color: hsl(42 95% 50%); }
+.star-input input:focus-visible + label { outline: 3px solid var(--focus); outline-offset: 1px; border-radius: 6px; }
+.review-form textarea {
+  width: 100%; padding: 12px 14px; border: 1.5px solid var(--line); border-radius: 12px;
+  background: var(--card); color: inherit; font: inherit; font-size: 15px; line-height: 1.5; resize: vertical;
+}
+.review-form__actions { display: flex; align-items: center; gap: 16px; }
