@@ -92,7 +92,7 @@
 .pp-upload { align-self: flex-start; cursor: pointer; }
 /* Choices (page style, availability) are a plain radio list: the chosen one gets a soft shade, no boxes */
 .pp-themes { display: grid; gap: 2px; max-width: 560px; margin-top: 14px; }
-.pp-theme { display: grid; gap: 2px; padding: 10px 12px 10px 42px; border-radius: 6px; cursor: pointer; position: relative; }
+.pp-theme { display: grid; gap: 2px; padding: 10px 12px 10px 42px; border-radius: 12px; cursor: pointer; position: relative; }
 .pp-theme:hover { background: color-mix(in srgb, var(--ink) 4%, transparent); }
 .pp-theme:has(input:checked) { background: color-mix(in srgb, var(--ink) 8%, transparent); }
 .pp-theme input { position: absolute; top: 12px; left: 14px; accent-color: var(--ink); width: 17px; height: 17px; margin: 0; }
@@ -215,7 +215,7 @@
 .dash-nav__group:first-child { padding-top: 0; }
 .dash-nav__group + .dash-nav__group { border-top: 1px solid var(--line); }
 .dash-nav a {
-  display: flex; align-items: center; gap: 12px; padding: 8px 12px; border-radius: 6px;
+  display: flex; align-items: center; gap: 12px; padding: 8px 12px; border-radius: 10px;
   color: var(--ink-2); font-size: 15px; font-weight: 500; line-height: 1.3; text-decoration: none;
 }
 .dash-nav a .i { width: 19px; height: 19px; stroke-width: 1.7; color: var(--ink-3); }
@@ -234,15 +234,6 @@
   .dash-nav a { padding: 8px 10px; gap: 8px; white-space: nowrap; }
 }
 
-/* ---------- Flat look ----------
-   The dashboards use a squarer, flatter style than the shop: small corners, no pill or round shapes. */
-:root { --radius: 6px; --radius-l: 8px; }
-.btn, .btn--sm, .icon-btn, .chip, .tabs, .tab, .login__btn, .count-badge, .admin-tag, .status-badge, .verified-pill, .presence,
-.field input, .field select, .field textarea, .pp-photo, .pp-photo__tag, .pp-photo__btn, .pp-theme, .pp-option, .pp-logo-item, .pp-logo-item__img,
-.pp-picker__search input, .pp-rowitem input, .pp-rowitem select, .av-row input[type="time"],
-.prod-row__art, .seller-row__avatar, .admin-icon, .brand-item, .brand-item img, .note, .pay__bank, .toast { border-radius: 4px; }
-.btn:hover { transform: none; }
-
 /* Store fee: this month / time left / paid until, as three plain figures split by thin lines */
 .fee-summary { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); margin: 14px 0 18px; border-block: 1px solid var(--line); }
 .fee-box { display: grid; gap: 4px; padding: 14px 18px; }
@@ -259,4 +250,4 @@
   .fee-box { padding-inline: 2px; }
   .fee-box + .fee-box { border-left: 0; border-top: 1px solid var(--line); }
 }
-.nav-flag { margin-left: auto; padding: 1px 6px; border-radius: 3px; background: var(--danger); color: #fff; font: 600 11px/1.5 var(--font-mono); }
+.nav-flag { margin-left: auto; padding: 1px 8px; border-radius: 999px; background: var(--danger); color: #fff; font: 600 11px/1.5 var(--font-mono); }
