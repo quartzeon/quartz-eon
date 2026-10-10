@@ -38,7 +38,7 @@
 .admin-empty { margin-top: 24px; color: var(--ink-2); }
 
 /* Seller, product, order and fee rows: a plain list split by thin lines, not a stack of boxes */
-.admin-list { display: grid; }
+.admin-list { display: grid; container-type: inline-size; }
 .seller-row {
   display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 14px 20px;
   padding: 16px 2px; border-bottom: 1px solid var(--line);
@@ -58,15 +58,16 @@
 .settings-card { max-width: 620px; }
 .settings-card__title { margin-bottom: 10px; padding-bottom: 12px; border-bottom: 1px solid var(--line); font: 700 20px/1.2 var(--font-display); letter-spacing: -.015em; }
 .settings-card .auth__form { margin-top: 18px; }
+/* Save buttons are as wide as their label on wide screens, not a bar across the whole page */
+@media (min-width: 641px) { .settings-card .auth__form > .btn { width: auto; justify-self: start; } }
 .settings-card--spaced { margin-top: 48px; }
+/* Shared brand logos: the picture and its name, no frame; the delete button sits on the picture's corner */
 .brand-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 10px; margin-top: 18px; }
-.brand-item { position: relative; display: grid; gap: 8px; justify-items: center; padding: 12px 8px; border: 1px solid var(--line); border-radius: 12px; text-align: center; }
-.brand-item img { width: 64px; height: 64px; object-fit: contain; border-radius: 10px; background: #fff; }
+.brand-item { position: relative; display: grid; gap: 8px; justify-items: center; padding: 12px 8px; border-radius: 12px; text-align: center; }
+.brand-item:hover { background: color-mix(in srgb, var(--ink) 5%, transparent); }
+.brand-item img { width: 64px; height: 64px; object-fit: contain; border: 1px solid var(--line); border-radius: 12px; background: #fff; }
 .brand-item span { font-size: 13px; overflow-wrap: anywhere; }
 .brand-item button { position: absolute; top: 6px; right: 6px; }
-.field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-@media (max-width: 640px) { .field-row { grid-template-columns: 1fr; } }
-.field__hint { font-size: 13px; color: var(--ink-2); }
 .order-problem { color: var(--danger); font-weight: 600; }
 
 .status-badge {
@@ -85,9 +86,17 @@
   :root:not([data-theme="light"]) .status-badge--suspended { background: hsl(0 35% 20%); color: hsl(0 75% 78%); }
 }
 
+/* When the list is narrow the buttons drop under the text, lined up with it (avatar 46px + gap 14px) */
+@container (max-width: 720px) {
+  .seller-row { grid-template-columns: minmax(0, 1fr); }
+  .seller-row__actions { justify-content: flex-start; padding-left: 60px; }
+}
 @media (max-width: 640px) {
   .seller-row { grid-template-columns: 1fr; }
   .seller-row__actions { justify-content: flex-start; }
+}
+@container (max-width: 480px) {
+  .seller-row__actions { padding-left: 0; }
 }
 
 /* Toast: a brief confirmation after approving/suspending a store */

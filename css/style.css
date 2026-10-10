@@ -116,7 +116,9 @@
 /* ---------- Base ---------- */
 *, *::before, *::after { box-sizing: border-box; }
 html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+/* A column that is at least as tall as the screen, so the footer sits at the bottom on short pages */
 body {
+  display: flex; flex-direction: column; min-height: 100vh; min-height: 100dvh;
   margin: 0;
   background: var(--paper);
   color: var(--ink);
@@ -597,7 +599,8 @@ dialog::backdrop { background: rgb(8 12 16 / .55); }
 .field input[aria-invalid="true"] { border-color: var(--danger); }
 .field__hint { font-size: 13px; color: var(--ink-2); }
 .field__error { font-size: 13px; font-weight: 600; color: var(--danger); }
-.field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.field-row { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: start; gap: 16px; }
+@media (max-width: 640px) { .field-row { grid-template-columns: minmax(0, 1fr); } }
 .addr { display: flex; align-items: stretch; }
 .addr__prefix {
   display: flex; align-items: center; padding: 0 12px; border: 1.5px solid var(--line); border-right: 0;
@@ -628,7 +631,7 @@ dialog::backdrop { background: rgb(8 12 16 / .55); }
 @keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
 
 /* ---------- Footer ---------- */
-.footer { padding-block: 48px 28px; background: var(--footer-bg); color: var(--footer-ink); }
+.footer { margin-top: auto; padding-block: 48px 28px; background: var(--footer-bg); color: var(--footer-ink); }
 .footer .brand { color: var(--footer-ink); }
 .footer__top { display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between; gap: 24px; }
 .footer__blurb { max-width: 34ch; margin-top: 16px; color: var(--footer-ink-2); }

@@ -20,7 +20,7 @@
 }
 .admin-icon {
   display: grid; place-items: center; width: 52px; height: 52px; margin-bottom: 4px; border-radius: 14px;
-  background: hsl(160 var(--art-s) var(--art-l)); color: hsl(160 var(--art-fg-s) var(--art-fg-l));
+  background: hsl(248 var(--art-s) var(--art-l)); color: hsl(248 var(--art-fg-s) var(--art-fg-l));
 }
 .admin-title { font: 800 clamp(1.7rem, 1.4rem + 1vw, 2.1rem)/1.12 var(--font-display); letter-spacing: -.03em; }
 .admin-lead { color: var(--ink-2); font-size: 15px; line-height: 1.5; }
@@ -29,6 +29,8 @@
 #seller-denied-email { font-weight: 700; color: var(--ink); }
 .admin-empty { margin-top: 20px; color: var(--ink-2); }
 .admin-count { font: 500 13px/1 var(--font-mono); letter-spacing: .04em; color: var(--ink-2); }
+/* Page head of products.html: the title on the left, the count and the main button on the right */
+.admin-app__head { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 12px 24px; margin-bottom: 22px; }
 
 .status-badge {
   display: inline-flex; align-items: center; padding: 3px 9px; border-radius: 999px;
@@ -51,9 +53,8 @@
 .status-banner p { color: var(--ink-2); font-size: 14px; }
 .status-banner a { color: var(--ink); text-decoration: underline; text-underline-offset: 3px; }
 
-/* Store profile and products side by side; the VPN card spans full width below them */
-.dash-grid { display: grid; grid-template-columns: minmax(0, .85fr) minmax(0, 1.15fr); gap: 24px; align-items: start; }
-.vpn-card, .sales-card { grid-column: 1 / -1; }
+/* The sections of the dashboard (one is shown at a time, see .dash-layout below) */
+.dash-grid { display: grid; align-items: start; align-content: start; }
 .vpn-card .auth__form { max-width: 560px; }
 /* A dashboard section is not a boxed card: just a title with a thin line under it, then its content */
 .dash-card { padding: 0; border: 0; background: none; }
@@ -65,7 +66,6 @@
 
 .copy-row { display: flex; gap: 8px; }
 .copy-row input { flex: 1; min-width: 0; font-family: var(--font-mono); font-size: 13px; color: var(--ink-2); background: var(--paper); }
-.field__hint { font-size: 13px; color: var(--ink-2); }
 
 /* ---------- Product panel (products.html) ---------- */
 .pp-head-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 18px; }
@@ -90,6 +90,8 @@
 .pp-photo__btn--x { right: 6px; }
 .pp-photo__btn--star { left: 6px; }
 .pp-upload { align-self: flex-start; cursor: pointer; }
+/* Small "add" buttons are as wide as their label, not a bar across the whole form */
+.pp-form .field > .btn { justify-self: start; }
 /* Choices (page style, availability) are a plain radio list: the chosen one gets a soft shade, no boxes */
 .pp-themes { display: grid; gap: 2px; max-width: 560px; margin-top: 14px; }
 .pp-theme { display: grid; gap: 2px; padding: 10px 12px 10px 42px; border-radius: 12px; cursor: pointer; position: relative; }
@@ -101,9 +103,12 @@
 .fee-status { margin-bottom: 10px; font-size: 16px; }
 .verified-pill { display: inline-flex; align-items: center; gap: 6px; padding: 4px 12px 4px 8px; border-radius: 999px; background: hsl(205 85% 92%); color: hsl(208 75% 36%); font-weight: 700; }
 .verified-icon { width: 18px; height: 18px; color: hsl(207 80% 52%); }
+:root[data-theme="dark"] .verified-pill { background: hsl(208 45% 20%); color: hsl(205 85% 78%); }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .verified-pill { background: hsl(208 45% 20%); color: hsl(205 85% 78%); }
+}
 #fee-card .auth__form { margin-top: 18px; max-width: 560px; }
 #fee-card .prod-list { margin-top: 18px; }
-#availability-card { grid-column: 1 / -1; }
 #availability-card .auth__form { max-width: 760px; }
 .av-hours { display: grid; max-width: 560px; border-top: 1px solid var(--line); }
 .av-row { display: grid; grid-template-columns: 96px auto minmax(0, 1fr) minmax(0, 1fr); align-items: center; gap: 10px; padding: 8px 2px; border-bottom: 1px solid var(--line); }
@@ -125,9 +130,9 @@
 .pp-picker__search .i { position: absolute; left: 14px; top: 50%; width: 18px; height: 18px; transform: translateY(-50%); color: var(--ink-3); pointer-events: none; }
 .pp-picker__search input { width: 100%; min-height: 48px; padding: 12px 14px 12px 42px; border: 1.5px solid var(--line); border-radius: 12px; background: var(--card); font: inherit; font-size: 15px; color: inherit; }
 .pp-logo-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(104px, 1fr)); gap: 10px; min-height: 120px; }
-.pp-logo-item { display: grid; gap: 8px; justify-items: center; padding: 12px 8px; border: 1.5px solid var(--line); border-radius: 12px; background: var(--paper); color: inherit; cursor: pointer; text-align: center; }
-.pp-logo-item:hover, .pp-logo-item:focus-visible { border-color: var(--ink); }
-.pp-logo-item__img { display: grid; place-items: center; width: 56px; height: 56px; border-radius: 12px; background: #fff; }
+.pp-logo-item { display: grid; gap: 8px; justify-items: center; padding: 12px 8px; border: 0; border-radius: 12px; background: none; color: inherit; cursor: pointer; text-align: center; }
+.pp-logo-item:hover, .pp-logo-item:focus-visible { background: color-mix(in srgb, var(--ink) 7%, transparent); }
+.pp-logo-item__img { display: grid; place-items: center; width: 56px; height: 56px; border: 1px solid var(--line); border-radius: 12px; background: #fff; }
 .pp-logo-item__img img { width: 32px; height: 32px; object-fit: contain; }
 .pp-logo-item__name { font-size: 12px; line-height: 1.25; overflow-wrap: anywhere; }
 .pp-rows { display: grid; gap: 8px; margin-bottom: 8px; }
@@ -138,10 +143,11 @@
   background: var(--card); font-family: inherit; font-size: 15px; color: inherit;
 }
 @media (max-width: 640px) { .pp-rowitem--info { grid-template-columns: 1fr auto; } .pp-rowitem--info select { grid-column: 1 / -1; } }
-.pp-options { display: grid; gap: 12px; margin-bottom: 12px; }
-.pp-option { display: grid; grid-template-columns: minmax(0, 2fr) repeat(auto-fit, minmax(90px, 1fr)); gap: 10px 12px; align-items: end; padding: 14px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--paper); position: relative; padding-right: 54px; }
+/* Options of a product: a plain list split by thin lines, each row with its own remove button */
+.pp-options { display: grid; margin-bottom: 12px; border-top: 1px solid var(--line); }
+.pp-option { display: grid; grid-template-columns: minmax(0, 2fr) repeat(auto-fit, minmax(90px, 1fr)); gap: 10px 12px; align-items: end; position: relative; padding: 14px 54px 14px 2px; border-bottom: 1px solid var(--line); }
 .pp-option .field label { font-size: 12px; }
-.pp-option__x { position: absolute; top: 12px; right: 12px; }
+.pp-option__x { position: absolute; top: 12px; right: 2px; }
 @media (max-width: 640px) {
   .pp-option { grid-template-columns: 1fr 1fr; }
   .pp-option__label { grid-column: 1 / -1; }
@@ -149,7 +155,14 @@
 
 .order-problem { color: var(--danger); font-weight: 600; }
 .telegram-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 14px; }
-.dash-card .pay__bank { margin-top: 14px; }
+/* Status messages and bank details inside a dashboard section are plain text and rows, not boxes */
+.dash-card .note { margin-top: 10px; padding: 0; border: 0; border-radius: 0; }
+.dash-card .pay__bank { gap: 0; margin-top: 14px; padding: 0; border: 0; border-top: 1px solid var(--line); border-radius: 0; background: none; }
+.dash-card .pay__bank div { padding: 10px 2px; border-bottom: 1px solid var(--line); }
+/* Save buttons are as wide as their label on wide screens, not a bar across the whole page */
+@media (min-width: 641px) {
+  .dash-card .auth__form > .btn { width: auto; justify-self: start; }
+}
 .check-row { display: flex; align-items: center; gap: 10px; font-size: 14px; color: var(--ink-2); }
 .check-row input { accent-color: var(--ink); width: 17px; height: 17px; }
 
@@ -179,11 +192,7 @@
 .icon-btn--sm .i { width: 18px; height: 18px; }
 .icon-btn--danger:hover { border-color: var(--danger); color: var(--danger); }
 
-@media (max-width: 900px) {
-  .dash-grid { grid-template-columns: minmax(0, 1fr); }
-}
 @media (max-width: 640px) {
-  .field-row { grid-template-columns: minmax(0, 1fr); }
   .prod-row { grid-template-columns: 1fr; }
   .prod-row__actions { justify-content: flex-start; }
 }
