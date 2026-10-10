@@ -310,6 +310,10 @@ section[id] { scroll-margin-top: 76px; }
   appearance: none; -webkit-appearance: none; cursor: pointer;
 }
 .select__chev { position: absolute; right: 14px; width: 18px; height: 18px; color: var(--ink-3); pointer-events: none; }
+/* Currency picker in the shop header: a smaller pill than the sort box */
+.select--cur select { height: 40px; padding: 0 32px 0 14px; font-size: 14px; font-weight: 600; }
+.select--cur .select__chev { right: 10px; width: 16px; height: 16px; }
+@media (max-width: 640px) { .select.select--cur, .select.select--cur select { width: auto; } }
 
 .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 250px), 1fr)); gap: 36px 24px; }
 .product { display: flex; flex-direction: column; gap: 14px; min-width: 0; }

@@ -282,6 +282,7 @@
 
   function fillStoreForm() {
     storeForm.elements.storeName.value = sellerRow.store_name;
+    storeForm.elements.currency.value = sellerRow.currency === 'USD' ? 'USD' : 'LKR';
     storeForm.elements.about.value = sellerRow.about || '';
     byId('store-link').value = `${window.location.origin}${window.location.pathname.replace('seller.html', '')}index.html#/store/${sellerRow.store_slug}`;
     storeForm.elements.whatsapp.value = sellerRow.contact_whatsapp || '';
@@ -336,6 +337,7 @@
 
     const details = {
       store_name: storeName,
+      currency: f.currency.value === 'USD' ? 'USD' : 'LKR',
       about,
       contact_whatsapp: whatsapp || null,
       contact_telegram: telegram || null,
@@ -435,7 +437,7 @@
 
   function saleRow(o) {
     const [badgeClass, label] = SALE_STATUS[o.status] || ['pending', o.status];
-    const amount = o.method === 'paypal' && o.amount_usd ? `$${Number(o.amount_usd).toFixed(2)} via PayPal` : `Rs. ${Number(o.amount_lkr).toLocaleString('en-US')} by bank transfer`;
+    const amount = o.method === 'paypal' && o.amount_usd ? `$${Number(o.amount_usd).toFixed(2)} via PayPal` : `${o.currency === 'USD' ? '$' : 'Rs. '}${Number(o.amount_lkr).toLocaleString('en-US')} by bank transfer`;
     const actions = [];
     if (o.status === 'awaiting_review') {
       if (o.receipt_path) actions.push(`<button class="btn btn--ghost btn--sm" type="button" data-slip="${esc(o.id)}"><span>View slip</span></button>`);
@@ -545,7 +547,7 @@
     if (approve) {
       /* A slip photo can be faked: make the seller check the bank first. */
       const o = sales.find((s) => s.id === approve.dataset.orderApprove);
-      const money = o ? `Rs. ${Number(o.amount_lkr).toLocaleString('en-US')}${o.reference ? ` (reference ${o.reference})` : ''}` : 'the money';
+      const money = o ? `${o.currency === 'USD' ? '$' : 'Rs. '}${Number(o.amount_lkr).toLocaleString('en-US')}${o.reference ? ` (reference ${o.reference})` : ''}` : 'the money';
       if (window.confirm(`Did ${money} really arrive in your bank account?\n\nCheck your bank app or statement first. A slip photo can be faked. Once approved, the product is delivered and this cannot be undone.`)) approveSale(approve.dataset.orderApprove);
       return;
     }

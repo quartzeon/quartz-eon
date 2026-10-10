@@ -18,7 +18,10 @@
   const icon = (id) => `<svg class="i" aria-hidden="true" focusable="false"><use href="#${id}"/></svg>`;
   const art = (name) => `<svg class="art" aria-hidden="true" focusable="false"><use href="#a-${esc(name)}"/></svg>`;
   const plural = (n, one, many) => (n === 1 ? one : many);
-  const rupees = (n) => `Rs. ${Math.round(Number(n)).toLocaleString('en-US')}`;
+  /* The store's currency (LKR or USD) decides how prices are written and labelled. */
+  const usd = () => !!sellerRow && sellerRow.currency === 'USD';
+  const unit = () => (usd() ? 'US dollars' : 'rupees');
+  const rupees = (n) => `${usd() ? '$' : 'Rs. '}${Math.round(Number(n)).toLocaleString('en-US')}`;
   const storage = { set(key, value) { try { window.localStorage.setItem(key, value); } catch (e) { /* storage unavailable */ } } };
   const photoUrl = (path) => sb.storage.from(BUCKET).getPublicUrl(path).data.publicUrl;
   /* A logo is either an uploaded file (a storage path) or one picked from the brand library, saved as "si:<name>". */
@@ -98,6 +101,7 @@
     sellerRow = row;
     byId('pp-app').hidden = false;
     fillCategories();
+    byId('pp-price-label').textContent = usd() ? 'Price (USD)' : 'Price (Rs.)';
     loadProducts();
     checkPanel();
     /* "Add a new product" on the seller's store page links here as products.html#new. */
@@ -466,7 +470,7 @@
           <input id="pp-o-label-${i}" data-field="label" type="text" maxlength="60" value="${esc(o.label)}" placeholder="For example 30 days">
         </div>
         <div class="field">
-          <label for="pp-o-price-${i}">Price (Rs.)</label>
+          <label for="pp-o-price-${i}">Price (${usd() ? 'USD' : 'Rs.'})</label>
           <input id="pp-o-price-${i}" data-field="price" type="number" min="1" step="1" inputmode="numeric" value="${esc(o.price)}">
         </div>
         <div class="field">
@@ -709,7 +713,7 @@
         const g = readInt(o.gb);
         const where = `Option ${i + 1}`;
         if (!label) { showBox('pp-options-error', `${where} needs a name.`); ok = false; break; }
-        if (p == null || Number.isNaN(p) || p <= 0) { showBox('pp-options-error', `${where} needs a price above 0 (whole rupees).`); ok = false; break; }
+        if (p == null || Number.isNaN(p) || p <= 0) { showBox('pp-options-error', `${where} needs a price above 0 (whole ${unit()}).`); ok = false; break; }
         if (Number.isNaN(s) || (s != null && s < 0)) { showBox('pp-options-error', `${where}: stock must be 0 or more, or empty for unlimited.`); ok = false; break; }
         if (vpn && (Number.isNaN(d) || (d != null && (d < 1 || d > 3650)))) { showBox('pp-options-error', `${where}: days must be 1 to 3650.`); ok = false; break; }
         if (vpn && (Number.isNaN(g) || (g != null && g < 0))) { showBox('pp-options-error', `${where}: data must be 0 or more.`); ok = false; break; }
@@ -720,7 +724,7 @@
       if (ok) price = Math.min(...options.map((o) => o.price));
     } else {
       price = readInt(f.price.value);
-      if (price == null || Number.isNaN(price) || price <= 0) { showFieldError(f.price, 'Enter a price above 0 (whole rupees).'); ok = false; }
+      if (price == null || Number.isNaN(price) || price <= 0) { showFieldError(f.price, `Enter a price above 0 (whole ${unit()}).`); ok = false; }
       stock = readInt(f.stock.value);
       if (Number.isNaN(stock) || (stock != null && stock < 0)) { showFieldError(f.stock, 'Enter 0 or more, or leave empty for unlimited.'); ok = false; }
       if (vpn) {

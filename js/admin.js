@@ -284,7 +284,7 @@
           <span class="seller-row__avatar"><svg class="art" aria-hidden="true" focusable="false"><use href="#a-${esc(p.icon)}"/></svg></span>
           <div class="seller-row__text">
             <p class="seller-row__name">${esc(p.name)} ${badge}</p>
-            <p class="seller-row__meta">${esc(store ? store.store_name : 'Unknown store')} &middot; ${esc(p.category)} &middot; Rs. ${Number(p.price).toLocaleString('en-US')}${p.type ? ` &middot; ${esc(p.type)}` : ''}</p>
+            <p class="seller-row__meta">${esc(store ? store.store_name : 'Unknown store')} &middot; ${esc(p.category)} &middot; ${store && store.currency === 'USD' ? '$' : 'Rs. '}${Number(p.price).toLocaleString('en-US')}${p.type ? ` &middot; ${esc(p.type)}` : ''}</p>
           </div>
         </div>
         <div class="seller-row__actions">
@@ -368,7 +368,7 @@
   function orderRow(o) {
     const [badgeClass, label] = ORDER_BADGE[o.status] || ['pending', o.status];
     const store = sellers.find((s) => s.id === o.seller_id);
-    const amount = o.method === 'paypal' && o.amount_usd ? `$${Number(o.amount_usd).toFixed(2)} via PayPal` : `Rs. ${Number(o.amount_lkr).toLocaleString('en-US')} by bank transfer`;
+    const amount = o.method === 'paypal' && o.amount_usd ? `$${Number(o.amount_usd).toFixed(2)} via PayPal` : `${o.currency === 'USD' ? '$' : 'Rs. '}${Number(o.amount_lkr).toLocaleString('en-US')} by bank transfer`;
     const actions = [];
     if (o.status === 'awaiting_review') {
       if (o.receipt_path) actions.push(`<button class="btn btn--ghost btn--sm" type="button" data-slip="${esc(o.id)}"><span>View slip</span></button>`);

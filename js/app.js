@@ -142,7 +142,7 @@
     if (meta.signup_role === 'seller' && meta.store_name && meta.store_slug) {
       const { error } = await sb.from('profiles').insert({ id: user.id, role: 'seller', email: user.email });
       if (!error) {
-        const { error: storeError } = await sb.from('sellers').insert({ id: user.id, store_name: meta.store_name, store_slug: meta.store_slug, hue: Number(meta.hue) || 0 });
+        const { error: storeError } = await sb.from('sellers').insert({ id: user.id, store_name: meta.store_name, store_slug: meta.store_slug, hue: Number(meta.hue) || 0, currency: meta.currency === 'USD' ? 'USD' : 'LKR' });
         /* Tell the owner (Telegram) that a store is waiting for approval. Failure here changes nothing for the seller. */
         if (!storeError) sb.functions.invoke('notify', { body: { kind: 'new_seller', id: user.id } }).catch(() => {});
       }
@@ -256,15 +256,35 @@
   const dollars = (n) => `$${money2(n / rate.value)}`;
   const rupeeNumber = (n) => Math.round(n).toLocaleString('en-US');
 
+  /* A store prices in rupees (LKR) or dollars (USD). The price is shown in that currency, with the other one worked out as an estimate. */
+  const isUsd = (currency) => currency === 'USD';
+  const symbolOf = (currency) => (isUsd(currency) ? '$' : CFG.currencySymbol);
+  const amountText = (n, currency) => (isUsd(currency) ? `$${rupeeNumber(n)}` : `${CFG.currencySymbol} ${rupeeNumber(n)}`);
+  const toLkr = (n, currency) => (isUsd(currency) ? n * rate.value : n);
+  const otherText = (n, currency) => (isUsd(currency) ? `${CFG.currencySymbol} ${rupeeNumber(n * rate.value)}` : dollars(n));
+
+  /* The customer chooses which currency prices are shown in (kept in this browser). A price in the other currency is converted at the live rate. */
+  const CUR_KEY = 'quartz-eon.currency';
+  let showCur = storage.get(CUR_KEY) === 'USD' ? 'USD' : 'LKR';
+  const shownNumber = (n, currency) => {
+    if (currency === showCur) return rupeeNumber(n);
+    return showCur === 'USD' ? money2(n / rate.value) : rupeeNumber(n * rate.value);
+  };
+  const shownText = (n, currency) => `${showCur === 'USD' ? '$' : `${CFG.currencySymbol} `}${shownNumber(n, currency)}`;
+
   /* What a price looks like. With several options and none chosen it reads "From Rs. ...". */
   function priceHtml(p, optionIndex) {
     const options = p.options || [];
     const chosen = Number.isInteger(optionIndex) ? options[optionIndex] : null;
     const amount = chosen ? chosen.price : p.price;
     const from = !chosen && options.length > 1 ? '<span class="price__from">From</span> ' : '';
+    const converted = p.currency !== showCur;
+    const note = converted
+      ? `<span class="usd" title="The store sets this price in ${isUsd(p.currency) ? 'US dollars' : 'rupees'}">Store price ${esc(amountText(amount, p.currency))}</span>`
+      : `<span class="usd" title="Approximate, at the current exchange rate">&asymp; ${esc(otherText(amount, p.currency))}</span>`;
     return `
-      <span class="price">${from}<span class="price__cur">${esc(CFG.currencySymbol)}</span>${rupeeNumber(amount)}</span>
-      <span class="usd" title="Approximate, at the current exchange rate">&asymp; ${dollars(amount)}</span>`;
+      <span class="price">${from}<span class="price__cur">${showCur === 'USD' ? '$' : esc(CFG.currencySymbol)}</span>${shownNumber(amount, p.currency)}</span>
+      ${note}`;
   }
 
   /* The public address of a product photo. */
@@ -285,7 +305,7 @@
 
   function renderRateNote() {
     const per = `1 USD = ${CFG.currencySymbol} ${money2(rate.value)}`;
-    const base = 'Prices are in Sri Lankan rupees. Dollar amounts are approximate';
+    const base = 'Each store prices in rupees or US dollars. The other currency is approximate';
     let text;
     if (rate.status === 'live') text = `${base}, at ${per}${rate.date ? ` (rate of ${formatDate(rate.date)})` : ''}.`;
     else if (rate.status === 'fallback') text = `${base}, using an estimated ${per} because the live rate could not be loaded.`;
@@ -429,7 +449,7 @@
     if (stores.error || products.error) {
       catalog.status = 'error';
     } else {
-      SELLERS = stores.data.map((s) => ({ id: s.id, slug: s.store_slug, name: s.store_name, about: s.about, hue: s.hue, logo: s.logo || '', whatsapp: s.contact_whatsapp || '', telegram: s.contact_telegram || '', facebook: s.social_facebook || '', instagram: s.social_instagram || '', website: s.social_website || '', verified: !!s.verified, availabilityMode: s.availability_mode || 'none', availabilityHours: Array.isArray(s.availability_hours) ? s.availability_hours : [] }));
+      SELLERS = stores.data.map((s) => ({ id: s.id, slug: s.store_slug, name: s.store_name, about: s.about, hue: s.hue, logo: s.logo || '', whatsapp: s.contact_whatsapp || '', telegram: s.contact_telegram || '', facebook: s.social_facebook || '', instagram: s.social_instagram || '', website: s.social_website || '', verified: !!s.verified, availabilityMode: s.availability_mode || 'none', availabilityHours: Array.isArray(s.availability_hours) ? s.availability_hours : [], currency: s.currency === 'USD' ? 'USD' : 'LKR' }));
       SELLER_BY_ID = new Map(SELLERS.map((s) => [s.id, s]));
       SELLER_BY_SLUG = new Map(SELLERS.map((s) => [s.slug, s]));
       PRODUCTS = products.data.map((p) => ({
@@ -438,6 +458,7 @@
         name: p.name,
         category: p.category,
         price: p.price,
+        currency: p.currency === 'USD' ? 'USD' : 'LKR',
         type: p.type,
         description: p.description,
         icon: p.icon,
@@ -477,8 +498,8 @@
   function visibleProducts() {
     const list = PRODUCTS.filter((p) => (state.cat === 'All' || p.category === state.cat) && matches(p, state.q));
     const order = {
-      low: (a, b) => a.price - b.price,
-      high: (a, b) => b.price - a.price,
+      low: (a, b) => toLkr(a.price, a.currency) - toLkr(b.price, b.currency),
+      high: (a, b) => toLkr(b.price, b.currency) - toLkr(a.price, a.currency),
       name: (a, b) => a.name.localeCompare(b.name)
     }[state.sort];
     return order ? list.sort(order) : list;
@@ -647,6 +668,13 @@
   byId('sort').addEventListener('change', (event) => {
     state.sort = event.target.value;
     renderProducts();
+  });
+  /* Currency the customer wants to see prices in. */
+  byId('currency-pick').value = showCur;
+  byId('currency-pick').addEventListener('change', (event) => {
+    showCur = event.target.value === 'USD' ? 'USD' : 'LKR';
+    storage.set(CUR_KEY, showCur);
+    renderCurrentView();
   });
   byId('retry-load').addEventListener('click', loadCatalog);
   byId('clear-filters').addEventListener('click', () => {
@@ -876,7 +904,7 @@
           <label class="pd-option${o.soldOut ? ' is-disabled' : ''}">
             <input type="radio" name="pd-option" value="${i}" ${o.soldOut ? 'disabled' : ''} ${page.option === i ? 'checked' : ''}>
             <span class="pd-option__name">${esc(o.label)}${p.icon === 'vpn' && o.days ? `<small>${esc(planText(o.days, o.gb))}</small>` : ''}</span>
-            <span class="pd-option__price">${esc(CFG.currencySymbol)} ${rupeeNumber(o.price)}</span>
+            <span class="pd-option__price">${esc(shownText(o.price, p.currency))}</span>
             <span class="pd-option__stock">${o.soldOut ? 'Sold out' : o.left != null ? `${o.left} left` : ''}</span>
           </label>`).join('')}
       </fieldset>` : '';
@@ -1141,7 +1169,7 @@
       .filter((row) => row[1])
       .map(([k, v]) => `<div><dt>${esc(k)}</dt><dd>${esc(v)}</dd></div>`).join('');
     panel.innerHTML = `
-      <p class="auth__hint">Transfer <strong>${esc(CFG.currencySymbol)} ${rupeeNumber(offerOf(p, checkout.option).price)}</strong> to ${esc(sellerOf(p).name)}’s account below, then send the slip so they can confirm your payment.</p>
+      <p class="auth__hint">Transfer <strong>${esc(amountText(offerOf(p, checkout.option).price, p.currency))}</strong> to ${esc(sellerOf(p).name)}’s account below, then send the slip so they can confirm your payment.</p>
       <dl class="pay__bank">${rows}</dl>
       ${bank.note ? `<p class="auth__hint">${esc(bank.note)}</p>` : ''}
       <form class="auth__form" id="bank-form" novalidate>
@@ -1173,7 +1201,7 @@
     let body;
     if (method === 'paypal') {
       body = `
-        <p class="auth__hint">PayPal charges in US dollars: about ${esc(dollars(offerOf(p, checkout.option).price))} at today’s rate. The exact amount is shown by PayPal before you pay.</p>
+        <p class="auth__hint">PayPal charges in US dollars: about ${esc(dollars(toLkr(offerOf(p, checkout.option).price, p.currency)))} at today’s rate. The exact amount is shown by PayPal before you pay.</p>
         <p class="field__error" id="pay-error" hidden></p>
         <div id="paypal-buttons" class="pay__paypal"><p class="note">Loading PayPal…</p></div>`;
     } else {
@@ -1389,7 +1417,7 @@
     } else {
       detail = '<p class="note">The seller could not confirm this payment. If you already paid, please contact the seller with your transfer slip.</p>';
     }
-    const price = o.method === 'paypal' && o.amount_usd ? `$${money2(Number(o.amount_usd))} via PayPal` : `${esc(CFG.currencySymbol)} ${rupeeNumber(o.amount_lkr)} by bank transfer`;
+    const price = o.method === 'paypal' && o.amount_usd ? `$${money2(Number(o.amount_usd))} via PayPal` : `${esc(amountText(o.amount_lkr, o.currency))} by bank transfer`;
     return `
       <article class="order">
         <div class="order__head">
@@ -1571,6 +1599,14 @@
             </div>
             <p class="field__hint">Letters, numbers and hyphens. This is your store's web address.</p>
             <p class="field__error" id="auth-store-address-error" hidden></p>
+          </div>
+          <div class="field">
+            <label for="auth-currency">Currency for your prices</label>
+            <select id="auth-currency" name="currency">
+              <option value="LKR">Sri Lankan rupees (LKR)</option>
+              <option value="USD">US dollars (USD)</option>
+            </select>
+            <p class="field__hint">You can change this later in your dashboard settings.</p>
           </div>
           ${email}
           ${passwordHtml('new-password', 'At least 8 characters.')}
@@ -1817,7 +1853,7 @@
           password,
           options: {
             emailRedirectTo: redirectUrl(),
-            data: { signup_role: 'seller', store_name: storeName, store_slug: storeSlug, hue }
+            data: { signup_role: 'seller', store_name: storeName, store_slug: storeSlug, hue, currency: form.elements.currency.value === 'USD' ? 'USD' : 'LKR' }
           }
         });
         if (error) throw error;

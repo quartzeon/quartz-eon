@@ -151,6 +151,14 @@
             <p class="field__error" id="store-name-error" hidden></p>
           </div>
           <div class="field">
+            <label for="store-currency">Currency for your prices</label>
+            <select id="store-currency" name="currency">
+              <option value="LKR">Sri Lankan rupees (LKR)</option>
+              <option value="USD">US dollars (USD)</option>
+            </select>
+            <p class="field__hint">Your product prices are shown in this currency, and customers pay you in it. Changing it does not convert your prices, so check your products afterwards. Orders already placed keep their old currency.</p>
+          </div>
+          <div class="field">
             <span class="pp-label">Store logo</span>
             <div class="pp-logo" id="store-logo"></div>
             <div class="pp-logo-actions">
