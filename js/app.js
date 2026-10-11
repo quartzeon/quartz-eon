@@ -242,35 +242,132 @@
     checkOrderUpdates();
   });
 
-  /* ---------- Money: prices are in rupees, dollars are worked out from the live rate ---------- */
-  const RATE_KEY = 'quartz-eon.usd-lkr';
+  /* ---------- Money: stores price in rupees or dollars; customers see prices in their own country's currency ---------- */
+  const RATE_KEY = 'quartz-eon.usd-rates';
   const RATE_MAX_AGE = 12 * 60 * 60 * 1000;
   const RATE_SOURCES = [
     'https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@latest/v1/currencies/usd.json',
     'https://latest.currency-api.pages.dev/v1/currencies/usd.json'
   ];
-  /* status: 'loading' until the first answer, then 'live' (real rate) or 'fallback' (config value) */
-  const rate = { value: CFG.fallbackUsdRate, date: '', status: 'loading' };
+  /* value: rupees per US dollar. rates: units of each currency per US dollar (lower case codes, as the source gives them).
+     status: 'loading' until the first answer, then 'live' (real rates) or 'fallback' (config value, rupees and dollars only) */
+  const rate = { value: CFG.fallbackUsdRate, rates: {}, date: '', status: 'loading' };
 
   const money2 = (n) => n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   const dollars = (n) => `$${money2(n / rate.value)}`;
   const rupeeNumber = (n) => Math.round(n).toLocaleString('en-US');
 
-  /* A store prices in rupees (LKR) or dollars (USD). The price is shown in that currency, with the other one worked out as an estimate. */
+  /* A store prices in rupees (LKR) or dollars (USD). Its own price is what the customer pays. */
   const isUsd = (currency) => currency === 'USD';
-  const symbolOf = (currency) => (isUsd(currency) ? '$' : CFG.currencySymbol);
   const amountText = (n, currency) => (isUsd(currency) ? `$${rupeeNumber(n)}` : `${CFG.currencySymbol} ${rupeeNumber(n)}`);
   const toLkr = (n, currency) => (isUsd(currency) ? n * rate.value : n);
   const otherText = (n, currency) => (isUsd(currency) ? `${CFG.currencySymbol} ${rupeeNumber(n * rate.value)}` : dollars(n));
 
-  /* The customer chooses which currency prices are shown in (kept in this browser). A price in the other currency is converted at the live rate. */
-  const CUR_KEY = 'quartz-eon.currency';
-  let showCur = storage.get(CUR_KEY) === 'USD' ? 'USD' : 'LKR';
-  const shownNumber = (n, currency) => {
-    if (currency === showCur) return rupeeNumber(n);
-    return showCur === 'USD' ? money2(n / rate.value) : rupeeNumber(n * rate.value);
+  /* Countries the customer can pick in the header: [code, name, currency, device time zones]. Choosing one shows
+     every price in its currency. On a first visit the device time zone picks the country (Sri Lanka if unknown). */
+  const COUNTRIES = [
+    ['LK', 'Sri Lanka', 'LKR', 'Asia/Colombo'],
+    ['AU', 'Australia', 'AUD', 'Australia/Sydney Australia/Melbourne Australia/Brisbane Australia/Perth Australia/Adelaide Australia/Hobart Australia/Darwin'],
+    ['AT', 'Austria', 'EUR', 'Europe/Vienna'],
+    ['BH', 'Bahrain', 'BHD', 'Asia/Bahrain'],
+    ['BD', 'Bangladesh', 'BDT', 'Asia/Dhaka'],
+    ['BE', 'Belgium', 'EUR', 'Europe/Brussels'],
+    ['CA', 'Canada', 'CAD', 'America/Toronto America/Vancouver America/Edmonton America/Winnipeg America/Halifax America/Regina America/St_Johns'],
+    ['CN', 'China', 'CNY', 'Asia/Shanghai Asia/Urumqi'],
+    ['CY', 'Cyprus', 'EUR', 'Asia/Nicosia Europe/Nicosia'],
+    ['DK', 'Denmark', 'DKK', 'Europe/Copenhagen'],
+    ['FI', 'Finland', 'EUR', 'Europe/Helsinki'],
+    ['FR', 'France', 'EUR', 'Europe/Paris'],
+    ['DE', 'Germany', 'EUR', 'Europe/Berlin'],
+    ['GR', 'Greece', 'EUR', 'Europe/Athens'],
+    ['HK', 'Hong Kong', 'HKD', 'Asia/Hong_Kong'],
+    ['IN', 'India', 'INR', 'Asia/Kolkata Asia/Calcutta'],
+    ['ID', 'Indonesia', 'IDR', 'Asia/Jakarta Asia/Makassar Asia/Jayapura'],
+    ['IE', 'Ireland', 'EUR', 'Europe/Dublin'],
+    ['IL', 'Israel', 'ILS', 'Asia/Jerusalem Asia/Tel_Aviv'],
+    ['IT', 'Italy', 'EUR', 'Europe/Rome'],
+    ['JP', 'Japan', 'JPY', 'Asia/Tokyo'],
+    ['JO', 'Jordan', 'JOD', 'Asia/Amman'],
+    ['KW', 'Kuwait', 'KWD', 'Asia/Kuwait'],
+    ['LB', 'Lebanon', 'LBP', 'Asia/Beirut'],
+    ['MY', 'Malaysia', 'MYR', 'Asia/Kuala_Lumpur Asia/Kuching'],
+    ['MV', 'Maldives', 'MVR', 'Indian/Maldives'],
+    ['NP', 'Nepal', 'NPR', 'Asia/Kathmandu Asia/Katmandu'],
+    ['NL', 'Netherlands', 'EUR', 'Europe/Amsterdam'],
+    ['NZ', 'New Zealand', 'NZD', 'Pacific/Auckland'],
+    ['NO', 'Norway', 'NOK', 'Europe/Oslo'],
+    ['OM', 'Oman', 'OMR', 'Asia/Muscat'],
+    ['PK', 'Pakistan', 'PKR', 'Asia/Karachi'],
+    ['PH', 'Philippines', 'PHP', 'Asia/Manila'],
+    ['PL', 'Poland', 'PLN', 'Europe/Warsaw'],
+    ['PT', 'Portugal', 'EUR', 'Europe/Lisbon'],
+    ['QA', 'Qatar', 'QAR', 'Asia/Qatar'],
+    ['RO', 'Romania', 'RON', 'Europe/Bucharest'],
+    ['RU', 'Russia', 'RUB', 'Europe/Moscow'],
+    ['SA', 'Saudi Arabia', 'SAR', 'Asia/Riyadh'],
+    ['SG', 'Singapore', 'SGD', 'Asia/Singapore'],
+    ['KR', 'South Korea', 'KRW', 'Asia/Seoul'],
+    ['ES', 'Spain', 'EUR', 'Europe/Madrid'],
+    ['SE', 'Sweden', 'SEK', 'Europe/Stockholm'],
+    ['CH', 'Switzerland', 'CHF', 'Europe/Zurich'],
+    ['TH', 'Thailand', 'THB', 'Asia/Bangkok'],
+    ['AE', 'United Arab Emirates', 'AED', 'Asia/Dubai'],
+    ['GB', 'United Kingdom', 'GBP', 'Europe/London'],
+    ['US', 'United States', 'USD', 'America/New_York America/Chicago America/Denver America/Los_Angeles America/Phoenix America/Anchorage America/Detroit Pacific/Honolulu'],
+    ['VN', 'Vietnam', 'VND', 'Asia/Ho_Chi_Minh Asia/Saigon']
+  ];
+  const countryOf = (code) => COUNTRIES.find((c) => c[0] === code) || COUNTRIES[0];
+  const COUNTRY_KEY = 'quartz-eon.country';
+
+  function startCountry() {
+    const saved = storage.get(COUNTRY_KEY);
+    if (COUNTRIES.some((c) => c[0] === saved)) return saved;
+    const old = storage.get('quartz-eon.currency'); /* the earlier rupees / dollars switch */
+    if (old === 'USD') return 'US';
+    if (old === 'LKR') return 'LK';
+    let zone = '';
+    try { zone = Intl.DateTimeFormat().resolvedOptions().timeZone || ''; } catch (e) { /* no time zone */ }
+    const hit = COUNTRIES.find((c) => c[3].split(' ').includes(zone));
+    return hit ? hit[0] : 'LK';
+  }
+  let showCountry = startCountry();
+  const wantedCur = () => countryOf(showCountry)[2];
+
+  /* Units of a currency per US dollar, or undefined while that rate is not loaded. */
+  const perUsd = (cur) => (cur === 'USD' ? 1 : cur === 'LKR' ? rate.value : rate.rates[cur.toLowerCase()]);
+  /* The currency a price is shown in: the customer's, or the store's own until the live rates have loaded. */
+  const shownCur = (storeCur) => (perUsd(wantedCur()) ? wantedCur() : storeCur);
+  const convert = (n, from, to) => (from === to ? n : (n / perUsd(from)) * perUsd(to));
+
+  function currencyName(cur) {
+    try { return new Intl.DisplayNames(['en'], { type: 'currency' }).of(cur); } catch (e) { return cur; }
+  }
+
+  /* A price split into its sign and number, e.g. { sign: '€', number: '12.40' }. Rupees keep "Rs." and whole numbers.
+     A store's own price ("exact") and big converted amounts are whole numbers; small converted amounts keep cents. */
+  function moneyParts(n, cur, exact) {
+    if (cur === 'LKR') return { sign: CFG.currencySymbol, number: rupeeNumber(n) };
+    const whole = exact || n >= 1000 ? { minimumFractionDigits: 0, maximumFractionDigits: 0 } : {};
+    try {
+      const parts = new Intl.NumberFormat('en-US', { style: 'currency', currency: cur, ...whole }).formatToParts(n);
+      return {
+        sign: parts.filter((x) => x.type === 'currency').map((x) => x.value).join(''),
+        number: parts.filter((x) => x.type !== 'currency' && x.type !== 'literal').map((x) => x.value).join('')
+      };
+    } catch (e) {
+      return { sign: cur, number: money2(n) };
+    }
+  }
+  /* "€12.40", but "AED 45" and "Rs. 1,200" with a space after a lettered sign. */
+  function moneyText(n, cur, exact) {
+    const m = moneyParts(n, cur, exact);
+    return /[A-Za-z.]$/.test(m.sign) ? `${m.sign} ${m.number}` : `${m.sign}${m.number}`;
+  }
+  /* A store price written in the currency the customer chose. */
+  const shownText = (n, storeCur) => {
+    const cur = shownCur(storeCur);
+    return moneyText(convert(n, storeCur, cur), cur, cur === storeCur);
   };
-  const shownText = (n, currency) => `${showCur === 'USD' ? '$' : `${CFG.currencySymbol} `}${shownNumber(n, currency)}`;
 
   /* What a price looks like. With several options and none chosen it reads "From Rs. ...". */
   function priceHtml(p, optionIndex) {
@@ -278,12 +375,13 @@
     const chosen = Number.isInteger(optionIndex) ? options[optionIndex] : null;
     const amount = chosen ? chosen.price : p.price;
     const from = !chosen && options.length > 1 ? '<span class="price__from">From</span> ' : '';
-    const converted = p.currency !== showCur;
-    const note = converted
-      ? `<span class="usd" title="The store sets this price in ${isUsd(p.currency) ? 'US dollars' : 'rupees'}">Store price ${esc(amountText(amount, p.currency))}</span>`
+    const cur = shownCur(p.currency);
+    const m = moneyParts(convert(amount, p.currency, cur), cur, cur === p.currency);
+    const note = cur !== p.currency
+      ? `<span class="usd" title="Approximate. The store sets this price in ${isUsd(p.currency) ? 'US dollars' : 'rupees'} and you pay in that">Store price ${esc(amountText(amount, p.currency))}</span>`
       : `<span class="usd" title="Approximate, at the current exchange rate">&asymp; ${esc(otherText(amount, p.currency))}</span>`;
     return `
-      <span class="price">${from}<span class="price__cur">${showCur === 'USD' ? '$' : esc(CFG.currencySymbol)}</span>${shownNumber(amount, p.currency)}</span>
+      <span class="price">${from}<span class="price__cur">${esc(m.sign)}</span>${esc(m.number)}</span>
       ${note}`;
   }
 
@@ -305,26 +403,31 @@
 
   function renderRateNote() {
     const per = `1 USD = ${CFG.currencySymbol} ${money2(rate.value)}`;
-    const base = 'Each store prices in rupees or US dollars. The other currency is approximate';
+    const cur = wantedCur();
+    const base = 'Each store prices in rupees or US dollars, and you pay the store in its own currency.';
+    const showing = `Prices are shown in ${currencyName(cur)} for ${countryOf(showCountry)[1]} (change the country at the top of the page).`;
     let text;
-    if (rate.status === 'live') text = `${base}, at ${per}${rate.date ? ` (rate of ${formatDate(rate.date)})` : ''}.`;
-    else if (rate.status === 'fallback') text = `${base}, using an estimated ${per} because the live rate could not be loaded.`;
-    else text = `${base}. Loading the live exchange rate.`;
+    if (rate.status === 'live') text = `${base} ${showing} Other currencies are approximate, at today's exchange rates (${per}${rate.date ? `, rate of ${formatDate(rate.date)}` : ''}).`;
+    else if (rate.status === 'fallback') text = `${base} The live exchange rates could not be loaded, so an estimated ${per} is used${perUsd(cur) ? '' : ' and prices are shown in each store\'s own currency'}.`;
+    else text = `${base} Loading the live exchange rates.`;
     byId('rate-note').textContent = text;
   }
 
-  function applyRate(value, date, status) {
+  function applyRate(value, rates, date, status) {
     rate.value = value;
+    rate.rates = rates;
     rate.date = date;
     rate.status = status;
     renderCurrentView();
     renderRateNote();
   }
 
+  const goodLkr = (value) => value > 50 && value < 2000;
+
   function readCachedRate() {
     try {
       const cached = JSON.parse(storage.get(RATE_KEY));
-      if (cached && cached.value > 50 && cached.value < 2000) return cached;
+      if (cached && goodLkr(cached.value) && cached.rates) return cached;
     } catch (e) { /* no usable cache */ }
     return null;
   }
@@ -335,8 +438,16 @@
         const response = await fetch(url, { cache: 'no-cache' });
         if (!response.ok) continue;
         const data = await response.json();
-        const value = Number(data && data.usd && data.usd.lkr);
-        if (value > 50 && value < 2000) return { value, date: data.date || '', fetchedAt: Date.now() };
+        const all = (data && data.usd) || {};
+        const value = Number(all.lkr);
+        if (!goodLkr(value)) continue;
+        /* Keep only the currencies of the country list. */
+        const rates = {};
+        COUNTRIES.forEach((c) => {
+          const v = Number(all[c[2].toLowerCase()]);
+          if (v > 0) rates[c[2].toLowerCase()] = v;
+        });
+        return { value, rates, date: data.date || '', fetchedAt: Date.now() };
       } catch (e) { /* try the next source */ }
     }
     return null;
@@ -345,15 +456,15 @@
   async function loadRate() {
     const cached = readCachedRate();
     if (cached) {
-      applyRate(cached.value, cached.date, 'live');
+      applyRate(cached.value, cached.rates, cached.date, 'live');
       if (Date.now() - cached.fetchedAt < RATE_MAX_AGE) return;
     }
     const fresh = await fetchRate();
     if (fresh) {
       storage.set(RATE_KEY, JSON.stringify(fresh));
-      applyRate(fresh.value, fresh.date, 'live');
+      applyRate(fresh.value, fresh.rates, fresh.date, 'live');
     } else if (!cached) {
-      applyRate(CFG.fallbackUsdRate, '', 'fallback');
+      applyRate(CFG.fallbackUsdRate, {}, '', 'fallback');
     }
   }
 
@@ -669,12 +780,21 @@
     state.sort = event.target.value;
     renderProducts();
   });
-  /* Currency the customer wants to see prices in. */
-  byId('currency-pick').value = showCur;
-  byId('currency-pick').addEventListener('change', (event) => {
-    showCur = event.target.value === 'USD' ? 'USD' : 'LKR';
-    storage.set(CUR_KEY, showCur);
+  /* The customer's country (kept in this browser): every price is shown in its currency.
+     The pill shows only the currency code; the full country list opens from it. */
+  const curPick = byId('currency-pick');
+  curPick.innerHTML = COUNTRIES.map((c) => `<option value="${c[0]}">${esc(c[1])} (${c[2]})</option>`).join('');
+  function paintCurrencyPick() {
+    curPick.value = showCountry;
+    byId('currency-face').textContent = wantedCur();
+  }
+  paintCurrencyPick();
+  curPick.addEventListener('change', (event) => {
+    showCountry = countryOf(event.target.value)[0];
+    storage.set(COUNTRY_KEY, showCountry);
+    paintCurrencyPick();
     renderCurrentView();
+    renderRateNote();
   });
   byId('retry-load').addEventListener('click', loadCatalog);
   byId('clear-filters').addEventListener('click', () => {
