@@ -858,9 +858,14 @@
   const links = Array.from(nav.querySelectorAll('[data-dash-tab]'));
   const ids = links.map((a) => a.dataset.dashTab);
   function show(id) {
+    /* An id inside a section (such as #store-contact) opens that section and scrolls to the spot. */
+    const inner = id && !ids.includes(id) ? document.getElementById(id) : null;
+    const owner = inner && ids.find((tab) => { const el = document.getElementById(tab); return el && el.contains(inner); });
+    if (owner) id = owner;
     if (!ids.includes(id)) id = ids[0];
     ids.forEach((other) => { const el = document.getElementById(other); if (el) el.hidden = other !== id; });
     links.forEach((a) => { if (a.dataset.dashTab === id) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current'); });
+    if (owner) requestAnimationFrame(() => inner.scrollIntoView({ block: 'start' }));
   }
   nav.addEventListener('click', (event) => {
     const link = event.target.closest('[data-dash-tab]');

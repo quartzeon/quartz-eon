@@ -80,6 +80,7 @@
 .pp-form__actions { display: flex; align-items: center; gap: 16px; padding-bottom: 24px; }
 .pp-label { font-size: 13px; font-weight: 600; }
 .pp-label--gap { display: block; margin-top: 18px; }
+.store-contact { display: grid; gap: 6px; margin-top: 6px; padding-top: 18px; border-top: 1px solid var(--line); scroll-margin-top: 90px; }
 .pp-photos { display: flex; flex-wrap: wrap; gap: 10px; }
 .pp-photo { position: relative; width: 112px; height: 112px; margin: 0; overflow: hidden; border: 1.5px solid var(--line); border-radius: 12px; background: var(--paper); }
 .pp-photo img { width: 100%; height: 100%; object-fit: cover; display: block; }
