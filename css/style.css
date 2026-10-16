@@ -872,7 +872,9 @@ button.is-locked { opacity: .55; cursor: not-allowed; }
 .modal.modal--ad .dlg { height: auto; max-height: min(92vh, 860px); max-height: min(92dvh, 860px); }
 .ad { display: grid; grid-template-columns: 1fr 1fr; }
 .ad__media { position: relative; display: block; min-height: 440px; overflow: hidden; background: hsl(var(--h) var(--art-s) var(--art-l)); }
-.ad__poster, .ad__photo { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.ad { cursor: pointer; }
+.ad__blur { position: absolute; inset: -24px; background: center / cover no-repeat; filter: blur(22px) brightness(.7); }
+.ad__poster { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; }
 .ad__art { position: absolute; inset: 0; display: grid; place-items: center; color: hsl(var(--h) var(--art-fg-s) var(--art-fg-l)); }
 .ad__art .art { width: 120px; height: 120px; }
 .ad__logo { width: 120px; height: 120px; object-fit: contain; border-radius: 24px; }
@@ -887,7 +889,9 @@ button.is-locked { opacity: .55; cursor: not-allowed; }
 @media (max-width: 640px) {
   .modal.modal--ad { width: min(440px, calc(100% - 24px)); }
   .ad { grid-template-columns: 1fr; }
-  .ad__media { min-height: 0; aspect-ratio: 4 / 3; }
+  .ad__media { min-height: 0; }
+  .ad__media--art { aspect-ratio: 16 / 9; }
+  .ad__poster { position: relative; display: block; height: auto; max-height: 46vh; max-height: 46dvh; }
   .ad__info { padding: 24px 22px 26px; }
   .ad__name { font-size: 1.6rem; }
   .ad__rule { margin: 14px auto 14px; }

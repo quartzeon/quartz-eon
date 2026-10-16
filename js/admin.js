@@ -815,6 +815,7 @@
           </div>
         </div>
         <div class="seller-row__actions">
+          <button class="btn btn--ghost btn--sm" type="button" data-ad-edit="${esc(a.id)}">${icon('i-edit')}<span>Edit</span></button>
           ${toggle}
           <button class="btn btn--ghost btn--sm" type="button" data-ad-delete="${esc(a.id)}">${icon('i-trash')}<span>Delete</span></button>
         </div>
@@ -840,6 +841,42 @@
     renderAds();
   }
 
+  /* The form adds a new ad, or saves an existing one after its Edit button was used. */
+  let editingAd = null;
+
+  function resetAdForm() {
+    const form = byId('ad-form');
+    editingAd = null;
+    form.reset();
+    byId('ad-error').hidden = true;
+    byId('ad-submit').textContent = 'Add ad';
+    byId('ad-cancel').hidden = true;
+    fillAdForm();
+  }
+
+  function startAdEdit(ad) {
+    const f = byId('ad-form').elements;
+    fillAdForm();
+    if (![...f.product.options].some((o) => o.value === ad.product_id)) {
+      const p = products.find((row) => row.id === ad.product_id);
+      f.product.insertAdjacentHTML('beforeend', `<option value="${esc(ad.product_id)}">${esc(p ? p.name : 'Deleted product')} (not on sale now)</option>`);
+    }
+    editingAd = ad;
+    f.product.value = ad.product_id;
+    f.poster.value = '';
+    f.startsOn.value = ad.starts_on;
+    f.endsOn.value = ad.ends_on;
+    f.title.value = ad.title || '';
+    f.message.value = ad.message || '';
+    f.note.value = ad.note || '';
+    byId('ad-error').hidden = true;
+    byId('ad-submit').textContent = 'Save changes';
+    byId('ad-cancel').hidden = false;
+    byId('ad-form').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  byId('ad-cancel').addEventListener('click', resetAdForm);
+
   byId('ad-form').addEventListener('submit', async (event) => {
     event.preventDefault();
     const form = byId('ad-form');
@@ -853,7 +890,8 @@
     if (!f.startsOn.value || !f.endsOn.value) return fail('Choose the start and end days.');
     if (f.endsOn.value < f.startsOn.value) return fail('The end day must be on or after the start day.');
 
-    const button = form.querySelector('button[type="submit"]');
+    const editing = editingAd;
+    const button = byId('ad-submit');
     button.disabled = true;
     let path = null;
     try {
@@ -863,24 +901,35 @@
         const { error: uploadError } = await sb.storage.from(BRAND_BUCKET).upload(path, blob, { contentType: 'image/jpeg' });
         if (uploadError) throw uploadError;
       }
-      const { data, error: insertError } = await sb.from('ads').insert({
+      const fields = {
         product_id: f.product.value,
-        image: path,
         starts_on: f.startsOn.value,
         ends_on: f.endsOn.value,
         title: f.title.value.trim(),
         message: f.message.value.trim(),
         note: f.note.value.trim()
-      }).select().maybeSingle();
-      if (insertError) throw insertError;
-      ads.unshift(data);
-      renderAds();
-      form.reset();
-      fillAdForm();
-      toast('Ad added');
+      };
+      if (editing) {
+        if (path) fields.image = path; /* no new file: keep the current poster */
+        const { data, error: updateError } = await sb.from('ads').update(fields).eq('id', editing.id).select().maybeSingle();
+        if (updateError) throw updateError;
+        if (!data) throw new Error('This ad no longer exists. Reload the page.');
+        if (path && editing.image) sb.storage.from(BRAND_BUCKET).remove([editing.image]).catch(() => {});
+        ads = ads.map((a) => (a.id === data.id ? data : a));
+        renderAds();
+        resetAdForm();
+        toast('Ad saved');
+      } else {
+        const { data, error: insertError } = await sb.from('ads').insert({ ...fields, image: path }).select().maybeSingle();
+        if (insertError) throw insertError;
+        ads.unshift(data);
+        renderAds();
+        resetAdForm();
+        toast('Ad added');
+      }
     } catch (err) {
       if (path) sb.storage.from(BRAND_BUCKET).remove([path]).catch(() => {});
-      fail((err && err.message) || 'Could not add the ad.');
+      fail((err && err.message) || 'Could not save the ad.');
     } finally {
       button.disabled = false;
     }
@@ -890,15 +939,18 @@
     const pause = event.target.closest('[data-ad-pause]');
     const run = event.target.closest('[data-ad-run]');
     const del = event.target.closest('[data-ad-delete]');
-    const id = (pause && pause.dataset.adPause) || (run && run.dataset.adRun) || (del && del.dataset.adDelete);
+    const edit = event.target.closest('[data-ad-edit]');
+    const id = (pause && pause.dataset.adPause) || (run && run.dataset.adRun) || (del && del.dataset.adDelete) || (edit && edit.dataset.adEdit);
     const ad = ads.find((a) => a.id === id);
     if (!ad) return;
+    if (edit) { startAdEdit(ad); return; }
     if (del) {
       if (!window.confirm('Delete this ad? It stops showing in the shop.')) return;
       const { error } = await sb.from('ads').delete().eq('id', ad.id);
       if (error) { toast(`Could not delete: ${error.message}`); return; }
       if (ad.image) sb.storage.from(BRAND_BUCKET).remove([ad.image]).catch(() => {});
       ads = ads.filter((a) => a.id !== ad.id);
+      if (editingAd && editingAd.id === ad.id) resetAdForm();
       renderAds();
       toast('Ad deleted');
       return;

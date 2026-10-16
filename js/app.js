@@ -549,6 +549,7 @@
     const request = ++catalogRequest;
     catalog.status = 'loading';
     renderCurrentView();
+    startAdRequest();
     const [stores, products, ratings] = await Promise.all([
       sb.from('public_stores').select('*'),
       sb.from('public_products').select('*').order('created_at', { ascending: false }),
@@ -600,25 +601,44 @@
   /* ---------- Ad popup: a product a seller paid to promote, shown once per visit ---------- */
   const adDialog = byId('ad');
   let adChecked = false;
+  let adRequest = null;
+
+  /* Ask for the running ads while the products load, so the popup shows as soon as the shop is ready. */
+  function startAdRequest() {
+    if (adRequest) return;
+    let seen = false;
+    try { seen = Boolean(window.sessionStorage.getItem('qe-ad-shown')); } catch (e) { /* storage unavailable: show it */ }
+    adRequest = seen ? Promise.resolve({ data: [], error: null }) : Promise.resolve(sb.from('public_ads').select('*')).catch((err) => ({ data: null, error: err }));
+  }
 
   adDialog.addEventListener('click', (event) => {
-    if (event.target === adDialog || event.target.closest('[data-ad-go]')) adDialog.close();
+    if (event.target === adDialog || event.target.closest('[data-ad-go]')) { adDialog.close(); return; }
+    /* A tap anywhere else on the post (not the close button) opens the seller's store too. */
+    const post = event.target.closest('.ad[data-href]');
+    if (post && !event.target.closest('[data-close]')) {
+      adDialog.close();
+      window.location.hash = post.dataset.href;
+    }
   });
 
   async function showAd() {
     if (adChecked) return;
     adChecked = true;
     try { if (window.sessionStorage.getItem('qe-ad-shown')) return; } catch (e) { /* storage unavailable: show it */ }
-    const { data, error } = await sb.from('public_ads').select('*');
+    startAdRequest();
+    const { data, error } = await adRequest;
     if (error || !data) return;
     const running = data.filter((a) => PRODUCT_BY_ID.has(a.product_id));
     if (!running.length || view.name === 'orders' || document.querySelector('dialog[open]')) return;
     const ad = running[Math.floor(Math.random() * running.length)];
     const p = PRODUCT_BY_ID.get(ad.product_id);
     const seller = sellerOf(p);
-    const href = `#/product/${esc(p.id)}`;
-    const picture = ad.image ? `<img class="ad__poster" src="${esc(photoUrl(ad.image))}" alt="${esc(p.name)}">`
-      : p.images.length ? `<img class="ad__photo" src="${esc(photoUrl(p.images[0]))}" alt="${esc(p.name)}">`
+    /* The whole post opens the seller's store (the product page if the store has no address). */
+    const href = seller.slug ? `#/store/${esc(seller.slug)}` : `#/product/${esc(p.id)}`;
+    const photo = ad.image || p.images[0];
+    /* The whole picture is shown (never cropped); a blurred copy of it fills the empty space around it. */
+    const picture = photo
+      ? `<span class="ad__blur" style="background-image:url('${esc(photoUrl(photo))}')" aria-hidden="true"></span><img class="ad__poster" src="${esc(photoUrl(photo))}" alt="${esc(p.name)}">`
       : p.logo ? `<span class="ad__art"><img class="ad__logo" src="${esc(logoUrl(p.logo))}" alt=""></span>`
       : `<span class="ad__art">${art(p.icon)}</span>`;
     const headline = (ad.title || '').trim() || p.name;
@@ -628,9 +648,9 @@
       if (message.length > 140) message = `${message.slice(0, 137).replace(/\s+\S*$/, '')}...`;
     }
     byId('ad-body').innerHTML = `
-      <div class="ad" style="--h:${hueOf(p)}">
+      <div class="ad" style="--h:${hueOf(p)}" data-href="${href}">
         <button class="icon-btn dlg__x" type="button" data-close aria-label="Close">${icon('i-close')}</button>
-        <a class="ad__media" href="${href}" data-ad-go>${picture}</a>
+        <a class="ad__media${photo ? '' : ' ad__media--art'}" href="${href}" data-ad-go>${picture}</a>
         <div class="ad__info">
           <p class="ad__label">Sponsored &middot; ${esc(seller.name)}</p>
           <h2 class="ad__name">${esc(headline)}</h2>
@@ -638,7 +658,7 @@
           ${message ? `<p class="ad__message">${esc(message)}</p>` : ''}
           ${headline !== p.name ? `<p class="ad__product">${esc(p.name)}</p>` : ''}
           <p class="product__price ad__price">${priceHtml(p)}</p>
-          <a class="btn btn--ink ad__cta" href="${href}" data-ad-go>${p.soldOut ? 'See details' : p.saleMode === 'contact' ? 'Contact the seller' : 'Buy now'}</a>
+          <a class="btn btn--ink ad__cta" href="${href}" data-ad-go>${seller.slug ? 'Visit the store' : 'See details'}</a>
         </div>
       </div>`;
     adDialog.showModal();

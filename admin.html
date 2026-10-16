@@ -33,6 +33,7 @@
     <symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></symbol>
     <symbol id="i-pause" viewBox="0 0 24 24"><rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></symbol>
     <symbol id="i-play" viewBox="0 0 24 24"><path d="M7 5l12 7-12 7z"/></symbol>
+    <symbol id="i-edit" viewBox="0 0 24 24"><path d="M4 20h4L18.5 9.5a2.1 2.1 0 0 0-3-3L5 17v3zM14 8l3 3"/></symbol>
     <symbol id="i-trash" viewBox="0 0 24 24"><path d="M5 7h14M9 7V5.5A1.5 1.5 0 0 1 10.5 4h3A1.5 1.5 0 0 1 15 5.5V7M7 7l1 13h8l1-13"/></symbol>
     <symbol id="i-orders" viewBox="0 0 24 24"><path d="M6 3h12v18l-3-2-3 2-3-2-3 2z"/><path d="M9 8h6M9 12h6M9 16h3"/></symbol>
     <symbol id="i-box" viewBox="0 0 24 24"><path d="M3.5 7.5L12 3l8.5 4.5v9L12 21l-8.5-4.5z"/><path d="M3.5 7.5L12 12l8.5-4.5M12 12v9"/></symbol>
@@ -193,7 +194,7 @@
         </div>
         <p class="admin-count" id="ads-count" aria-live="polite"></p>
       </header>
-      <p class="admin-lead">When a seller pays you to promote a product, add it here. While the ad runs, the product pops up when a customer opens the shop (once per visit), with a close button at the top right. If several ads run at the same time, the shop shows one of them at random.</p>
+      <p class="admin-lead">When a seller pays you to promote a product, add it here. While the ad runs, the product pops up when a customer opens the shop (once per visit), with a close button at the top right. A tap on the post opens the seller’s store. If several ads run at the same time, the shop shows one of them at random.</p>
 
       <form class="auth__form" id="ad-form" novalidate>
         <div class="field">
@@ -203,7 +204,7 @@
         <div class="field">
           <label for="ad-file">Poster image (optional)</label>
           <input id="ad-file" name="poster" type="file" accept="image/jpeg,image/png,image/webp">
-          <p class="field__hint">The picture the seller wants shown. It fills the left half of the popup, so a square or tall picture looks best. Leave empty to use the product’s own photo.</p>
+          <p class="field__hint">The picture the seller wants shown (the whole picture is shown, never cut). Leave empty to use the product’s own photo. When editing an ad, leave empty to keep its current poster.</p>
         </div>
         <div class="field">
           <label for="ad-title">Headline (optional)</label>
@@ -230,7 +231,10 @@
           <input id="ad-note" name="note" type="text" maxlength="200" placeholder="For example: paid Rs. 1000 on 16 Oct">
         </div>
         <p class="field__error" id="ad-error" hidden></p>
-        <button class="btn btn--ink" type="submit">Add ad</button>
+        <div class="ad-form__actions">
+          <button class="btn btn--ink" type="submit" id="ad-submit">Add ad</button>
+          <button class="btn btn--ghost" type="button" id="ad-cancel" hidden>Cancel</button>
+        </div>
       </form>
 
       <div class="admin-list admin-list--spaced" id="ads-list"></div>
