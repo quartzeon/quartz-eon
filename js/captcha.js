@@ -39,6 +39,23 @@ window.QE_CAPTCHA = (function () {
     const submit = form.querySelector('button[type="submit"]');
     form.insertBefore(box, submit || null);
 
+    /* The button stays locked until the check says Success. This is a class, not the disabled
+       attribute, because the pages turn disabled on and off themselves while they log in. */
+    function lock(on) {
+      if (!submit) return;
+      submit.classList.toggle('is-locked', on);
+      submit.setAttribute('aria-disabled', on ? 'true' : 'false');
+      submit.title = on ? 'Finish the "Verify you are human" check first' : '';
+    }
+    function blockSubmit(event) {
+      if (submit && submit.classList.contains('is-locked')) {
+        event.preventDefault();
+        event.stopImmediatePropagation();
+      }
+    }
+    form.addEventListener('submit', blockSubmit, true);
+    lock(true);
+
     let widgetId = null;
     let failed = null;
     const rendered = load().then((turnstile) => {
@@ -46,10 +63,18 @@ window.QE_CAPTCHA = (function () {
         sitekey: siteKey,
         theme: 'auto',
         size: 'flexible',
-        'refresh-expired': 'auto'
+        'refresh-expired': 'auto',
+        callback: () => lock(false),
+        'expired-callback': () => lock(true),
+        'error-callback': () => lock(true)
       });
       return turnstile;
-    }).catch((err) => { failed = err; return null; });
+    }).catch((err) => {
+      /* Let the button work so the click shows the error and tries to load the check again. */
+      failed = err;
+      lock(false);
+      return null;
+    });
 
     const handle = {
       async token() {
@@ -69,6 +94,7 @@ window.QE_CAPTCHA = (function () {
       },
       reset() {
         if (window.turnstile && widgetId !== null && box.isConnected) {
+          lock(true);
           try { window.turnstile.reset(widgetId); } catch (err) { /* the widget is already gone */ }
         }
       },
@@ -76,6 +102,8 @@ window.QE_CAPTCHA = (function () {
         if (window.turnstile && widgetId !== null) {
           try { window.turnstile.remove(widgetId); } catch (err) { /* the widget is already gone */ }
         }
+        form.removeEventListener('submit', blockSubmit, true);
+        lock(false);
         box.remove();
         delete form.qeCaptcha;
       }
