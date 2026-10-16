@@ -486,7 +486,8 @@
   }
 
   /* ---------- Product cards ---------- */
-  /* A "plan card" product in a list: the same card as on its page (logo, badge, key figures, detail lines), then Details and Buy now. */
+  /* A "plan card" product in a list: logo, name and badge, the key figures and detail lines, then the price and
+     Buy like the other tiles. Tiles get small on phones, so style.css trims them as the list narrows. */
   function planTile(p, showSeller) {
     const seller = sellerOf(p);
     const href = `#/product/${esc(p.id)}`;
@@ -494,22 +495,19 @@
     return `
       <article class="pc pc--tile${p.soldOut ? ' is-soldout' : ''}" style="--h:${hueOf(p)}">
         <header class="pc__head">
-          ${p.logo ? `<img class="pc__logo" src="${esc(logoUrl(p.logo))}" alt="" loading="lazy">` : `<span class="pc__logo pc__logo--art">${art(p.icon)}</span>`}
+          <a class="pc__logo-link" href="${href}" tabindex="-1" aria-hidden="true">${p.logo ? `<img class="pc__logo" src="${esc(logoUrl(p.logo))}" alt="" loading="lazy">` : `<span class="pc__logo pc__logo--art">${art(p.icon)}</span>`}</a>
           <div>
             <h3 class="pc__title"><a href="${href}">${esc(p.name)}</a></h3>
             ${p.badge ? `<span class="pc__badge">${icon('i-shield')}${esc(p.badge)}</span>` : ''}
             ${ratingLine(p)}
           </div>
         </header>
-        <div class="pc__stats">
-          ${p.stats.map(stat).join('')}
-          <div class="pc__stat pc__stat--price"><div class="product__price pd__price">${priceHtml(p)}</div></div>
-        </div>
+        ${p.stats.length ? `<div class="pc__stats">${p.stats.map(stat).join('')}</div>` : ''}
         ${p.info.length ? `<ul class="pc__info">${p.info.map((row) => `<li>${icon(`i-${esc(row.icon)}`)}<span>${esc(row.text)}</span></li>`).join('')}</ul>` : ''}
         ${showSeller ? `<p class="product__seller">by ${seller.slug ? `<a href="#/store/${esc(seller.slug)}">${esc(seller.name)}</a>${verifiedBadge(seller)}` : esc(seller.name)}</p>` : ''}
         <div class="pc__foot">
-          <a class="link" href="${href}">Details &rarr;</a>
-          <a class="btn ${p.soldOut ? 'btn--ghost' : 'btn--ink'} pc__buy" href="${href}">${p.soldOut ? 'Sold out' : p.saleMode === 'contact' ? 'Contact to buy' : 'Buy now'}</a>
+          <p class="product__price">${priceHtml(p)}</p>
+          <a class="btn ${p.soldOut ? 'btn--ghost' : 'btn--ink'} btn--sm pc__buy" href="${href}" aria-label="${p.soldOut ? 'See' : p.saleMode === 'contact' ? 'Contact the seller about' : 'Buy'} ${esc(p.name)}">${p.soldOut ? 'Sold out' : p.saleMode === 'contact' ? 'Contact' : 'Buy'}</a>
         </div>
       </article>`;
   }

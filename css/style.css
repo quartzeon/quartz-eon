@@ -367,30 +367,46 @@ section[id] { scroll-margin-top: 76px; }
   .cur__menu { position: fixed; top: var(--cur-top, 76px); left: var(--gutter); right: var(--gutter); width: auto; max-height: calc(100dvh - var(--cur-top, 76px) - 16px); }
 }
 
-.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 250px), 1fr)); gap: 36px 24px; }
-.product { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+/* Product lists: never fewer than three tiles a row (more on wide screens). Each column is at most a third of the
+   row minus the gaps (1px less so rounding never drops it to two). The list is a size container: the
+   "Small product tiles" rules further down shrink the tiles as it narrows. */
+.grid {
+  --gap-x: 16px;
+  display: grid; gap: 30px var(--gap-x); container: grid / inline-size;
+  grid-template-columns: repeat(auto-fill, minmax(min(190px, calc((100% - 2 * var(--gap-x)) / 3 - 1px)), 1fr));
+}
+.product { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
 .product__art {
-  position: relative; display: grid; place-items: center; aspect-ratio: 4 / 3; border-radius: var(--radius-l);
+  position: relative; display: grid; place-items: center; aspect-ratio: 4 / 3; border-radius: 18px;
   background: hsl(var(--h) var(--art-s) var(--art-l));
   color: hsl(var(--h) var(--art-fg-s) var(--art-fg-l));
 }
 .product__art .art { width: 36%; height: 36%; }
+.product__art .badge { top: 10px; left: 10px; padding: 4px 8px; font-size: 10px; }
+.product__art .badge--soldout { left: auto; right: 10px; }
 .badge {
   position: absolute; top: 12px; left: 12px; padding: 5px 9px; border-radius: 6px;
   background: var(--ink); color: var(--paper);
   font: 500 11px/1 var(--font-mono); letter-spacing: .08em; text-transform: uppercase;
 }
-.product__info { display: flex; flex-direction: column; gap: 4px; }
-.product__cat { font: 500 11px/1 var(--font-mono); letter-spacing: .09em; text-transform: uppercase; color: var(--ink-3); }
-.product__name { margin-top: 4px; font: 600 18px/1.25 var(--font-display); letter-spacing: -.015em; text-wrap: balance; }
-.product__seller { font-size: 14px; color: var(--ink-2); }
+.product__info { display: flex; flex: 1 1 auto; flex-direction: column; gap: 4px; }
+.product__cat { font: 500 10px/1 var(--font-mono); letter-spacing: .09em; text-transform: uppercase; color: var(--ink-3); }
+/* Long names stop after two lines so tiles in a row stay the same size */
+.product__name {
+  margin-top: 2px; font: 600 16px/1.25 var(--font-display); letter-spacing: -.015em; text-wrap: balance; overflow-wrap: anywhere;
+  display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-clamp: 2; overflow: hidden;
+}
+.product__seller { font-size: 13px; color: var(--ink-2); }
 .product__seller a { text-decoration: underline; text-underline-offset: 3px; }
 .product__seller a:hover { color: var(--ink); }
-/* Bottom of a card: a hairline, then the price (rupees big, approximate dollars small) and the Buy button */
+/* Bottom of a card: a hairline, the price (rupees big, approximate dollars small), then a full width Buy button.
+   It sits at the bottom of the tile, so the prices and buttons of one row line up. */
 .product__buy {
-  display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px 12px;
-  margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--line);
+  display: flex; flex-direction: column; align-items: stretch; gap: 10px;
+  margin-top: auto; padding-top: 10px; border-top: 1px solid var(--line);
 }
+.product__info > :nth-last-child(2) { margin-bottom: 8px; }
+.product__buy .price { font-size: 19px; }
 .product__price { display: flex; flex-direction: column; gap: 6px; }
 .price { font: 700 22px/1 var(--font-display); letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
 .price__cur { margin-right: 5px; font: 500 13px/1 var(--font-mono); letter-spacing: 0; color: var(--ink-2); }
@@ -477,15 +493,102 @@ section[id] { scroll-margin-top: 76px; }
 .pc__info .i { flex: none; width: 18px; height: 18px; margin-top: 1px; }
 .pc__buy { min-height: 52px; border-radius: 14px; }
 .pc.is-soldout .pc__logo, .pc.is-soldout .pc__stats { opacity: .55; }
-/* The same card inside the shop's product list. Lists with plan cards use wider columns so the cards read well. */
-.grid:has(.pc--tile) { grid-template-columns: repeat(auto-fill, minmax(min(100%, 330px), 1fr)); }
-.pc--tile { width: 100%; height: 100%; margin: 0; padding: 18px; box-shadow: none; }
-.pc--tile .pc__title { font-size: 1.02rem; }
-.pc__foot { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: auto; padding-top: 4px; }
-.pc__foot .link { font-size: 14px; color: var(--ink-2); text-decoration: none; }
-.pc__foot .link:hover { color: var(--ink); text-decoration: underline; text-underline-offset: 3px; }
-.pc--tile .pc__buy { min-height: 44px; padding-inline: 20px; font-size: 15px; }
+/* The same card inside the shop's product list, sized like the other tiles: the price moves down next to Buy
+   and only the first two detail lines show (the product page has them all). */
+.pc--tile { width: 100%; height: 100%; margin: 0; gap: 12px; padding: 14px; border-radius: 18px; box-shadow: none; min-width: 0; }
+.pc--tile .pc__head { align-items: flex-start; gap: 12px; }
+.pc__logo-link { display: block; flex: none; }
+.pc--tile .pc__logo { width: 46px; height: 46px; padding: 5px; border-radius: 12px; }
+.pc--tile .pc__title {
+  font-size: 15px; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-clamp: 2; overflow: hidden;
+}
+.pc--tile .pc__badge { margin-top: 5px; padding: 3px 9px; font-size: 11px; }
+.pc--tile .pc__stats { min-height: 0; padding: 8px 2px; border-radius: 12px; }
+.pc--tile .pc__stat { min-width: 0; gap: 4px; padding: 2px 6px; }
+.pc--tile .pc__stat strong { font-size: 1.1rem; }
+.pc--tile .pc__stat strong.is-long { font-size: .85rem; }
+.pc--tile .pc__stat span { font-size: 9.5px; letter-spacing: .06em; }
+.pc--tile .pc__info li { gap: 7px; padding: 7px 9px; border-radius: 10px; font-size: 12.5px; }
+.pc--tile .pc__info li:nth-child(n+3) { display: none; }
+.pc--tile .pc__info .i { width: 15px; height: 15px; }
 .pc--tile .product__seller { font-size: 13px; }
+.pc__foot {
+  display: flex; flex-direction: column; align-items: stretch; gap: 10px;
+  margin-top: auto; padding-top: 10px; border-top: 1px solid var(--line);
+}
+.pc__foot .price { font-size: 19px; }
+.pc--tile .pc__buy { min-height: 40px; border-radius: 12px; }
+/* "4.5 (12 reviews)" moves under the stars as a whole instead of breaking in the middle */
+.grid .rating { flex-wrap: wrap; row-gap: 2px; }
+.grid .rating > span:not(.stars) { white-space: nowrap; }
+
+/* ---------- Small product tiles ---------- */
+/* Tiles of about 140 to 190px (a narrow window, a tablet): the extras go, the name, price and button stay. */
+@container grid (max-width: 600px) {
+  .product { gap: 9px; }
+  .product__art { border-radius: 14px; }
+  .product__art .art { width: 40%; height: 40%; }
+  .product__art .badge { top: 7px; left: 7px; padding: 3px 6px; font-size: 9px; }
+  .product__art .badge--soldout { left: auto; right: 7px; }
+  .product__cat { font-size: 9px; }
+  .product__name { font-size: 14px; }
+  .product__seller { overflow: hidden; font-size: 12px; white-space: nowrap; text-overflow: ellipsis; }
+  .grid .rating { gap: 4px; font-size: 11px; }
+  .grid .stars .i { width: 12px; height: 12px; }
+  .product__buy, .pc__foot { gap: 7px; padding-top: 8px; }
+  .product__buy .price, .pc__foot .price { font-size: 16px; line-height: 1.1; }
+  .product__buy .price__cur, .pc__foot .price__cur { margin-right: 3px; font-size: 11px; }
+  .product__buy .price__from, .pc__foot .price__from { font-size: 9.5px; }
+  .product__buy .usd, .pc__foot .usd { font-size: 10.5px; line-height: 1.2; }
+  .product__buy .product__price, .pc__foot .product__price { gap: 4px; }
+  .product__buy .btn, .pc--tile .pc__buy { min-height: 34px; padding: 0 8px; border-radius: 10px; font-size: 13px; }
+
+  .pc--tile { gap: 9px; padding: 11px; border-radius: 16px; }
+  .pc--tile .pc__head { gap: 9px; }
+  .pc--tile .pc__logo { width: 38px; height: 38px; padding: 4px; border-radius: 10px; }
+  .pc--tile .pc__title { font-size: 14px; }
+  .pc--tile .pc__badge { gap: 4px; margin-top: 4px; padding: 2px 7px; font-size: 10px; }
+  .pc--tile .pc__badge .i { width: 11px; height: 11px; }
+  .pc--tile .pc__stats { padding: 6px 0; border-radius: 10px; }
+  .pc--tile .pc__stat { padding: 0 4px; }
+  .pc--tile .pc__stat strong { font-size: .95rem; }
+  .pc--tile .pc__stat strong.is-long { font-size: .75rem; }
+  .pc--tile .pc__stat span { font-size: 8.5px; letter-spacing: .04em; }
+  .pc--tile .pc__info { display: none; }
+}
+/* Phones: tiles of about 100 to 140px, three a row */
+@container grid (max-width: 440px) {
+  .product { gap: 7px; }
+  .product__art { border-radius: 12px; }
+  .product__art .art { width: 44%; height: 44%; }
+  .product__art .badge { top: 5px; left: 5px; padding: 3px 4px; font-size: 8px; letter-spacing: .04em; }
+  .product__art .badge--soldout { left: auto; right: 5px; }
+  .product.is-soldout .product__art .badge:not(.badge--soldout) { display: none; }
+  .product__cat { display: none; }
+  .product__name, .pc--tile .pc__title { margin-top: 0; font-size: 12.5px; line-height: 1.2; }
+  .product__seller { font-size: 11px; }
+  .rating > span:not(.stars) { display: none; }
+  .grid .stars .i { width: 10px; height: 10px; }
+  .product__info > :nth-last-child(2) { margin-bottom: 6px; }
+  .product__buy, .pc__foot { gap: 6px; padding-top: 7px; }
+  .product__buy .price, .pc__foot .price { font-size: 14px; line-height: 1.15; }
+  .product__buy .price__cur, .pc__foot .price__cur { font-size: 10px; }
+  .product__buy .usd, .pc__foot .usd { font-size: 9.5px; }
+  .product__buy .btn, .pc--tile .pc__buy { min-height: 30px; padding: 0 6px; border-radius: 9px; font-size: 12px; }
+
+  .pc--tile { gap: 7px; padding: 8px; border-radius: 14px; }
+  .pc--tile .pc__head { flex-direction: column; gap: 6px; }
+  .pc--tile .pc__head > div { width: 100%; }
+  .pc--tile .pc__logo { width: 34px; height: 34px; border-radius: 9px; }
+  .pc--tile .pc__badge { max-width: 100%; font-size: 9px; }
+  /* Key figures turn into short lines ("30 DAYS") instead of side by side columns */
+  .pc--tile .pc__stats { flex-direction: column; padding: 2px 7px; }
+  /* A long value ("Unlimited") pushes its label under it instead of breaking in the middle of the word */
+  .pc--tile .pc__stat { flex: none; flex-flow: row wrap; align-items: baseline; justify-content: flex-start; gap: 1px 4px; padding: 4px 0; text-align: left; }
+  .pc--tile .pc__stat + .pc__stat { border-left: 0; border-top: 1px solid var(--line); }
+  .pc--tile .pc__stat strong, .pc--tile .pc__stat strong.is-long { font-size: .8rem; }
+  .pc--tile .pc__stat span { font-size: 8px; }
+}
 
 /* ---------- Social icons on a store page, contact buttons on a product page ---------- */
 .social { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
@@ -784,11 +887,8 @@ button.is-locked { opacity: .55; cursor: not-allowed; }
 
 /* ---------- Responsive ---------- */
 @media (max-width: 600px) {
-  .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 28px 14px; }
-  .product__name { font-size: 16px; }
-  .product__art .art { width: 42%; height: 42%; }
+  .grid { --gap-x: 10px; row-gap: 22px; }
   .price { font-size: 19px; }
-  .product__buy .btn { width: 100%; }
   .store-avatar { width: 68px; height: 68px; border-radius: 20px; font-size: 26px; }
   .buy { grid-template-columns: minmax(0, 1fr); }
   .buy__art { min-height: 170px; }
