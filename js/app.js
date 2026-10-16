@@ -673,8 +673,37 @@
     return query.toLowerCase().split(/\s+/).filter(Boolean).every((word) => haystack.includes(word));
   }
 
+  /* A small string hash (FNV-1a), used to give each store a fair place in the mix. */
+  function hashText(text) {
+    let h = 2166136261;
+    for (let i = 0; i < text.length; i += 1) h = Math.imul(h ^ text.charCodeAt(i), 16777619);
+    return h >>> 0;
+  }
+
+  /* Stores take turns: each store's newest product, then each store's second newest, and so on, so one store that
+     adds many products never fills the top rows. The store order changes once a day (every store gets days near the
+     top) but stays the same while a customer browses. */
+  function takeTurns(list) {
+    const day = new Date().toISOString().slice(0, 10);
+    const byStore = new Map();
+    list.forEach((p) => {
+      if (!byStore.has(p.sellerId)) byStore.set(p.sellerId, []);
+      byStore.get(p.sellerId).push(p);
+    });
+    const queues = [...byStore.entries()]
+      .sort((a, b) => hashText(`${day}:${a[0]}`) - hashText(`${day}:${b[0]}`))
+      .map(([, products]) => products);
+    const mixed = [];
+    for (let round = 0; mixed.length < list.length; round += 1) {
+      queues.forEach((products) => { if (products[round]) mixed.push(products[round]); });
+    }
+    return mixed;
+  }
+
   function visibleProducts() {
     const list = PRODUCTS.filter((p) => (state.cat === 'All' || p.category === state.cat) && matches(p, state.q));
+    /* Featured: stores mixed fairly, sold out products last. Newest: the order the catalogue arrives in. */
+    if (state.sort === 'featured') return takeTurns(list.filter((p) => !p.soldOut)).concat(takeTurns(list.filter((p) => p.soldOut)));
     const order = {
       low: (a, b) => toLkr(a.price, a.currency) - toLkr(b.price, b.currency),
       high: (a, b) => toLkr(b.price, b.currency) - toLkr(a.price, a.currency),
