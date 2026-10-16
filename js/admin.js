@@ -133,7 +133,9 @@
       showPanel('app');
       await loadSellers();
       loadProducts();
-      loadAds(); /* the ads list shows store names, loaded above */
+      loadAds().then(loadSpotRequests); /* both lists show store names, loaded above; requests show their ad */
+      loadSpotPacks();
+      loadOwnerTelegram();
       loadOrders().then(loadReports); /* reports show the order's product name */
       loadOwnerBank();
       loadBrands();
@@ -208,7 +210,7 @@
     byId('sellers-empty').hidden = list.length > 0;
     byId('sellers-count').textContent = `${sellers.length} total · ${list.length} shown`;
     fillAdForm(); /* the ad form lists the approved stores */
-    if (ads.length) renderAds();
+    if (ads.length) renderAds(); else if (spotRequests.length) renderSpotRequests();
   }
 
   byId('status-tabs').addEventListener('click', (event) => {
@@ -241,7 +243,8 @@
       return;
     }
     sellers = sellers.filter((row) => row.id !== id);
-    ads = ads.filter((a) => a.seller_id !== id); /* its ads were deleted with it */
+    ads = ads.filter((a) => a.seller_id !== id); /* its ads and ad requests were deleted with it */
+    spotRequests = spotRequests.filter((r) => r.seller_id !== id);
     renderSellers();
     toast('Store deleted');
     loadProducts();
@@ -773,10 +776,46 @@
     toast('Logo removed');
   });
 
-  /* ---------- Ads: a store (and an optional poster) that pops up when customers open the shop ---------- */
+  /* ---------- Ads: a store (and an optional poster) that pops up when customers open the shop ----------
+     Three parts: Requests (a seller buys an ad in their dashboard and sends a slip), Ads (every ad; the owner
+     can also add one by hand) and Packages (what sellers can buy, and the owner's Telegram shown to them). */
   let ads = [];
-  const isoDay = (date) => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
-  const addDays = (n) => { const d = new Date(); d.setDate(d.getDate() + n); return isoDay(d); };
+  let spotRequests = [];
+  let spotPacks = [];
+
+  function showSpotTab(name) {
+    byId('spot-tabs').querySelectorAll('[data-spottab]').forEach((c) => c.setAttribute('aria-pressed', String(c.dataset.spottab === name)));
+    ['requests', 'ads', 'packages'].forEach((part) => { byId(`spot-tab-${part}`).hidden = part !== name; });
+  }
+
+  byId('spot-tabs').addEventListener('click', (event) => {
+    const chip = event.target.closest('[data-spottab]');
+    if (chip) showSpotTab(chip.dataset.spottab);
+  });
+
+  const pad2 = (n) => String(n).padStart(2, '0');
+  /* datetime-local inputs hold the device's own time, like "2026-10-16T09:30" */
+  const localInput = (date) => `${date.getFullYear()}-${pad2(date.getMonth() + 1)}-${pad2(date.getDate())}T${pad2(date.getHours())}:${pad2(date.getMinutes())}`;
+  const hoursFromNow = (hours) => localInput(new Date(Date.now() + hours * 3600000));
+  const rs = (n) => `Rs. ${Number(n).toLocaleString('en-US')}`;
+
+  function formatDateTime(value) {
+    const d = new Date(value);
+    return Number.isNaN(d.getTime()) ? '' : d.toLocaleString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true });
+  }
+
+  /* 72 hours reads "3 days", 36 hours stays "36 hours" */
+  function spanText(hours) {
+    if (hours % 24 === 0) return `${hours / 24} ${plural(hours / 24, 'day', 'days')}`;
+    return `${hours} ${plural(hours, 'hour', 'hours')}`;
+  }
+
+  function paintSpotCount() {
+    const running = ads.filter((a) => adState(a).label === 'Running').length;
+    const waiting = spotRequests.filter((r) => r.status === 'awaiting_review').length;
+    byId('spots-count').textContent = `${ads.length} ${plural(ads.length, 'ad', 'ads')} · ${running} running${waiting ? ` · ${waiting} waiting` : ''}`;
+    byId('spot-tabs').querySelector('[data-spottab="requests"]').textContent = waiting ? `Requests (${waiting})` : 'Requests';
+  }
 
   function fillAdForm() {
     const f = byId('spot-form').elements;
@@ -787,15 +826,15 @@
       ? `<option value="">Choose a store</option>${live.map((s) => `<option value="${esc(s.id)}">${esc(s.store_name)}${s.store_slug ? ` (/${esc(s.store_slug)})` : ''}</option>`).join('')}`
       : '<option value="">No approved stores yet</option>';
     if (live.some((s) => s.id === chosen)) f.store.value = chosen;
-    if (!f.startsOn.value) f.startsOn.value = addDays(0);
-    if (!f.endsOn.value) f.endsOn.value = addDays(30);
+    if (!f.startsAt.value) f.startsAt.value = hoursFromNow(0);
+    if (!f.endsAt.value) f.endsAt.value = hoursFromNow(24 * 7);
   }
 
   function adState(a) {
-    const today = isoDay(new Date());
+    const now = Date.now();
     if (!a.active) return { label: 'Paused', tone: 'pending' };
-    if (a.ends_on < today) return { label: 'Ended', tone: 'suspended' };
-    if (a.starts_on > today) return { label: 'Starts later', tone: 'pending' };
+    if (new Date(a.ends_at).getTime() <= now) return { label: 'Ended', tone: 'suspended' };
+    if (new Date(a.starts_at).getTime() > now) return { label: 'Starts later', tone: 'pending' };
     return { label: 'Running', tone: 'approved' };
   }
 
@@ -812,7 +851,7 @@
           <span class="seller-row__avatar">${picture ? `<img src="${esc(brandUrl(picture))}" alt="" loading="lazy">` : icon('i-megaphone')}</span>
           <div class="seller-row__text">
             <p class="seller-row__name">${esc(a.title || (store ? store.store_name : 'Deleted store'))} <span class="status-badge status-badge--${state.tone}">${state.label}</span></p>
-            <p class="seller-row__meta">${a.title && store ? `${esc(store.store_name)} &middot; ` : ''}${store && store.status !== 'approved' ? 'store not approved now &middot; ' : ''}${esc(formatDate(a.starts_on))} to ${esc(formatDate(a.ends_on))}${a.image ? ' &middot; own poster' : ''}${a.note ? ` &middot; ${esc(a.note)}` : ''}</p>
+            <p class="seller-row__meta">${a.title && store ? `${esc(store.store_name)} &middot; ` : ''}${store && store.status !== 'approved' ? 'store not approved now &middot; ' : ''}${esc(formatDateTime(a.starts_at))} to ${esc(formatDateTime(a.ends_at))}${a.image ? ' &middot; own poster' : ''}${a.note ? ` &middot; ${esc(a.note)}` : ''}</p>
           </div>
         </div>
         <div class="seller-row__actions">
@@ -827,8 +866,8 @@
     byId('spots-list').innerHTML = ads.map(adRow).join('');
     byId('spots-list').hidden = ads.length === 0;
     byId('spots-empty').hidden = ads.length > 0;
-    const running = ads.filter((a) => adState(a).label === 'Running').length;
-    byId('spots-count').textContent = `${ads.length} ${plural(ads.length, 'ad', 'ads')} · ${running} running`;
+    paintSpotCount();
+    if (spotRequests.length) renderSpotRequests(); /* approved requests show when their ad ends */
   }
 
   async function loadAds() {
@@ -865,8 +904,8 @@
     editingAd = ad;
     f.store.value = ad.seller_id;
     f.poster.value = '';
-    f.startsOn.value = ad.starts_on;
-    f.endsOn.value = ad.ends_on;
+    f.startsAt.value = localInput(new Date(ad.starts_at));
+    f.endsAt.value = localInput(new Date(ad.ends_at));
     f.title.value = ad.title || '';
     f.message.value = ad.message || '';
     f.note.value = ad.note || '';
@@ -886,10 +925,12 @@
     const fail = (message) => { error.textContent = message; error.hidden = false; };
     error.hidden = true;
     const file = f.poster.files[0];
+    const startsAt = new Date(f.startsAt.value);
+    const endsAt = new Date(f.endsAt.value);
     if (!f.store.value) return fail('Choose the store to promote.');
     if (file && !/^image\/(jpeg|png|webp)$/.test(file.type)) return fail('The poster must be a JPG, PNG or WebP image.');
-    if (!f.startsOn.value || !f.endsOn.value) return fail('Choose the start and end days.');
-    if (f.endsOn.value < f.startsOn.value) return fail('The end day must be on or after the start day.');
+    if (!f.startsAt.value || !f.endsAt.value || Number.isNaN(startsAt.getTime()) || Number.isNaN(endsAt.getTime())) return fail('Choose when the ad starts and ends.');
+    if (endsAt <= startsAt) return fail('The end must be after the start.');
 
     const editing = editingAd;
     const button = byId('spot-submit');
@@ -904,8 +945,8 @@
       }
       const fields = {
         seller_id: f.store.value,
-        starts_on: f.startsOn.value,
-        ends_on: f.endsOn.value,
+        starts_at: startsAt.toISOString(),
+        ends_at: endsAt.toISOString(),
         title: f.title.value.trim(),
         message: f.message.value.trim(),
         note: f.note.value.trim()
@@ -962,6 +1003,255 @@
     ad.active = active;
     renderAds();
     toast(active ? 'Ad running' : 'Ad paused');
+  });
+
+  /* Requests: a seller filled in the popup, picked a package and sent a payment slip. Approving creates the ad. */
+  const REQUEST_BADGE = { awaiting_review: ['pending', 'Waiting for review'], approved: ['approved', 'Approved'], rejected: ['suspended', 'Not accepted'] };
+
+  async function loadSpotRequests() {
+    const { data, error } = await sb.from('spotlight_requests').select('*').order('created_at', { ascending: false }).limit(100);
+    if (error) { toast(`Could not load ad requests: ${error.message}`); return; }
+    spotRequests = data || [];
+    renderSpotRequests();
+  }
+
+  function spotRequestRow(r) {
+    const [tone, label] = REQUEST_BADGE[r.status] || ['pending', r.status];
+    const store = sellers.find((s) => s.id === r.seller_id);
+    const picture = r.image || (store && store.logo);
+    const ad = r.spotlight_id && ads.find((a) => a.id === r.spotlight_id);
+    const length = r.qty > 1 ? `${r.qty} × ${spanText(r.hours)} = ${spanText(r.hours * r.qty)}` : spanText(r.hours);
+    const actions = [];
+    if (r.image) actions.push(`<a class="btn btn--ghost btn--sm" href="${esc(brandUrl(r.image))}" target="_blank" rel="noopener"><span>Poster</span></a>`);
+    if (r.receipt_path) actions.push(`<button class="btn btn--ghost btn--sm" type="button" data-spotreq-slip="${esc(r.id)}"><span>View slip</span></button>`);
+    if (r.status === 'awaiting_review') {
+      actions.push(`<button class="btn btn--ink btn--sm" type="button" data-spotreq-approve="${esc(r.id)}">${icon('i-check')}<span>Approve</span></button>`);
+      actions.push(`<button class="btn btn--ghost btn--sm" type="button" data-spotreq-reject="${esc(r.id)}">${icon('i-pause')}<span>Reject</span></button>`);
+    }
+    return `
+      <article class="seller-row" style="--h:${Number(store && store.hue) || 0}">
+        <div class="seller-row__main">
+          <span class="seller-row__avatar">${picture ? `<img src="${esc(brandUrl(picture))}" alt="" loading="lazy">` : icon('i-megaphone')}</span>
+          <div class="seller-row__text">
+            <p class="seller-row__name">${esc(store ? store.store_name : 'Deleted store')} <span class="status-badge status-badge--${tone}">${esc(label)}</span></p>
+            <p class="seller-row__meta">${esc(length)} &middot; ${rs(r.amount_lkr)} &middot; sent ${esc(formatDateTime(r.created_at))}${r.reference ? ` &middot; Reference: ${esc(r.reference)}` : ''}${ad ? ` &middot; runs ${esc(formatDateTime(ad.starts_at))} to ${esc(formatDateTime(ad.ends_at))}` : ''}</p>
+            ${r.title || r.message ? `<p class="seller-row__meta spot-request__text">${r.title ? `<strong>${esc(r.title)}</strong>` : ''}${r.title && r.message ? ' &middot; ' : ''}${esc(r.message)}</p>` : ''}
+          </div>
+        </div>
+        <div class="seller-row__actions">${actions.join('')}</div>
+      </article>`;
+  }
+
+  function renderSpotRequests() {
+    const waitingFirst = (r) => (r.status === 'awaiting_review' ? 0 : 1);
+    const list = spotRequests.slice().sort((a, b) => waitingFirst(a) - waitingFirst(b) || String(b.created_at).localeCompare(String(a.created_at)));
+    byId('spot-requests-list').innerHTML = list.map(spotRequestRow).join('');
+    byId('spot-requests-list').hidden = list.length === 0;
+    byId('spot-requests-empty').hidden = list.length > 0;
+    paintSpotCount();
+  }
+
+  byId('spot-requests-list').addEventListener('click', async (event) => {
+    const approve = event.target.closest('[data-spotreq-approve]');
+    if (approve) {
+      approve.disabled = true;
+      const { data, error } = await sb.rpc('approve_spotlight_request', { p_id: approve.dataset.spotreqApprove });
+      if (error) { approve.disabled = false; toast(`Could not approve: ${error.message}`); loadSpotRequests(); return; }
+      toast(`Approved. The ad runs until ${formatDateTime(data)}`);
+      await loadAds();
+      loadSpotRequests();
+      return;
+    }
+    const reject = event.target.closest('[data-spotreq-reject]');
+    if (reject) {
+      const request = spotRequests.find((r) => r.id === reject.dataset.spotreqReject);
+      if (!request) return;
+      if (!window.confirm('Reject this request? If the seller paid, send the money back to them yourself.')) return;
+      const { error } = await sb.rpc('reject_spotlight_request', { p_id: request.id });
+      if (error) { toast(`Could not reject: ${error.message}`); loadSpotRequests(); return; }
+      if (request.image) sb.storage.from(BRAND_BUCKET).remove([request.image]).catch(() => {});
+      toast('Request rejected');
+      loadSpotRequests();
+      return;
+    }
+    const slip = event.target.closest('[data-spotreq-slip]');
+    if (slip) {
+      const request = spotRequests.find((r) => r.id === slip.dataset.spotreqSlip);
+      if (!request || !request.receipt_path) return;
+      const popup = window.open('', '_blank');
+      const { data, error } = await sb.storage.from('receipts').createSignedUrl(request.receipt_path, 300);
+      if (error || !data) { if (popup) popup.close(); toast('Could not open the slip.'); return; }
+      if (popup) popup.location.href = data.signedUrl; else window.location.href = data.signedUrl;
+    }
+  });
+
+  /* Packages: what sellers can buy, shown to them as the same glass boxes. */
+  const packForm = byId('spot-pack-form');
+  let editingPack = null;
+
+  async function loadSpotPacks() {
+    const { data, error } = await sb.from('spotlight_packages').select('*').order('hours').order('price');
+    if (error) { toast(`Could not load ad packages: ${error.message}`); return; }
+    spotPacks = data || [];
+    renderSpotPacks();
+  }
+
+  function packBox(p) {
+    const length = spanText(p.hours);
+    const editing = editingPack && editingPack.id === p.id;
+    return `
+      <div class="spot-pack spot-pack--admin${p.active ? '' : ' is-off'}${editing ? ' is-editing' : ''}">
+        <p class="spot-pack__time">${esc(length)}</p>
+        <p class="spot-pack__price">${rs(p.price)}</p>
+        <p class="spot-pack__note">${p.max_qty > 1 ? `Up to ${p.max_qty} at once (${esc(spanText(p.hours * p.max_qty))})` : 'One at a time'}${p.active ? '' : '<br>Hidden from sellers'}</p>
+        <div class="spot-pack__tools">
+          <button class="btn btn--ghost btn--sm" type="button" data-pack-edit="${esc(p.id)}" title="Edit" aria-label="Edit the ${esc(length)} package">${icon('i-edit')}</button>
+          <button class="btn btn--ghost btn--sm" type="button" data-pack-toggle="${esc(p.id)}" title="${p.active ? 'Hide from sellers' : 'Show to sellers'}" aria-label="${p.active ? 'Hide' : 'Show'} the ${esc(length)} package">${icon(p.active ? 'i-pause' : 'i-play')}</button>
+          <button class="btn btn--ghost btn--sm" type="button" data-pack-delete="${esc(p.id)}" title="Delete" aria-label="Delete the ${esc(length)} package">${icon('i-trash')}</button>
+        </div>
+      </div>`;
+  }
+
+  function renderSpotPacks() {
+    spotPacks.sort((a, b) => a.hours - b.hours || a.price - b.price);
+    byId('spot-packs-admin').innerHTML = spotPacks.length
+      ? spotPacks.map(packBox).join('')
+      : '<p class="spot-packs__empty">No packages yet. Add one below: sellers cannot buy an ad until there is one.</p>';
+  }
+
+  function packHours() {
+    const f = packForm.elements;
+    const n = Number(f.span.value);
+    if (!f.span.value || !Number.isInteger(n) || n < 1) return 0;
+    return f.unit.value === 'days' ? n * 24 : n;
+  }
+
+  function paintPackPreview() {
+    const f = packForm.elements;
+    const hours = packHours();
+    const price = Number(f.price.value);
+    const max = Number(f.maxQty.value);
+    const out = byId('spot-pack-preview');
+    if (!hours || !Number.isInteger(price) || price < 1 || !Number.isInteger(max) || max < 1) { out.textContent = ''; return; }
+    out.textContent = `Sellers see: ${spanText(hours)} for ${rs(price)}${max > 1 ? `. They can take up to ${max}: ${spanText(hours * max)} for ${rs(price * max)}.` : ', one at a time.'}`;
+  }
+
+  function resetPackForm() {
+    editingPack = null;
+    packForm.reset();
+    byId('spot-pack-error').hidden = true;
+    byId('spot-pack-form-title').textContent = 'Add a package';
+    byId('spot-pack-submit').textContent = 'Add package';
+    byId('spot-pack-cancel').hidden = true;
+    paintPackPreview();
+    renderSpotPacks();
+  }
+
+  function startPackEdit(p) {
+    const f = packForm.elements;
+    const inDays = p.hours % 24 === 0;
+    editingPack = p;
+    f.span.value = inDays ? p.hours / 24 : p.hours;
+    f.unit.value = inDays ? 'days' : 'hours';
+    f.price.value = p.price;
+    f.maxQty.value = p.max_qty;
+    byId('spot-pack-error').hidden = true;
+    byId('spot-pack-form-title').textContent = 'Edit package';
+    byId('spot-pack-submit').textContent = 'Save changes';
+    byId('spot-pack-cancel').hidden = false;
+    paintPackPreview();
+    renderSpotPacks();
+    packForm.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  packForm.addEventListener('input', paintPackPreview);
+  byId('spot-pack-cancel').addEventListener('click', resetPackForm);
+
+  packForm.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    const f = packForm.elements;
+    const error = byId('spot-pack-error');
+    const fail = (message) => { error.textContent = message; error.hidden = false; };
+    error.hidden = true;
+    const hours = packHours();
+    const price = Number(f.price.value);
+    const maxQty = Number(f.maxQty.value);
+    if (!hours) return fail('Enter how long, in whole hours or days.');
+    if (hours > 8760) return fail('A package can be at most 365 days.');
+    if (!f.price.value || !Number.isInteger(price) || price < 1) return fail('Enter the price in whole rupees.');
+    if (price > 10000000) return fail('That price is too high.');
+    if (!f.maxQty.value || !Number.isInteger(maxQty) || maxQty < 1 || maxQty > 365) return fail('The most a seller can buy at once must be 1 to 365.');
+
+    const editing = editingPack;
+    const button = byId('spot-pack-submit');
+    button.disabled = true;
+    const fields = { hours, price, max_qty: maxQty };
+    const query = editing
+      ? sb.from('spotlight_packages').update(fields).eq('id', editing.id)
+      : sb.from('spotlight_packages').insert(fields);
+    const { data, error: saveError } = await query.select().maybeSingle();
+    button.disabled = false;
+    if (saveError) return fail(saveError.message);
+    if (!data) return fail('This package no longer exists. Reload the page.');
+    spotPacks = editing ? spotPacks.map((p) => (p.id === data.id ? data : p)) : spotPacks.concat(data);
+    resetPackForm();
+    toast(editing ? 'Package saved' : 'Package added');
+  });
+
+  byId('spot-packs-admin').addEventListener('click', async (event) => {
+    const edit = event.target.closest('[data-pack-edit]');
+    const toggle = event.target.closest('[data-pack-toggle]');
+    const del = event.target.closest('[data-pack-delete]');
+    const id = (edit && edit.dataset.packEdit) || (toggle && toggle.dataset.packToggle) || (del && del.dataset.packDelete);
+    const pack = spotPacks.find((p) => p.id === id);
+    if (!pack) return;
+    if (edit) { startPackEdit(pack); return; }
+    if (del) {
+      if (!window.confirm(`Delete the ${spanText(pack.hours)} package? Requests already sent are not changed.`)) return;
+      const { error } = await sb.from('spotlight_packages').delete().eq('id', pack.id);
+      if (error) { toast(`Could not delete: ${error.message}`); return; }
+      spotPacks = spotPacks.filter((p) => p.id !== pack.id);
+      if (editingPack && editingPack.id === pack.id) resetPackForm(); else renderSpotPacks();
+      toast('Package deleted');
+      return;
+    }
+    const active = !pack.active;
+    const { error } = await sb.from('spotlight_packages').update({ active }).eq('id', pack.id);
+    if (error) { toast(`Could not save: ${error.message}`); return; }
+    pack.active = active;
+    renderSpotPacks();
+    toast(active ? 'Sellers can buy this package again' : 'Package hidden from sellers');
+  });
+
+  /* The owner's Telegram username: sellers get a "Message on Telegram" button in their Ads page. */
+  const telegramForm = byId('spot-telegram-form');
+
+  async function loadOwnerTelegram() {
+    const { data } = await sb.from('site_settings').select('owner_telegram').maybeSingle();
+    if (data) telegramForm.elements.username.value = data.owner_telegram ? `@${data.owner_telegram}` : '';
+  }
+
+  telegramForm.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    const input = telegramForm.elements.username;
+    /* People paste "@name" or a "t.me/name" link; the database keeps only "name" */
+    const name = input.value.trim().replace(/^(https?:\/\/)?(www\.)?(t|telegram)\.me\//i, '').replace(/^@/, '').replace(/\/+$/, '');
+    if (name && !/^[A-Za-z0-9_]{5,32}$/.test(name)) {
+      showFieldError(input, 'A Telegram username has 5 to 32 letters, numbers or underscores (_).');
+      return;
+    }
+    showFieldError(input, '');
+    const button = telegramForm.querySelector('button[type="submit"]');
+    button.disabled = true;
+    const { error } = await sb.from('site_settings').update({ owner_telegram: name }).eq('id', true);
+    button.disabled = false;
+    if (error) { showFieldError(input, error.message); return; }
+    input.value = name ? `@${name}` : '';
+    toast(name ? 'Telegram username saved' : 'Telegram button hidden from sellers');
+  });
+
+  telegramForm.addEventListener('input', (event) => {
+    if (event.target.getAttribute('aria-invalid') === 'true') showFieldError(event.target, '');
   });
 
   document.title = `Admin | ${CFG.storeName}`;

@@ -147,3 +147,18 @@
 @media (min-width: 641px) { .spot-form__actions .btn { width: auto; } }
 .admin-list--spaced { margin-top: 32px; border-top: 1px solid var(--line); }
 .seller-row__avatar img { width: 100%; height: 100%; object-fit: cover; border-radius: inherit; }
+
+/* Ads tabs: Requests (sellers who bought an ad), Ads, Packages (glass boxes, same look sellers see) */
+.spot-tab-lead { margin-top: 16px; }
+#spot-requests-list { margin-top: 16px; }
+.spot-request__text { color: var(--ink); }
+.spot-tab-lead + .spot-glass { margin-top: 16px; }
+#spot-pack-form { max-width: 620px; margin-top: 24px; }
+#spot-telegram-form { max-width: 420px; }
+.spot-pack--admin { cursor: default; }
+.spot-pack--admin:hover { transform: none; background: var(--glass); }
+.spot-pack--admin.is-off { opacity: .55; }
+.spot-pack--admin.is-editing { background: var(--glass-hi); box-shadow: 0 0 0 2px var(--brand), var(--glass-shadow); opacity: 1; }
+.spot-pack__tools { display: flex; gap: 4px; margin-top: 10px; }
+.spot-pack__tools .btn { width: 34px; height: 34px; padding: 0; justify-content: center; background: var(--glass-hi); }
+.spot-pack__tools .i { width: 16px; height: 16px; }

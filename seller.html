@@ -44,6 +44,9 @@
     <symbol id="i-server" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="7" rx="1.5"/><rect x="4" y="13" width="16" height="7" rx="1.5"/><path d="M8 7.5h.01M8 16.5h.01"/></symbol>
     <symbol id="i-bank" viewBox="0 0 24 24"><path d="M3 9.5L12 4l9 5.5z"/><path d="M5.5 10v8M10 10v8M14 10v8M18.5 10v8M3 20.5h18"/></symbol>
     <symbol id="i-card" viewBox="0 0 24 24"><rect x="3" y="5.5" width="18" height="13" rx="2"/><path d="M3 10h18M7 15h4"/></symbol>
+    <symbol id="i-megaphone" viewBox="0 0 24 24"><path d="M3 10v4a1 1 0 0 0 1 1h3l6 4V5L7 9H4a1 1 0 0 0-1 1z"/><path d="M17 8.5a5 5 0 0 1 0 7"/><path d="M7 15l1.5 5"/></symbol>
+    <symbol id="i-minus" viewBox="0 0 24 24"><path d="M5 12h14"/></symbol>
+    <symbol id="i-image" viewBox="0 0 24 24"><rect x="3.5" y="4.5" width="17" height="15" rx="2.5"/><circle cx="9" cy="10" r="1.8"/><path d="M20.5 16l-5-5-8.5 8.5"/></symbol>
 
     <symbol id="a-layout" viewBox="0 0 48 48"><rect x="6" y="8" width="36" height="32" rx="4"/><path d="M6 18h36M20 18v22"/></symbol>
     <symbol id="a-book" viewBox="0 0 48 48"><path d="M10 6h24a4 4 0 0 1 4 4v28H14a4 4 0 0 1-4-4z"/><path d="M10 34a4 4 0 0 1 4-4h24"/><path d="M18 14h14M18 20h10"/></symbol>
@@ -126,6 +129,7 @@
       <div class="dash-nav__group">
         <a href="#bank-card" data-dash-tab="bank-card"><svg class="i" aria-hidden="true" focusable="false"><use href="#i-bank"/></svg><span>Bank details</span></a>
         <a href="#fee-card" data-dash-tab="fee-card"><svg class="i" aria-hidden="true" focusable="false"><use href="#i-card"/></svg><span>Store fee</span><span class="nav-flag" id="fee-nav-flag" hidden></span></a>
+        <a href="#spotlight-card" data-dash-tab="spotlight-card"><svg class="i" aria-hidden="true" focusable="false"><use href="#i-megaphone"/></svg><span>Ads</span></a>
       </div>
     </nav>
     <div class="dash-grid">
@@ -307,6 +311,106 @@
           <p class="field__hint">The site owner checks the slip. Once approved, your store is <strong>Verified</strong> and can sell for 30 more days.</p>
         </form>
         <div class="prod-list" id="fee-history"></div>
+      </section>
+
+      <section class="dash-card spot-panel" id="spotlight-card" aria-labelledby="spotlight-title">
+        <h2 class="dash-card__title" id="spotlight-title">Ads</h2>
+        <p class="admin-lead">Put your store in front of every customer. Your ad pops up when someone opens the shop, and a tap on it opens your store. Fill in the ad, choose how long it runs, pay the site owner and send the slip.</p>
+        <div class="spot-contact" id="spot-contact" hidden>
+          <p>Questions about ads? Message the site owner on Telegram.</p>
+          <a class="btn btn--ghost btn--sm" id="spot-contact-link" href="#" target="_blank" rel="noopener"><svg class="i" aria-hidden="true" focusable="false"><use href="#i-send"/></svg><span id="spot-contact-name">Telegram</span></a>
+        </div>
+
+        <div class="spot-mine" id="spot-mine-wrap" hidden>
+          <h3 class="spot-sub">Your ads</h3>
+          <div class="prod-list" id="spot-mine"></div>
+        </div>
+
+        <h3 class="spot-sub">Buy an ad</h3>
+        <ol class="spot-steps" id="spot-steps">
+          <li data-step-dot="1" aria-current="step"><span>1</span>Your ad</li>
+          <li data-step-dot="2"><span>2</span>How long</li>
+          <li data-step-dot="3"><span>3</span>Pay</li>
+        </ol>
+        <form class="auth__form spot-buy" id="spot-buy-form" novalidate>
+          <div class="spot-step" data-spot-step="1">
+            <div class="field">
+              <p class="spot-label" id="spot-poster-label">Poster (optional)</p>
+              <div class="spot-poster" id="spot-poster">
+                <div class="spot-poster__img" id="spot-poster-img"><svg class="i" aria-hidden="true" focusable="false"><use href="#i-image"/></svg></div>
+                <div class="spot-poster__text">
+                  <input class="sr-only" id="spot-poster-file" type="file" accept="image/jpeg,image/png,image/webp" aria-labelledby="spot-poster-label">
+                  <label class="btn btn--ghost btn--sm" for="spot-poster-file" id="spot-poster-btn">Choose a picture</label>
+                  <button class="btn btn--ghost btn--sm" type="button" id="spot-poster-clear" hidden>Remove</button>
+                  <p class="field__hint">Shown whole, never cut. Without a picture, the ad shows your store logo.</p>
+                </div>
+              </div>
+              <p class="field__error" id="spot-poster-file-error" hidden></p>
+            </div>
+            <div class="field">
+              <label for="spot-title">Headline (optional)</label>
+              <input id="spot-title" name="title" type="text" maxlength="60" autocomplete="off" placeholder="For example: Netflix 4K, 30 days">
+              <p class="field__hint">Leave it empty to show your store name.</p>
+            </div>
+            <div class="field">
+              <label for="spot-message">Offer line (optional)</label>
+              <textarea id="spot-message" name="message" rows="2" maxlength="160" placeholder="For example: 15% off this week only"></textarea>
+              <p class="field__hint">Leave it empty to show the About text of your store.</p>
+            </div>
+            <div class="spot-actions">
+              <button class="btn btn--ink" type="button" data-spot-go="2">Continue</button>
+            </div>
+          </div>
+
+          <div class="spot-step" data-spot-step="2" hidden>
+            <div class="spot-glass">
+              <div class="spot-packs" id="spot-packs" role="radiogroup" aria-label="Ad time"></div>
+              <div class="spot-qty" id="spot-qty" hidden>
+                <span class="spot-qty__label" id="spot-qty-label">How many?</span>
+                <div class="spot-qty__stepper">
+                  <button type="button" id="spot-qty-minus" aria-label="One less"><svg class="i" aria-hidden="true" focusable="false"><use href="#i-minus"/></svg></button>
+                  <output id="spot-qty-value" aria-labelledby="spot-qty-label">1</output>
+                  <button type="button" id="spot-qty-plus" aria-label="One more"><svg class="i" aria-hidden="true" focusable="false"><use href="#i-plus"/></svg></button>
+                </div>
+                <span class="spot-qty__max" id="spot-qty-max"></span>
+              </div>
+              <p class="spot-total" id="spot-total" aria-live="polite"></p>
+            </div>
+            <p class="field__hint">If your store already has an ad running, the new time is added after it ends.</p>
+            <p class="field__error" id="spot-pack-error" hidden></p>
+            <div class="spot-actions">
+              <button class="btn btn--ghost" type="button" data-spot-go="1">Back</button>
+              <button class="btn btn--ink" type="button" data-spot-go="3">Continue</button>
+            </div>
+          </div>
+
+          <div class="spot-step" data-spot-step="3" hidden>
+            <dl class="pay__bank spot-summary" id="spot-summary"></dl>
+            <p class="admin-lead" id="spot-pay-lead"></p>
+            <dl class="pay__bank" id="spot-bank" hidden></dl>
+            <p class="field__hint" id="spot-bank-note" hidden></p>
+            <div class="field">
+              <label for="spot-reference">Transfer reference (optional)</label>
+              <input id="spot-reference" name="reference" type="text" maxlength="100" autocomplete="off" placeholder="For example the reference on your bank slip">
+            </div>
+            <div class="field">
+              <label for="spot-receipt">Photo or PDF of the payment slip</label>
+              <input id="spot-receipt" name="receipt" type="file" accept="image/jpeg,image/png,image/webp,application/pdf">
+              <p class="field__error" id="spot-receipt-error" hidden></p>
+            </div>
+            <p class="field__error" id="spot-form-error" hidden></p>
+            <div class="spot-actions">
+              <button class="btn btn--ghost" type="button" data-spot-go="2">Back</button>
+              <button class="btn btn--ink" type="submit">I have paid, send the request</button>
+            </div>
+            <p class="field__hint">The site owner checks the slip. Once approved, your ad starts right away (or when your current ad ends).</p>
+          </div>
+        </form>
+
+        <div id="spot-requests-wrap" hidden>
+          <h3 class="spot-sub">Your requests</h3>
+          <div class="prod-list" id="spot-requests"></div>
+        </div>
       </section>
 
       <section class="dash-card vpn-card" id="vpn-card" aria-labelledby="vpn-title">

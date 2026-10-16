@@ -148,6 +148,7 @@
     loadBank();
     loadTelegram();
     loadFee();
+    loadSpotlight();
   });
 
   /* ---------- Status banner ---------- */
@@ -230,14 +231,14 @@
     });
   }
 
-  /* A logo is shrunk to 600 pixels on a white background (JPEG has no transparency). */
-  function shrinkLogo(file) {
+  /* A logo is shrunk to 600 pixels (an ad poster to 1600) on a white background (JPEG has no transparency). */
+  function shrinkLogo(file, maxSide = 600) {
     return new Promise((resolve, reject) => {
       const img = new Image();
       const url = URL.createObjectURL(file);
       img.onload = () => {
         URL.revokeObjectURL(url);
-        const scale = Math.min(1, 600 / Math.max(img.width, img.height));
+        const scale = Math.min(1, maxSide / Math.max(img.width, img.height));
         const canvas = document.createElement('canvas');
         canvas.width = Math.max(1, Math.round(img.width * scale));
         canvas.height = Math.max(1, Math.round(img.height * scale));
@@ -849,6 +850,268 @@
       toast('Slip sent. You will be verified once the owner approves it.');
       loadFee();
     } catch (err) {
+      errorBox.textContent = (err && err.message) || 'Something went wrong. Please try again.';
+      errorBox.hidden = false;
+    } finally {
+      button.disabled = false;
+    }
+  });
+
+  /* ---------- Ads: the seller buys time in the popup the shop shows (called "spotlight" in the code and database,
+     because ad blockers block addresses and classes with "ad" in them) ---------- */
+  const SPOT_STATUS = { awaiting_review: ['pending', 'Waiting for review'], approved: ['approved', 'Approved'], rejected: ['suspended', 'Not accepted'] };
+  const spot = { step: 1, packs: [], pack: null, qty: 1, poster: null, posterUrl: '', bank: null };
+  const rs = (n) => `Rs. ${Number(n).toLocaleString('en-US')}`;
+
+  /* 24 hours reads "1 day", 36 hours reads "36 hours". */
+  function spanText(hours) {
+    if (hours % 24 === 0) return dayWord(hours / 24);
+    return `${hours} ${hours === 1 ? 'hour' : 'hours'}`;
+  }
+
+  function formatDateTime(value) {
+    const d = new Date(value);
+    return Number.isNaN(d.getTime()) ? '' : d.toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit', hour12: true });
+  }
+
+  /* Time left until a moment, in whole hours under two days, else in whole days. */
+  function timeLeft(value) {
+    const hours = Math.max(1, Math.ceil((new Date(value).getTime() - Date.now()) / 3600000));
+    return hours < 48 ? `${hours} ${hours === 1 ? 'hour' : 'hours'}` : dayWord(Math.floor(hours / 24));
+  }
+
+  function spotThumb(path) {
+    return `<span class="prod-row__art spot-thumb">${path ? `<img src="${esc(logoUrl(path))}" alt="" loading="lazy">` : icon('i-megaphone')}</span>`;
+  }
+
+  function myAdRow(s) {
+    const now = Date.now();
+    const start = new Date(s.starts_at).getTime();
+    const end = new Date(s.ends_at).getTime();
+    let badge, meta;
+    if (!s.active) { badge = ['suspended', 'Paused']; meta = 'Paused by the site owner. Message them if this is a mistake.'; }
+    else if (end <= now) { badge = ['', 'Ended']; meta = `Ended ${formatDateTime(s.ends_at)}`; }
+    else if (start > now) { badge = ['pending', 'Starts later']; meta = `Starts ${formatDateTime(s.starts_at)}, ends ${formatDateTime(s.ends_at)}`; }
+    else { badge = ['approved', 'Running']; meta = `Ends ${formatDateTime(s.ends_at)} (${timeLeft(s.ends_at)} left)`; }
+    return `
+      <article class="prod-row">
+        <div class="prod-row__main">${spotThumb(s.image)}<div class="prod-row__text">
+          <p class="prod-row__name">${esc(s.title || sellerRow.store_name)} <span class="status-badge${badge[0] ? ` status-badge--${badge[0]}` : ''}">${esc(badge[1])}</span></p>
+          <p class="prod-row__meta">${esc(meta)}</p>
+        </div></div>
+      </article>`;
+  }
+
+  function requestRow(r) {
+    const [badgeClass, label] = SPOT_STATUS[r.status] || ['pending', r.status];
+    const time = r.qty > 1 ? `${r.qty} × ${spanText(r.hours)}` : spanText(r.hours);
+    return `
+      <article class="prod-row">
+        <div class="prod-row__main">${spotThumb(r.image)}<div class="prod-row__text">
+          <p class="prod-row__name">${esc(r.title || sellerRow.store_name)} <span class="status-badge status-badge--${badgeClass}">${esc(label)}</span></p>
+          <p class="prod-row__meta">${esc(time)} &middot; ${esc(rs(r.amount_lkr))} &middot; sent ${esc(formatDate(r.created_at))}${r.reference ? ` &middot; ${esc(r.reference)}` : ''}</p>
+        </div></div>
+      </article>`;
+  }
+
+  async function loadSpotlight() {
+    const [{ data: settings }, { data: packs }, { data: mine }, { data: requests }, { data: bankData }] = await Promise.all([
+      sb.from('site_settings').select('owner_telegram').maybeSingle(),
+      sb.from('spotlight_packages').select('*').order('hours').order('price'),
+      sb.rpc('my_spotlights'),
+      sb.from('spotlight_requests').select('*').eq('seller_id', sellerRow.id).order('created_at', { ascending: false }).limit(10),
+      sb.rpc('get_owner_bank')
+    ]);
+    const tg = settings && settings.owner_telegram;
+    byId('spot-contact').hidden = !tg;
+    if (tg) {
+      byId('spot-contact-link').href = `https://t.me/${encodeURIComponent(tg)}`;
+      byId('spot-contact-name').textContent = `Message @${tg}`;
+    }
+    byId('spot-mine-wrap').hidden = !(mine && mine.length);
+    byId('spot-mine').innerHTML = (mine || []).map(myAdRow).join('');
+    byId('spot-requests-wrap').hidden = !(requests && requests.length);
+    byId('spot-requests').innerHTML = (requests || []).map(requestRow).join('');
+    spot.packs = packs || [];
+    const bank = Array.isArray(bankData) ? bankData[0] : null;
+    spot.bank = bank && bank.account_number ? bank : null;
+    byId('spot-bank').hidden = !spot.bank;
+    byId('spot-bank').innerHTML = spot.bank
+      ? [['Bank', bank.bank_name], ['Account name', bank.account_name], ['Account number', bank.account_number], ['Branch', bank.branch]]
+        .filter((row) => row[1]).map(([k, v]) => `<div><dt>${esc(k)}</dt><dd>${esc(v)}</dd></div>`).join('')
+      : '';
+    byId('spot-bank-note').hidden = !(spot.bank && bank.note);
+    byId('spot-bank-note').textContent = spot.bank && bank.note ? bank.note : '';
+    renderPacks();
+  }
+
+  /* The packages the owner offers, as glass boxes. The first one is picked to start with. */
+  function renderPacks() {
+    const box = byId('spot-packs');
+    if (spot.pack) spot.pack = spot.packs.find((p) => p.id === spot.pack.id) || null;
+    if (!spot.pack) spot.pack = spot.packs[0] || null;
+    if (!spot.pack) {
+      box.innerHTML = '<p class="spot-packs__empty">No ad times are offered right now. Please message the site owner.</p>';
+      byId('spot-qty').hidden = true;
+      byId('spot-total').innerHTML = '';
+      return;
+    }
+    box.innerHTML = spot.packs.map((p) => `
+      <button type="button" class="spot-pack" role="radio" aria-checked="${p.id === spot.pack.id}" data-pack="${esc(p.id)}">
+        <span class="spot-pack__check">${icon('i-check')}</span>
+        <span class="spot-pack__time">${esc(spanText(p.hours))}</span>
+        <span class="spot-pack__price">${esc(rs(p.price))}</span>
+        <span class="spot-pack__note">${p.max_qty > 1 ? `Buy up to ${p.max_qty} at once` : 'One at a time'}</span>
+      </button>`).join('');
+    paintQty();
+  }
+
+  function paintQty() {
+    const p = spot.pack;
+    if (!p) return;
+    spot.qty = Math.min(Math.max(1, spot.qty), p.max_qty);
+    byId('spot-qty').hidden = p.max_qty <= 1;
+    byId('spot-qty-value').textContent = String(spot.qty);
+    byId('spot-qty-minus').disabled = spot.qty <= 1;
+    byId('spot-qty-plus').disabled = spot.qty >= p.max_qty;
+    byId('spot-qty-max').textContent = `× ${spanText(p.hours)}, up to ${p.max_qty}`;
+    byId('spot-total').innerHTML = `<span>Your ad runs for <strong>${esc(spanText(p.hours * spot.qty))}</strong></span><span class="spot-total__price">${esc(rs(p.price * spot.qty))}</span>`;
+  }
+
+  byId('spot-packs').addEventListener('click', (event) => {
+    const button = event.target.closest('[data-pack]');
+    if (!button) return;
+    spot.pack = spot.packs.find((p) => p.id === button.dataset.pack) || spot.pack;
+    byId('spot-pack-error').hidden = true;
+    byId('spot-packs').querySelectorAll('[data-pack]').forEach((b) => b.setAttribute('aria-checked', String(b === button)));
+    paintQty();
+  });
+  byId('spot-qty-minus').addEventListener('click', () => { spot.qty -= 1; paintQty(); });
+  byId('spot-qty-plus').addEventListener('click', () => { spot.qty += 1; paintQty(); });
+
+  /* The poster is made smaller in the browser and uploaded only when the request is sent. */
+  function setSpotPoster(blob) {
+    if (spot.posterUrl) URL.revokeObjectURL(spot.posterUrl);
+    spot.poster = blob;
+    spot.posterUrl = blob ? URL.createObjectURL(blob) : '';
+    byId('spot-poster-img').innerHTML = blob ? `<img src="${spot.posterUrl}" alt="Your poster">` : icon('i-image');
+    byId('spot-poster-btn').textContent = blob ? 'Change the picture' : 'Choose a picture';
+    byId('spot-poster-clear').hidden = !blob;
+  }
+
+  byId('spot-poster-file').addEventListener('change', async (event) => {
+    const input = event.target;
+    const file = (input.files || [])[0];
+    showFieldError(input, '');
+    if (!file) return;
+    try {
+      if (!/^image\/(jpeg|png|webp)$/.test(file.type)) throw new Error('Use a JPG, PNG or WebP picture.');
+      const blob = await shrinkLogo(file, 1600);
+      if (blob.size > 3 * 1024 * 1024) throw new Error('That picture is too large. Try a smaller one.');
+      setSpotPoster(blob);
+    } catch (err) {
+      showFieldError(input, err.message);
+    }
+    input.value = '';
+  });
+  byId('spot-poster-clear').addEventListener('click', () => setSpotPoster(null));
+
+  function paintSpotSummary() {
+    const form = byId('spot-buy-form');
+    const p = spot.pack;
+    const total = p.price * spot.qty;
+    const rows = [
+      ['Headline', form.elements.title.value.trim() || `${sellerRow.store_name} (your store name)`],
+      ['Offer line', form.elements.message.value.trim() || 'The About text of your store'],
+      ['Poster', spot.poster ? 'Added' : 'Your store logo'],
+      ['Time', spot.qty > 1 ? `${spot.qty} × ${spanText(p.hours)} = ${spanText(p.hours * spot.qty)}` : spanText(p.hours)],
+      ['To pay', rs(total)]
+    ];
+    byId('spot-summary').innerHTML = rows.map(([k, v]) => `<div><dt>${esc(k)}</dt><dd>${esc(v)}</dd></div>`).join('');
+    byId('spot-pay-lead').textContent = spot.bank
+      ? `Send ${rs(total)} to the site owner's account below, then attach the slip.`
+      : `Send ${rs(total)} to the site owner. They have not added bank details yet, so please message them first.`;
+  }
+
+  function goSpotStep(n) {
+    if (n === 3) {
+      if (!spot.pack) {
+        byId('spot-pack-error').textContent = 'Choose how long your ad runs.';
+        byId('spot-pack-error').hidden = false;
+        return;
+      }
+      paintSpotSummary();
+    }
+    spot.step = n;
+    document.querySelectorAll('[data-spot-step]').forEach((el) => { el.hidden = Number(el.dataset.spotStep) !== n; });
+    document.querySelectorAll('[data-step-dot]').forEach((li) => {
+      const k = Number(li.dataset.stepDot);
+      li.classList.toggle('is-done', k < n);
+      if (k === n) li.setAttribute('aria-current', 'step'); else li.removeAttribute('aria-current');
+    });
+    const steps = byId('spot-steps');
+    if (steps.getBoundingClientRect().top < 0) steps.scrollIntoView({ block: 'start' });
+  }
+
+  byId('spot-buy-form').addEventListener('click', (event) => {
+    const go = event.target.closest('[data-spot-go]');
+    if (go) goSpotStep(Number(go.dataset.spotGo));
+  });
+
+  byId('spot-buy-form').addEventListener('submit', async (event) => {
+    event.preventDefault();
+    /* Enter in a field of the first two steps moves on instead of sending. */
+    if (spot.step < 3) { goSpotStep(spot.step + 1); return; }
+    const form = byId('spot-buy-form');
+    const file = form.elements.receipt.files[0];
+    const errorBox = byId('spot-form-error');
+    errorBox.hidden = true;
+    showFieldError(form.elements.receipt, '');
+    if (!file) { showFieldError(form.elements.receipt, 'Attach the payment slip (a photo or a PDF).'); return; }
+    if (!/^(image\/(jpeg|png|webp)|application\/pdf)$/.test(file.type)) { showFieldError(form.elements.receipt, 'Use a JPG, PNG, WebP or PDF file.'); return; }
+    if (file.type === 'application/pdf' && file.size > 5 * 1024 * 1024) { showFieldError(form.elements.receipt, 'That PDF is over 5 MB. Send a photo of the slip instead.'); return; }
+    const button = form.querySelector('button[type="submit"]');
+    button.disabled = true;
+    let posterPath = null;
+    let sent = false;
+    try {
+      if (spot.poster) {
+        const path = `spotlight/${sellerRow.id}/${Date.now()}.jpg`;
+        const { error: posterError } = await sb.storage.from(LOGO_BUCKET).upload(path, spot.poster, { contentType: 'image/jpeg' });
+        if (posterError) throw new Error(`Could not upload the poster: ${posterError.message}`);
+        posterPath = path;
+      }
+      const slip = await shrinkSlip(file);
+      if (slip.size > 5 * 1024 * 1024) throw new Error('That photo is too large even after making it smaller. Try a smaller photo or a screenshot.');
+      let safeName = file.name.toLowerCase().replace(/[^a-z0-9.]+/g, '-').slice(-60);
+      if (slip !== file) safeName = safeName.replace(/\.[a-z0-9]+$/, '') + '.jpg';
+      const slipPath = `${sellerRow.id}/spot-${Date.now()}-${safeName}`;
+      const { error: uploadError } = await sb.storage.from('receipts').upload(slipPath, slip, { contentType: slip.type || file.type });
+      if (uploadError) {
+        if (/row-level security|policy/i.test(uploadError.message || '')) throw new Error('You have sent too many slips today. Please try again tomorrow.');
+        throw uploadError;
+      }
+      const { data: requestId, error } = await sb.rpc('submit_spotlight_request', {
+        p_package_id: spot.pack.id,
+        p_qty: spot.qty,
+        p_title: form.elements.title.value.trim(),
+        p_message: form.elements.message.value.trim(),
+        p_image: posterPath,
+        p_reference: form.elements.reference.value.trim(),
+        p_receipt_path: slipPath
+      });
+      if (error) throw error;
+      sent = true;
+      /* Tell the owner on Telegram, with the slip and Approve / Reject buttons. */
+      sb.functions.invoke('notify', { body: { kind: 'spotlight_request', id: requestId } }).catch(() => {});
+      form.reset();
+      setSpotPoster(null);
+      spot.qty = 1;
+      goSpotStep(1);
+      toast('Request sent. Your ad starts once the site owner approves it.');
+      loadSpotlight();
+    } catch (err) {
+      if (posterPath && !sent) sb.storage.from(LOGO_BUCKET).remove([posterPath]).catch(() => {});
       errorBox.textContent = (err && err.message) || 'Something went wrong. Please try again.';
       errorBox.hidden = false;
     } finally {

@@ -194,51 +194,119 @@
         </div>
         <p class="admin-count" id="spots-count" aria-live="polite"></p>
       </header>
-      <p class="admin-lead">When a seller pays you to promote their store, add it here. While the ad runs, the store pops up when a customer opens the shop (once per visit), with a close button at the top right. A tap on the post opens the store. If several ads run at the same time, the shop shows one of them at random.</p>
+      <div class="admin-tabs" id="spot-tabs" role="group" aria-label="Parts of Ads">
+        <button class="chip" type="button" data-spottab="requests" aria-pressed="true">Requests</button>
+        <button class="chip" type="button" data-spottab="ads" aria-pressed="false">Ads</button>
+        <button class="chip" type="button" data-spottab="packages" aria-pressed="false">Packages</button>
+      </div>
 
-      <form class="auth__form" id="spot-form" novalidate>
-        <div class="field">
-          <label for="spot-store">Store</label>
-          <select id="spot-store" name="store"></select>
-        </div>
-        <div class="field">
-          <label for="spot-file">Poster image (optional)</label>
-          <input id="spot-file" name="poster" type="file" accept="image/jpeg,image/png,image/webp">
-          <p class="field__hint">The picture the seller wants shown (the whole picture is shown, never cut). Leave empty to use the store logo. When editing an ad, leave empty to keep its current poster.</p>
-        </div>
-        <div class="field">
-          <label for="spot-title">Headline (optional)</label>
-          <input id="spot-title" name="title" type="text" maxlength="60" placeholder="For example: Fast VPN for less">
-          <p class="field__hint">Big words at the top of the popup. Leave empty to use the store name.</p>
-        </div>
-        <div class="field">
-          <label for="spot-message">Offer line (optional)</label>
-          <input id="spot-message" name="message" type="text" maxlength="160" placeholder="For example: Enjoy 15% off this week only">
-          <p class="field__hint">One short line under the headline. Leave empty to use the start of the store’s About text.</p>
-        </div>
-        <div class="field-row">
+      <div id="spot-tab-requests">
+        <p class="admin-lead spot-tab-lead">Sellers buy an ad in their dashboard (Ads): they fill in the popup, pick a package and pay you by bank transfer. Check the slip, then approve. The ad starts right away, or when the store’s current ad ends. You can also approve from Telegram.</p>
+        <div class="admin-list" id="spot-requests-list"></div>
+        <p class="empty__title admin-empty" id="spot-requests-empty" hidden>No requests yet</p>
+      </div>
+
+      <div id="spot-tab-ads" hidden>
+        <p class="admin-lead spot-tab-lead">Every ad, the ones sellers bought and the ones you added yourself. While an ad runs, the store pops up when a customer opens the shop (once per visit), with a close button at the top right. A tap on the post opens the store. If several ads run at the same time, the shop shows one of them at random.</p>
+
+        <form class="auth__form" id="spot-form" novalidate>
           <div class="field">
-            <label for="spot-start">Starts</label>
-            <input id="spot-start" name="startsOn" type="date">
+            <label for="spot-store">Store</label>
+            <select id="spot-store" name="store"></select>
           </div>
           <div class="field">
-            <label for="spot-end">Ends</label>
-            <input id="spot-end" name="endsOn" type="date">
+            <label for="spot-file">Poster image (optional)</label>
+            <input id="spot-file" name="poster" type="file" accept="image/jpeg,image/png,image/webp">
+            <p class="field__hint">The picture the seller wants shown (the whole picture is shown, never cut). Leave empty to use the store logo. When editing an ad, leave empty to keep its current poster.</p>
           </div>
-        </div>
-        <div class="field">
-          <label for="spot-note">Note for you (optional)</label>
-          <input id="spot-note" name="note" type="text" maxlength="200" placeholder="For example: paid Rs. 1000 on 16 Oct">
-        </div>
-        <p class="field__error" id="spot-error" hidden></p>
-        <div class="spot-form__actions">
-          <button class="btn btn--ink" type="submit" id="spot-submit">Add ad</button>
-          <button class="btn btn--ghost" type="button" id="spot-cancel" hidden>Cancel</button>
-        </div>
-      </form>
+          <div class="field">
+            <label for="spot-title">Headline (optional)</label>
+            <input id="spot-title" name="title" type="text" maxlength="60" placeholder="For example: Fast VPN for less">
+            <p class="field__hint">Big words at the top of the popup. Leave empty to use the store name.</p>
+          </div>
+          <div class="field">
+            <label for="spot-message">Offer line (optional)</label>
+            <input id="spot-message" name="message" type="text" maxlength="160" placeholder="For example: Enjoy 15% off this week only">
+            <p class="field__hint">One short line under the headline. Leave empty to use the start of the store’s About text.</p>
+          </div>
+          <div class="field-row">
+            <div class="field">
+              <label for="spot-start">Starts</label>
+              <input id="spot-start" name="startsAt" type="datetime-local">
+            </div>
+            <div class="field">
+              <label for="spot-end">Ends</label>
+              <input id="spot-end" name="endsAt" type="datetime-local">
+            </div>
+          </div>
+          <div class="field">
+            <label for="spot-note">Note for you (optional)</label>
+            <input id="spot-note" name="note" type="text" maxlength="200" placeholder="For example: paid Rs. 1000 on 16 Oct">
+          </div>
+          <p class="field__error" id="spot-error" hidden></p>
+          <div class="spot-form__actions">
+            <button class="btn btn--ink" type="submit" id="spot-submit">Add ad</button>
+            <button class="btn btn--ghost" type="button" id="spot-cancel" hidden>Cancel</button>
+          </div>
+        </form>
 
-      <div class="admin-list admin-list--spaced" id="spots-list"></div>
-      <p class="empty__title admin-empty" id="spots-empty" hidden>No ads yet</p>
+        <div class="admin-list admin-list--spaced" id="spots-list"></div>
+        <p class="empty__title admin-empty" id="spots-empty" hidden>No ads yet</p>
+      </div>
+
+      <div id="spot-tab-packages" hidden>
+        <p class="admin-lead spot-tab-lead">What sellers can buy. A seller picks one package and how many of it, up to the most you allow. For example 24 hours for Rs. 300, up to 7 at once: 3 of it is 3 days for Rs. 900. Sellers see these boxes in their Ads page.</p>
+        <div class="spot-glass">
+          <div class="spot-packs" id="spot-packs-admin"></div>
+        </div>
+
+        <form class="auth__form" id="spot-pack-form" novalidate>
+          <h2 class="settings-card__title" id="spot-pack-form-title">Add a package</h2>
+          <div class="field-row">
+            <div class="field">
+              <label for="spot-pack-length">How long</label>
+              <input id="spot-pack-length" name="span" type="number" min="1" step="1" inputmode="numeric" placeholder="24">
+            </div>
+            <div class="field">
+              <label for="spot-pack-unit">In</label>
+              <select id="spot-pack-unit" name="unit">
+                <option value="hours">Hours</option>
+                <option value="days">Days</option>
+              </select>
+            </div>
+          </div>
+          <div class="field-row">
+            <div class="field">
+              <label for="spot-pack-price">Price (Rs.)</label>
+              <input id="spot-pack-price" name="price" type="number" min="1" step="1" inputmode="numeric" placeholder="300">
+            </div>
+            <div class="field">
+              <label for="spot-pack-max">Most a seller can buy at once</label>
+              <input id="spot-pack-max" name="maxQty" type="number" min="1" max="365" step="1" inputmode="numeric" value="1">
+            </div>
+          </div>
+          <p class="field__hint" id="spot-pack-preview" aria-live="polite"></p>
+          <p class="field__error" id="spot-pack-error" hidden></p>
+          <div class="spot-form__actions">
+            <button class="btn btn--ink" type="submit" id="spot-pack-submit">Add package</button>
+            <button class="btn btn--ghost" type="button" id="spot-pack-cancel" hidden>Cancel</button>
+          </div>
+        </form>
+
+        <div class="settings-card settings-card--spaced">
+          <h2 class="settings-card__title">Your Telegram for sellers</h2>
+          <p class="admin-lead">Sellers see a “Message on Telegram” button in their Ads page, so they can ask you about ads. Leave empty to hide the button.</p>
+          <form class="auth__form" id="spot-telegram-form" novalidate>
+            <div class="field">
+              <label for="spot-telegram">Telegram username</label>
+              <input id="spot-telegram" name="username" type="text" maxlength="33" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="@yourname">
+              <p class="field__hint">Your username, not your phone number. Find it in Telegram, Settings.</p>
+              <p class="field__error" id="spot-telegram-error" hidden></p>
+            </div>
+            <button class="btn btn--ink" type="submit">Save</button>
+          </form>
+        </div>
+      </div>
     </div>
 
     <div id="fees-section" hidden>
