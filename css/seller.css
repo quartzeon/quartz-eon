@@ -125,6 +125,9 @@
 .pp-photo--logo { width: 96px; height: 96px; background: #fff; }
 .pp-photo--logo img { object-fit: contain; padding: 6px; }
 .pp-logo-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+.pp-file__row { display: flex; align-items: center; gap: 8px; margin: 0; font-size: 14px; }
+.pp-file__row .i { width: 18px; height: 18px; flex: none; color: var(--ink-3); }
+.pp-file__name { min-width: 0; overflow-wrap: anywhere; font-weight: 600; }
 .pp-picker { padding: 28px clamp(18px, 4vw, 32px) 24px; display: grid; gap: 14px; }
 .pp-picker__search { position: relative; }
 .pp-picker__search .i { position: absolute; left: 14px; top: 50%; width: 18px; height: 18px; transform: translateY(-50%); color: var(--ink-3); pointer-events: none; }

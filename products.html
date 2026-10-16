@@ -347,6 +347,16 @@
               <textarea id="pp-delivery" name="deliveryInfo" rows="3" placeholder="A private download link, a licence key, or instructions."></textarea>
               <p class="field__hint">Shown only to customers whose payment you approved. Never shown on the shop.</p>
             </div>
+            <div class="field">
+              <span class="pp-label">File to download</span>
+              <div class="pp-file" id="pp-file"></div>
+              <div class="pp-logo-actions">
+                <label class="btn btn--ghost btn--sm pp-upload" for="pp-file-input"><svg class="i" aria-hidden="true" focusable="false"><use href="#i-plus"/></svg><span id="pp-file-label">Upload a file</span></label>
+              </div>
+              <input id="pp-file-input" type="file" hidden>
+              <p class="field__hint">Optional. Software, an e-book, a ZIP... up to 50 MB. Customers whose payment you approved get a Download button in My orders. Upload a new version any time: past buyers get the new one. For bigger files, put a download link in the box above.</p>
+              <p class="field__error" id="pp-file-error" hidden></p>
+            </div>
           </div>
         </section>
 

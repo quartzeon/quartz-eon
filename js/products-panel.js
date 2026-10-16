@@ -9,6 +9,8 @@
   const root = document.documentElement;
   const darkQuery = window.matchMedia('(prefers-color-scheme: dark)');
   const BUCKET = 'product-images';
+  const FILE_BUCKET = 'product-files';   // private files a paying customer downloads
+  const MAX_FILE = 50 * 1024 * 1024;
   const MAX_PHOTOS = 6;
   const MAX_OPTIONS = 12;
 
@@ -199,6 +201,7 @@
     if (error) { toast(`Could not delete: ${error.message}`); return; }
     const files = (Array.isArray(p.images) ? p.images : []).concat(isFile(p.logo) ? [p.logo] : []);
     if (files.length) sb.storage.from(BUCKET).remove(files).catch(() => {});
+    if (p.delivery_file) sb.storage.from(FILE_BUCKET).remove([p.delivery_file]).catch(() => {});
     products = products.filter((row) => row.id !== p.id);
     renderList();
     toast('Product deleted');
@@ -212,6 +215,9 @@
   let uploading = 0;
   let logo = '';            // the plan card's logo path
   let originalLogo = '';
+  let file = null;          // the download file: { path, name } in the private files bucket
+  let originalFile = null;
+  let fileUploading = false;
   let stats = [];          // plan card key figures: { value, label }
   let info = [];           // plan card detail lines: { icon, text }
   const ICONS = [['bolt', 'Lightning'], ['server', 'Server'], ['info', 'Info'], ['shield', 'Shield'], ['clock', 'Clock'], ['check', 'Tick'], ['star', 'Star'], ['globe', 'Globe'], ['gift', 'Gift']];
@@ -300,6 +306,7 @@
       form.elements.vpnDays.value = p.vpn_days || 30;
       form.elements.vpnGb.value = p.vpn_data_gb || 0;
       form.elements.deliveryInfo.value = p.delivery_info || '';
+      file = p.delivery_file ? { path: p.delivery_file, name: p.delivery_file_name || 'Download' } : null;
       fillVpnSettings(p.vpn_settings);
       form.elements.showStock.checked = !!p.show_stock;
       form.elements.soldOut.checked = !!p.sold_out;
@@ -320,12 +327,16 @@
       logo = '';
       stats = [];
       info = [];
+      file = null;
     }
     originalImages = images.slice();
     originalLogo = logo;
+    originalFile = file;
     showBox('pp-plan-error', '');
     showBox('pp-logo-error', '');
+    showBox('pp-file-error', '');
     renderLogo();
+    renderFile();
     renderStats();
     renderInfo();
     renderPhotos();
@@ -351,9 +362,55 @@
   function discardNewPhotos() {
     const fresh = images.filter((path) => !originalImages.includes(path)).concat(isFile(logo) && logo !== originalLogo ? [logo] : []);
     if (fresh.length) sb.storage.from(BUCKET).remove(fresh).catch(() => {});
+    if (file && file !== originalFile) sb.storage.from(FILE_BUCKET).remove([file.path]).catch(() => {});
     images = originalImages.slice();
     logo = originalLogo;
+    file = originalFile;
   }
+
+  /* ----- The download file (software, e-book...) ----- */
+  const fileSize = (bytes) => (bytes >= 1048576 ? `${(bytes / 1048576).toFixed(1)} MB` : `${Math.max(1, Math.round(bytes / 1024))} KB`);
+
+  function renderFile() {
+    byId('pp-file').innerHTML = fileUploading
+      ? '<p class="pp-file__row">Uploading… keep this page open.</p>'
+      : file
+        ? `<p class="pp-file__row">${icon('i-check')}<span class="pp-file__name">${esc(file.name)}</span><button class="link" type="button" data-remove-file>Remove</button></p>`
+        : '';
+    byId('pp-file-label').textContent = file ? 'Replace the file' : 'Upload a file';
+  }
+
+  byId('pp-file').addEventListener('click', (event) => {
+    if (!event.target.closest('[data-remove-file]')) return;
+    if (file && file !== originalFile) sb.storage.from(FILE_BUCKET).remove([file.path]).catch(() => {});
+    file = null;
+    renderFile();
+  });
+
+  byId('pp-file-input').addEventListener('change', async (event) => {
+    const picked = (event.target.files || [])[0];
+    event.target.value = '';
+    showBox('pp-file-error', '');
+    if (!picked || fileUploading) return;
+    if (picked.size > MAX_FILE) { showBox('pp-file-error', `This file is ${fileSize(picked.size)}. The limit is 50 MB, so put a download link in the box above instead.`); return; }
+    const ext = (picked.name.match(/\.([a-z0-9]{1,8})$/i) || ['', 'bin'])[1].toLowerCase();
+    const path = `${sellerRow.id}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
+    fileUploading = true;
+    uploading += 1;
+    renderFile();
+    try {
+      const { error } = await sb.storage.from(FILE_BUCKET).upload(path, picked, { contentType: picked.type || 'application/octet-stream' });
+      if (error) throw error;
+      if (file && file !== originalFile) sb.storage.from(FILE_BUCKET).remove([file.path]).catch(() => {});
+      file = { path, name: picked.name.slice(0, 200) };
+    } catch (err) {
+      showBox('pp-file-error', (err && err.message) || 'Could not upload the file.');
+    } finally {
+      fileUploading = false;
+      uploading -= 1;
+      renderFile();
+    }
+  });
 
   /* Shows only the sections that matter: the single price box or the options, the VPN plan or the delivery text. */
   function syncSections() {
@@ -744,7 +801,7 @@
     }
     const vpnSettings = vpn ? readVpnSettings() : {};
     if (!vpnSettings) ok = false;
-    if (uploading) { showBox('pp-form-error', 'Wait for the photos to finish uploading.'); ok = false; }
+    if (uploading) { showBox('pp-form-error', fileUploading ? 'Wait for the file to finish uploading.' : 'Wait for the photos to finish uploading.'); ok = false; }
     if (!ok) return;
 
     const payload = {
@@ -766,6 +823,8 @@
       show_stock: f.showStock.checked,
       status: f.hidden.checked ? 'hidden' : 'active',
       delivery_info: vpn ? '' : f.deliveryInfo.value.trim(),
+      delivery_file: !vpn && file ? file.path : null,
+      delivery_file_name: !vpn && file ? file.name : '',
       vpn_days: vpn && !opts.length ? vpnDays : 30,
       vpn_data_gb: vpn && !opts.length ? vpnGb : 0,
       vpn_settings: vpnSettings
@@ -793,6 +852,11 @@
     if (removed.length) sb.storage.from(BUCKET).remove(removed).catch(() => {});
     originalImages = images.slice();
     originalLogo = keptLogo || '';
+    /* A replaced or removed download file is deleted too (also when the product turned into VPN access). */
+    const staleFiles = [originalFile, file].filter((x) => x && x.path !== payload.delivery_file).map((x) => x.path);
+    if (staleFiles.length) sb.storage.from(FILE_BUCKET).remove(staleFiles).catch(() => {});
+    file = payload.delivery_file ? file : null;
+    originalFile = file;
 
     if (editingId) products = products.map((p) => (p.id === editingId ? result.data : p));
     else products.unshift(result.data);

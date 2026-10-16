@@ -177,7 +177,7 @@
   }
 
   /* status: 'idle' | 'loading' | 'ready' | 'error' */
-  const ordersState = { status: 'idle', rows: [], reviews: new Map(), editing: new Set(), reports: new Map(), reporting: new Set() };
+  const ordersState = { status: 'idle', rows: [], reviews: new Map(), editing: new Set(), reports: new Map(), reporting: new Set(), files: new Map() };
 
   /* ---------- "Your order was approved" badge ----------
      Remembers in this browser which finished orders the customer has already seen, and marks
@@ -1440,11 +1440,14 @@
       ordersState.status = 'loading';
       renderOrders();
     }
-    const [{ data, error }, reviews, reports] = await Promise.all([
+    const [{ data, error }, reviews, reports, files] = await Promise.all([
       sb.from('orders').select('*').eq('customer_id', session.user.id).order('created_at', { ascending: false }),
       sb.from('reviews').select('*').eq('customer_id', session.user.id),
-      sb.from('order_reports').select('*').eq('customer_id', session.user.id).order('created_at', { ascending: true })
+      sb.from('order_reports').select('*').eq('customer_id', session.user.id).order('created_at', { ascending: true }),
+      sb.rpc('my_order_files')
     ]);
+    /* Download files of paid orders: order id -> { path, name }. */
+    ordersState.files = new Map(((files && files.data) || []).map((f) => [f.order_id, { path: f.file_path, name: f.file_name || 'Download' }]));
     /* The newest report of each order wins. */
     ordersState.reports = new Map(((reports && reports.data) || []).map((r) => [r.order_id, r]));
     if (!session) return;
@@ -1522,14 +1525,36 @@
     return `${before}<button class="link order__report-btn" type="button" data-report-open="${esc(o.id)}">Report a problem</button>`;
   }
 
+  /* A private file is downloaded through a link that works for 5 minutes, made only for a customer who paid. */
+  async function downloadOrderFile(button) {
+    const file = ordersState.files.get(button.dataset.downloadOrder);
+    if (!file || button.disabled) return;
+    button.disabled = true;
+    button.textContent = 'Preparing…';
+    const { data, error } = await sb.storage.from('product-files').createSignedUrl(file.path, 300, { download: file.name });
+    button.disabled = false;
+    button.textContent = 'Download';
+    if (error || !data) {
+      button.textContent = 'Could not get the file, try again';
+      window.setTimeout(() => { button.textContent = 'Download'; }, 3000);
+      return;
+    }
+    window.location.href = data.signedUrl;
+  }
+
   function orderCard(o) {
     let detail = '';
     if (o.status === 'paid') {
+      const file = ordersState.files.get(o.id);
+      const download = file
+        ? `<div class="order__download"><button class="btn btn--ink btn--sm" type="button" data-download-order="${esc(o.id)}">Download</button><span class="order__file">${esc(file.name)}</span></div>`
+        : '';
       if (o.delivery) {
         const link = (o.delivery.match(/^(?:vless|vmess|trojan):\/\/\S+$/m) || [''])[0];
         const copy = link ? `<button class="btn btn--ink btn--sm order__copy" type="button" data-copy-link="${esc(link)}">Copy connection link</button>` : '';
-        detail = `<div class="order__delivery"><p class="order__label">Your purchase</p><pre>${esc(o.delivery)}</pre>${copy}</div>`;
+        detail = `<div class="order__delivery"><p class="order__label">Your purchase</p><pre>${esc(o.delivery)}</pre>${copy}${download}</div>`;
       }
+      else if (download) detail = `<div class="order__delivery"><p class="order__label">Your purchase</p>${download}</div>`;
       else if (o.is_vpn) detail = '<p class="note">Your VPN access is being set up. Check back in a few minutes; if it does not appear, contact the seller.</p>';
       else detail = '<p class="note">Payment confirmed. The seller has not added download details yet, so please contact them.</p>';
     } else if (o.status === 'awaiting_review') {
@@ -2003,6 +2028,11 @@
       const done = () => { copyButton.textContent = 'Copied'; window.setTimeout(() => { copyButton.textContent = 'Copy connection link'; }, 2000); };
       if (navigator.clipboard) navigator.clipboard.writeText(copyButton.dataset.copyLink).then(done, () => { copyButton.textContent = 'Select the link above and copy it'; });
       else copyButton.textContent = 'Select the link above and copy it';
+      return;
+    }
+    const downloadButton = target.closest('[data-download-order]');
+    if (downloadButton) {
+      downloadOrderFile(downloadButton);
       return;
     }
     if (target.closest('[data-login-first]')) {
