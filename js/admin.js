@@ -132,7 +132,8 @@
     if (profile && profile.role === 'admin') {
       showPanel('app');
       await loadSellers();
-      loadProducts().then(loadAds); /* the ads list shows product names */
+      loadProducts();
+      loadAds(); /* the ads list shows store names, loaded above */
       loadOrders().then(loadReports); /* reports show the order's product name */
       loadOwnerBank();
       loadBrands();
@@ -206,6 +207,8 @@
     byId('sellers-list').hidden = list.length === 0;
     byId('sellers-empty').hidden = list.length > 0;
     byId('sellers-count').textContent = `${sellers.length} total · ${list.length} shown`;
+    fillAdForm(); /* the ad form lists the approved stores */
+    if (ads.length) renderAds();
   }
 
   byId('status-tabs').addEventListener('click', (event) => {
@@ -238,6 +241,7 @@
       return;
     }
     sellers = sellers.filter((row) => row.id !== id);
+    ads = ads.filter((a) => a.seller_id !== id); /* its ads were deleted with it */
     renderSellers();
     toast('Store deleted');
     loadProducts();
@@ -311,7 +315,6 @@
     byId('products-list').hidden = list.length === 0;
     byId('products-empty').hidden = list.length > 0;
     byId('products-count').textContent = `${products.length} ${plural(products.length, 'product', 'products')} · ${list.length} shown`;
-    fillAdForm(); /* the ad form lists the active products */
   }
 
   byId('product-status-tabs').addEventListener('click', (event) => {
@@ -342,7 +345,6 @@
     }
     products = products.filter((p) => p.id !== id);
     renderProducts();
-    if (ads.some((a) => a.product_id === id)) { ads = ads.filter((a) => a.product_id !== id); renderAds(); } /* its ads were deleted with it */
     toast('Product deleted');
   }
 
@@ -771,20 +773,20 @@
     toast('Logo removed');
   });
 
-  /* ---------- Ads: a product (and an optional poster) that pops up when customers open the shop ---------- */
+  /* ---------- Ads: a store (and an optional poster) that pops up when customers open the shop ---------- */
   let ads = [];
   const isoDay = (date) => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
   const addDays = (n) => { const d = new Date(); d.setDate(d.getDate() + n); return isoDay(d); };
 
   function fillAdForm() {
     const f = byId('spot-form').elements;
-    const live = products.filter((p) => p.status === 'active');
-    const storeName = (p) => { const s = sellers.find((row) => row.id === p.seller_id); return s ? s.store_name : 'Unknown store'; };
-    const chosen = f.product.value;
-    f.product.innerHTML = live.length
-      ? `<option value="">Choose a product</option>${live.map((p) => `<option value="${esc(p.id)}">${esc(p.name)} (${esc(storeName(p))})</option>`).join('')}`
-      : '<option value="">No active products yet</option>';
-    if (live.some((p) => p.id === chosen)) f.product.value = chosen;
+    const live = sellers.filter((s) => s.status === 'approved')
+      .sort((a, b) => String(a.store_name).localeCompare(String(b.store_name), undefined, { sensitivity: 'base' }));
+    const chosen = f.store.value;
+    f.store.innerHTML = live.length
+      ? `<option value="">Choose a store</option>${live.map((s) => `<option value="${esc(s.id)}">${esc(s.store_name)}${s.store_slug ? ` (/${esc(s.store_slug)})` : ''}</option>`).join('')}`
+      : '<option value="">No approved stores yet</option>';
+    if (live.some((s) => s.id === chosen)) f.store.value = chosen;
     if (!f.startsOn.value) f.startsOn.value = addDays(0);
     if (!f.endsOn.value) f.endsOn.value = addDays(30);
   }
@@ -798,10 +800,9 @@
   }
 
   function adRow(a) {
-    const p = products.find((row) => row.id === a.product_id);
-    const store = p && sellers.find((s) => s.id === p.seller_id);
+    const store = sellers.find((s) => s.id === a.seller_id);
     const state = adState(a);
-    const picture = a.image || (p && p.images && p.images[0]);
+    const picture = a.image || (store && store.logo);
     const toggle = a.active
       ? `<button class="btn btn--ghost btn--sm" type="button" data-spot-pause="${esc(a.id)}">${icon('i-pause')}<span>Pause</span></button>`
       : `<button class="btn btn--ink btn--sm" type="button" data-spot-run="${esc(a.id)}">${icon('i-play')}<span>Run</span></button>`;
@@ -810,8 +811,8 @@
         <div class="seller-row__main">
           <span class="seller-row__avatar">${picture ? `<img src="${esc(brandUrl(picture))}" alt="" loading="lazy">` : icon('i-megaphone')}</span>
           <div class="seller-row__text">
-            <p class="seller-row__name">${esc(a.title || (p ? p.name : 'Deleted product'))} <span class="status-badge status-badge--${state.tone}">${state.label}</span></p>
-            <p class="seller-row__meta">${a.title && p ? `${esc(p.name)} &middot; ` : ''}${esc(store ? store.store_name : 'Unknown store')} &middot; ${esc(formatDate(a.starts_on))} to ${esc(formatDate(a.ends_on))}${a.image ? ' &middot; own poster' : ''}${a.note ? ` &middot; ${esc(a.note)}` : ''}</p>
+            <p class="seller-row__name">${esc(a.title || (store ? store.store_name : 'Deleted store'))} <span class="status-badge status-badge--${state.tone}">${state.label}</span></p>
+            <p class="seller-row__meta">${a.title && store ? `${esc(store.store_name)} &middot; ` : ''}${store && store.status !== 'approved' ? 'store not approved now &middot; ' : ''}${esc(formatDate(a.starts_on))} to ${esc(formatDate(a.ends_on))}${a.image ? ' &middot; own poster' : ''}${a.note ? ` &middot; ${esc(a.note)}` : ''}</p>
           </div>
         </div>
         <div class="seller-row__actions">
@@ -857,12 +858,12 @@
   function startAdEdit(ad) {
     const f = byId('spot-form').elements;
     fillAdForm();
-    if (![...f.product.options].some((o) => o.value === ad.product_id)) {
-      const p = products.find((row) => row.id === ad.product_id);
-      f.product.insertAdjacentHTML('beforeend', `<option value="${esc(ad.product_id)}">${esc(p ? p.name : 'Deleted product')} (not on sale now)</option>`);
+    if (![...f.store.options].some((o) => o.value === ad.seller_id)) {
+      const s = sellers.find((row) => row.id === ad.seller_id);
+      f.store.insertAdjacentHTML('beforeend', `<option value="${esc(ad.seller_id)}">${esc(s ? s.store_name : 'Deleted store')} (not approved now)</option>`);
     }
     editingAd = ad;
-    f.product.value = ad.product_id;
+    f.store.value = ad.seller_id;
     f.poster.value = '';
     f.startsOn.value = ad.starts_on;
     f.endsOn.value = ad.ends_on;
@@ -885,7 +886,7 @@
     const fail = (message) => { error.textContent = message; error.hidden = false; };
     error.hidden = true;
     const file = f.poster.files[0];
-    if (!f.product.value) return fail('Choose the product to promote.');
+    if (!f.store.value) return fail('Choose the store to promote.');
     if (file && !/^image\/(jpeg|png|webp)$/.test(file.type)) return fail('The poster must be a JPG, PNG or WebP image.');
     if (!f.startsOn.value || !f.endsOn.value) return fail('Choose the start and end days.');
     if (f.endsOn.value < f.startsOn.value) return fail('The end day must be on or after the start day.');
@@ -902,7 +903,7 @@
         if (uploadError) throw uploadError;
       }
       const fields = {
-        product_id: f.product.value,
+        seller_id: f.store.value,
         starts_on: f.startsOn.value,
         ends_on: f.endsOn.value,
         title: f.title.value.trim(),

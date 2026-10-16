@@ -598,7 +598,7 @@
     if (catalog.status === 'ready') showSpotlight();
   }
 
-  /* ---------- Spotlight popup: a product a seller paid to promote, shown once per visit ---------- */
+  /* ---------- Spotlight popup: a store a seller paid to promote, shown once per visit ---------- */
   const spotDialog = byId('spot');
   let spotChecked = false;
   let spotRequest = null;
@@ -613,7 +613,7 @@
 
   spotDialog.addEventListener('click', (event) => {
     if (event.target === spotDialog || event.target.closest('[data-spot-go]')) { spotDialog.close(); return; }
-    /* A tap anywhere else on the post (not the close button) opens the seller's store too. */
+    /* A tap anywhere else on the post (not the close button) opens the store too. */
     const post = event.target.closest('.spot[data-href]');
     if (post && !event.target.closest('[data-close]')) {
       spotDialog.close();
@@ -628,37 +628,36 @@
     startSpotRequest();
     const { data, error } = await spotRequest;
     if (error || !data) return;
-    const running = data.filter((a) => PRODUCT_BY_ID.has(a.product_id));
+    const running = data.filter((a) => SELLER_BY_ID.has(a.seller_id) && SELLER_BY_ID.get(a.seller_id).slug);
     if (!running.length || view.name === 'orders' || document.querySelector('dialog[open]')) return;
     const spot = running[Math.floor(Math.random() * running.length)];
-    const p = PRODUCT_BY_ID.get(spot.product_id);
-    const seller = sellerOf(p);
-    /* The whole post opens the seller's store (the product page if the store has no address). */
-    const href = seller.slug ? `#/store/${esc(seller.slug)}` : `#/product/${esc(p.id)}`;
-    const photo = spot.image || p.images[0];
-    /* The whole picture is shown (never cropped); a blurred copy of it fills the empty space around it. */
-    const picture = photo
-      ? `<span class="spot__blur" style="background-image:url('${esc(photoUrl(photo))}')" aria-hidden="true"></span><img class="spot__poster" src="${esc(photoUrl(photo))}" alt="${esc(p.name)}">`
-      : p.logo ? `<span class="spot__art"><img class="spot__logo" src="${esc(logoUrl(p.logo))}" alt=""></span>`
-      : `<span class="spot__art">${art(p.icon)}</span>`;
-    const headline = (spot.title || '').trim() || p.name;
+    const seller = SELLER_BY_ID.get(spot.seller_id);
+    const href = `#/store/${esc(seller.slug)}`;
+    const count = PRODUCTS.filter((p) => p.sellerId === seller.id).length;
+    /* The whole picture is shown (never cropped); a blurred copy of it fills the empty space around it.
+       Without a poster the store logo (or its initials) is shown on the store colour. */
+    const picture = spot.image
+      ? `<span class="spot__blur" style="background-image:url('${esc(photoUrl(spot.image))}')" aria-hidden="true"></span><img class="spot__poster" src="${esc(photoUrl(spot.image))}" alt="${esc(seller.name)}">`
+      : seller.logo ? `<span class="spot__art"><img class="spot__logo" src="${esc(photoUrl(seller.logo))}" alt=""></span>`
+      : `<span class="spot__art"><span class="spot__initials" aria-hidden="true">${esc(initials(seller.name))}</span></span>`;
+    const headline = (spot.title || '').trim() || seller.name;
     let message = (spot.message || '').trim();
     if (!message) {
-      message = String(p.description || '').replace(/\s+/g, ' ').trim();
+      message = String(seller.about || '').replace(/\s+/g, ' ').trim();
       if (message.length > 140) message = `${message.slice(0, 137).replace(/\s+\S*$/, '')}...`;
     }
     byId('spot-body').innerHTML = `
-      <div class="spot" style="--h:${hueOf(p)}" data-href="${href}">
+      <div class="spot" style="--h:${Number(seller.hue) || 0}" data-href="${href}">
         <button class="icon-btn dlg__x" type="button" data-close aria-label="Close">${icon('i-close')}</button>
-        <a class="spot__media${photo ? '' : ' spot__media--art'}" href="${href}" data-spot-go>${picture}</a>
+        <a class="spot__media${spot.image ? '' : ' spot__media--art'}" href="${href}" data-spot-go>${picture}</a>
         <div class="spot__info">
-          <p class="spot__label">Featured &middot; ${esc(seller.name)}</p>
+          <p class="spot__label">Featured store</p>
           <h2 class="spot__name">${esc(headline)}</h2>
           <span class="spot__rule" aria-hidden="true"></span>
           ${message ? `<p class="spot__message">${esc(message)}</p>` : ''}
-          ${headline !== p.name ? `<p class="spot__product">${esc(p.name)}</p>` : ''}
-          <p class="product__price spot__price">${priceHtml(p)}</p>
-          <a class="btn btn--ink spot__cta" href="${href}" data-spot-go>${seller.slug ? 'Visit the store' : 'See details'}</a>
+          ${headline !== seller.name ? `<p class="spot__product">${esc(seller.name)}</p>` : ''}
+          ${count ? `<p class="spot__price">${count} ${count === 1 ? 'product' : 'products'}</p>` : ''}
+          <a class="btn btn--ink spot__cta" href="${href}" data-spot-go>Visit the store</a>
         </div>
       </div>`;
     spotDialog.showModal();

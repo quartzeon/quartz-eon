@@ -194,27 +194,27 @@
         </div>
         <p class="admin-count" id="spots-count" aria-live="polite"></p>
       </header>
-      <p class="admin-lead">When a seller pays you to promote a product, add it here. While the ad runs, the product pops up when a customer opens the shop (once per visit), with a close button at the top right. A tap on the post opens the seller’s store. If several ads run at the same time, the shop shows one of them at random.</p>
+      <p class="admin-lead">When a seller pays you to promote their store, add it here. While the ad runs, the store pops up when a customer opens the shop (once per visit), with a close button at the top right. A tap on the post opens the store. If several ads run at the same time, the shop shows one of them at random.</p>
 
       <form class="auth__form" id="spot-form" novalidate>
         <div class="field">
-          <label for="spot-product">Product</label>
-          <select id="spot-product" name="product"></select>
+          <label for="spot-store">Store</label>
+          <select id="spot-store" name="store"></select>
         </div>
         <div class="field">
           <label for="spot-file">Poster image (optional)</label>
           <input id="spot-file" name="poster" type="file" accept="image/jpeg,image/png,image/webp">
-          <p class="field__hint">The picture the seller wants shown (the whole picture is shown, never cut). Leave empty to use the product’s own photo. When editing an ad, leave empty to keep its current poster.</p>
+          <p class="field__hint">The picture the seller wants shown (the whole picture is shown, never cut). Leave empty to use the store logo. When editing an ad, leave empty to keep its current poster.</p>
         </div>
         <div class="field">
           <label for="spot-title">Headline (optional)</label>
           <input id="spot-title" name="title" type="text" maxlength="60" placeholder="For example: Fast VPN for less">
-          <p class="field__hint">Big words at the top of the popup. Leave empty to use the product name.</p>
+          <p class="field__hint">Big words at the top of the popup. Leave empty to use the store name.</p>
         </div>
         <div class="field">
           <label for="spot-message">Offer line (optional)</label>
           <input id="spot-message" name="message" type="text" maxlength="160" placeholder="For example: Enjoy 15% off this week only">
-          <p class="field__hint">One short line under the headline. Leave empty to use the start of the product description.</p>
+          <p class="field__hint">One short line under the headline. Leave empty to use the start of the store’s About text.</p>
         </div>
         <div class="field-row">
           <div class="field">
