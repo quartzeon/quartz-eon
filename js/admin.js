@@ -132,7 +132,7 @@
     if (profile && profile.role === 'admin') {
       showPanel('app');
       await loadSellers();
-      loadProducts();
+      loadProducts().then(loadAds); /* the ads list shows product names */
       loadOrders().then(loadReports); /* reports show the order's product name */
       loadOwnerBank();
       loadBrands();
@@ -263,6 +263,7 @@
     byId('reports-section').hidden = chip.dataset.section !== 'reports';
     byId('settings-section').hidden = chip.dataset.section !== 'settings';
     byId('fees-section').hidden = chip.dataset.section !== 'fees';
+    byId('ads-section').hidden = chip.dataset.section !== 'ads';
   });
 
   /* ---------- Products list (moderation: hide, show again, delete) ---------- */
@@ -310,6 +311,7 @@
     byId('products-list').hidden = list.length === 0;
     byId('products-empty').hidden = list.length > 0;
     byId('products-count').textContent = `${products.length} ${plural(products.length, 'product', 'products')} · ${list.length} shown`;
+    fillAdForm(); /* the ad form lists the active products */
   }
 
   byId('product-status-tabs').addEventListener('click', (event) => {
@@ -340,6 +342,7 @@
     }
     products = products.filter((p) => p.id !== id);
     renderProducts();
+    if (ads.some((a) => a.product_id === id)) { ads = ads.filter((a) => a.product_id !== id); renderAds(); } /* its ads were deleted with it */
     toast('Product deleted');
   }
 
@@ -688,13 +691,13 @@
   const brandUrl = (path) => sb.storage.from(BRAND_BUCKET).getPublicUrl(path).data.publicUrl;
   let brands = [];
 
-  function shrinkLogo(file) {
+  function shrinkImage(file, maxSide = 600) {
     return new Promise((resolve, reject) => {
       const img = new Image();
       const url = URL.createObjectURL(file);
       img.onload = () => {
         URL.revokeObjectURL(url);
-        const scale = Math.min(1, 600 / Math.max(img.width, img.height));
+        const scale = Math.min(1, maxSide / Math.max(img.width, img.height));
         const canvas = document.createElement('canvas');
         canvas.width = Math.max(1, Math.round(img.width * scale));
         canvas.height = Math.max(1, Math.round(img.height * scale));
@@ -736,7 +739,7 @@
     const button = byId('brand-form').querySelector('button[type="submit"]');
     button.disabled = true;
     try {
-      const blob = await shrinkLogo(file);
+      const blob = await shrinkImage(file);
       const path = `brands/${Date.now()}-${name.toLowerCase().replace(/[^a-z0-9]+/g, '-').slice(0, 24)}.jpg`;
       const { error: uploadError } = await sb.storage.from(BRAND_BUCKET).upload(path, blob, { contentType: 'image/jpeg' });
       if (uploadError) throw uploadError;
@@ -766,6 +769,146 @@
     brands = brands.filter((b) => b.id !== brand.id);
     renderBrands();
     toast('Logo removed');
+  });
+
+  /* ---------- Ads: a product (and an optional poster) that pops up when customers open the shop ---------- */
+  let ads = [];
+  const isoDay = (date) => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+  const addDays = (n) => { const d = new Date(); d.setDate(d.getDate() + n); return isoDay(d); };
+
+  function fillAdForm() {
+    const f = byId('ad-form').elements;
+    const live = products.filter((p) => p.status === 'active');
+    const storeName = (p) => { const s = sellers.find((row) => row.id === p.seller_id); return s ? s.store_name : 'Unknown store'; };
+    const chosen = f.product.value;
+    f.product.innerHTML = live.length
+      ? `<option value="">Choose a product</option>${live.map((p) => `<option value="${esc(p.id)}">${esc(p.name)} (${esc(storeName(p))})</option>`).join('')}`
+      : '<option value="">No active products yet</option>';
+    if (live.some((p) => p.id === chosen)) f.product.value = chosen;
+    if (!f.startsOn.value) f.startsOn.value = addDays(0);
+    if (!f.endsOn.value) f.endsOn.value = addDays(30);
+  }
+
+  function adState(a) {
+    const today = isoDay(new Date());
+    if (!a.active) return { label: 'Paused', tone: 'pending' };
+    if (a.ends_on < today) return { label: 'Ended', tone: 'suspended' };
+    if (a.starts_on > today) return { label: 'Starts later', tone: 'pending' };
+    return { label: 'Running', tone: 'approved' };
+  }
+
+  function adRow(a) {
+    const p = products.find((row) => row.id === a.product_id);
+    const store = p && sellers.find((s) => s.id === p.seller_id);
+    const state = adState(a);
+    const picture = a.image || (p && p.images && p.images[0]);
+    const toggle = a.active
+      ? `<button class="btn btn--ghost btn--sm" type="button" data-ad-pause="${esc(a.id)}">${icon('i-pause')}<span>Pause</span></button>`
+      : `<button class="btn btn--ink btn--sm" type="button" data-ad-run="${esc(a.id)}">${icon('i-play')}<span>Run</span></button>`;
+    return `
+      <article class="seller-row" style="--h:${Number(store && store.hue) || 0}">
+        <div class="seller-row__main">
+          <span class="seller-row__avatar">${picture ? `<img src="${esc(brandUrl(picture))}" alt="" loading="lazy">` : icon('i-megaphone')}</span>
+          <div class="seller-row__text">
+            <p class="seller-row__name">${esc(a.title || (p ? p.name : 'Deleted product'))} <span class="status-badge status-badge--${state.tone}">${state.label}</span></p>
+            <p class="seller-row__meta">${a.title && p ? `${esc(p.name)} &middot; ` : ''}${esc(store ? store.store_name : 'Unknown store')} &middot; ${esc(formatDate(a.starts_on))} to ${esc(formatDate(a.ends_on))}${a.image ? ' &middot; own poster' : ''}${a.note ? ` &middot; ${esc(a.note)}` : ''}</p>
+          </div>
+        </div>
+        <div class="seller-row__actions">
+          ${toggle}
+          <button class="btn btn--ghost btn--sm" type="button" data-ad-delete="${esc(a.id)}">${icon('i-trash')}<span>Delete</span></button>
+        </div>
+      </article>`;
+  }
+
+  function renderAds() {
+    byId('ads-list').innerHTML = ads.map(adRow).join('');
+    byId('ads-list').hidden = ads.length === 0;
+    byId('ads-empty').hidden = ads.length > 0;
+    const running = ads.filter((a) => adState(a).label === 'Running').length;
+    byId('ads-count').textContent = `${ads.length} ${plural(ads.length, 'ad', 'ads')} · ${running} running`;
+  }
+
+  async function loadAds() {
+    fillAdForm();
+    const { data, error } = await sb.from('ads').select('*').order('created_at', { ascending: false });
+    if (error) {
+      toast(`Could not load ads: ${error.message}`);
+      return;
+    }
+    ads = data || [];
+    renderAds();
+  }
+
+  byId('ad-form').addEventListener('submit', async (event) => {
+    event.preventDefault();
+    const form = byId('ad-form');
+    const f = form.elements;
+    const error = byId('ad-error');
+    const fail = (message) => { error.textContent = message; error.hidden = false; };
+    error.hidden = true;
+    const file = f.poster.files[0];
+    if (!f.product.value) return fail('Choose the product to promote.');
+    if (file && !/^image\/(jpeg|png|webp)$/.test(file.type)) return fail('The poster must be a JPG, PNG or WebP image.');
+    if (!f.startsOn.value || !f.endsOn.value) return fail('Choose the start and end days.');
+    if (f.endsOn.value < f.startsOn.value) return fail('The end day must be on or after the start day.');
+
+    const button = form.querySelector('button[type="submit"]');
+    button.disabled = true;
+    let path = null;
+    try {
+      if (file) {
+        const blob = await shrinkImage(file, 1200);
+        path = `ads/${Date.now()}.jpg`;
+        const { error: uploadError } = await sb.storage.from(BRAND_BUCKET).upload(path, blob, { contentType: 'image/jpeg' });
+        if (uploadError) throw uploadError;
+      }
+      const { data, error: insertError } = await sb.from('ads').insert({
+        product_id: f.product.value,
+        image: path,
+        starts_on: f.startsOn.value,
+        ends_on: f.endsOn.value,
+        title: f.title.value.trim(),
+        message: f.message.value.trim(),
+        note: f.note.value.trim()
+      }).select().maybeSingle();
+      if (insertError) throw insertError;
+      ads.unshift(data);
+      renderAds();
+      form.reset();
+      fillAdForm();
+      toast('Ad added');
+    } catch (err) {
+      if (path) sb.storage.from(BRAND_BUCKET).remove([path]).catch(() => {});
+      fail((err && err.message) || 'Could not add the ad.');
+    } finally {
+      button.disabled = false;
+    }
+  });
+
+  byId('ads-list').addEventListener('click', async (event) => {
+    const pause = event.target.closest('[data-ad-pause]');
+    const run = event.target.closest('[data-ad-run]');
+    const del = event.target.closest('[data-ad-delete]');
+    const id = (pause && pause.dataset.adPause) || (run && run.dataset.adRun) || (del && del.dataset.adDelete);
+    const ad = ads.find((a) => a.id === id);
+    if (!ad) return;
+    if (del) {
+      if (!window.confirm('Delete this ad? It stops showing in the shop.')) return;
+      const { error } = await sb.from('ads').delete().eq('id', ad.id);
+      if (error) { toast(`Could not delete: ${error.message}`); return; }
+      if (ad.image) sb.storage.from(BRAND_BUCKET).remove([ad.image]).catch(() => {});
+      ads = ads.filter((a) => a.id !== ad.id);
+      renderAds();
+      toast('Ad deleted');
+      return;
+    }
+    const active = Boolean(run);
+    const { error } = await sb.from('ads').update({ active }).eq('id', ad.id);
+    if (error) { toast(`Could not save: ${error.message}`); return; }
+    ad.active = active;
+    renderAds();
+    toast(active ? 'Ad running' : 'Ad paused');
   });
 
   document.title = `Admin | ${CFG.storeName}`;

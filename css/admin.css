@@ -140,3 +140,9 @@
   .dash-nav__group + .dash-nav__group { border-top: 0; margin-left: 6px; padding-left: 6px; border-left: 1px solid var(--line); }
   .dash-nav button { width: auto; padding: 8px 10px; gap: 8px; white-space: nowrap; }
 }
+
+/* Ads: the add form, then the list of ads (a poster or product photo as the row picture) */
+#ad-form { max-width: 620px; margin-top: 18px; }
+@media (min-width: 641px) { #ad-form > .btn { width: auto; justify-self: start; } }
+.admin-list--spaced { margin-top: 32px; border-top: 1px solid var(--line); }
+.seller-row__avatar img { width: 100%; height: 100%; object-fit: cover; border-radius: inherit; }

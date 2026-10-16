@@ -594,6 +594,55 @@
     }
     renderChips();
     route();
+    if (catalog.status === 'ready') showAd();
+  }
+
+  /* ---------- Ad popup: a product a seller paid to promote, shown once per visit ---------- */
+  const adDialog = byId('ad');
+  let adChecked = false;
+
+  adDialog.addEventListener('click', (event) => {
+    if (event.target === adDialog || event.target.closest('[data-ad-go]')) adDialog.close();
+  });
+
+  async function showAd() {
+    if (adChecked) return;
+    adChecked = true;
+    try { if (window.sessionStorage.getItem('qe-ad-shown')) return; } catch (e) { /* storage unavailable: show it */ }
+    const { data, error } = await sb.from('public_ads').select('*');
+    if (error || !data) return;
+    const running = data.filter((a) => PRODUCT_BY_ID.has(a.product_id));
+    if (!running.length || view.name === 'orders' || document.querySelector('dialog[open]')) return;
+    const ad = running[Math.floor(Math.random() * running.length)];
+    const p = PRODUCT_BY_ID.get(ad.product_id);
+    const seller = sellerOf(p);
+    const href = `#/product/${esc(p.id)}`;
+    const picture = ad.image ? `<img class="ad__poster" src="${esc(photoUrl(ad.image))}" alt="${esc(p.name)}">`
+      : p.images.length ? `<img class="ad__photo" src="${esc(photoUrl(p.images[0]))}" alt="${esc(p.name)}">`
+      : p.logo ? `<span class="ad__art"><img class="ad__logo" src="${esc(logoUrl(p.logo))}" alt=""></span>`
+      : `<span class="ad__art">${art(p.icon)}</span>`;
+    const headline = (ad.title || '').trim() || p.name;
+    let message = (ad.message || '').trim();
+    if (!message) {
+      message = String(p.description || '').replace(/\s+/g, ' ').trim();
+      if (message.length > 140) message = `${message.slice(0, 137).replace(/\s+\S*$/, '')}...`;
+    }
+    byId('ad-body').innerHTML = `
+      <div class="ad" style="--h:${hueOf(p)}">
+        <button class="icon-btn dlg__x" type="button" data-close aria-label="Close">${icon('i-close')}</button>
+        <a class="ad__media" href="${href}" data-ad-go>${picture}</a>
+        <div class="ad__info">
+          <p class="ad__label">Sponsored &middot; ${esc(seller.name)}</p>
+          <h2 class="ad__name">${esc(headline)}</h2>
+          <span class="ad__rule" aria-hidden="true"></span>
+          ${message ? `<p class="ad__message">${esc(message)}</p>` : ''}
+          ${headline !== p.name ? `<p class="ad__product">${esc(p.name)}</p>` : ''}
+          <p class="product__price ad__price">${priceHtml(p)}</p>
+          <a class="btn btn--ink ad__cta" href="${href}" data-ad-go>${p.soldOut ? 'See details' : p.saleMode === 'contact' ? 'Contact the seller' : 'Buy now'}</a>
+        </div>
+      </div>`;
+    adDialog.showModal();
+    try { window.sessionStorage.setItem('qe-ad-shown', '1'); } catch (e) { /* storage unavailable */ }
   }
 
   /* ---------- Home page: search, categories, sort ---------- */

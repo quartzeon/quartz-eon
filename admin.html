@@ -37,6 +37,7 @@
     <symbol id="i-orders" viewBox="0 0 24 24"><path d="M6 3h12v18l-3-2-3 2-3-2-3 2z"/><path d="M9 8h6M9 12h6M9 16h3"/></symbol>
     <symbol id="i-box" viewBox="0 0 24 24"><path d="M3.5 7.5L12 3l8.5 4.5v9L12 21l-8.5-4.5z"/><path d="M3.5 7.5L12 12l8.5-4.5M12 12v9"/></symbol>
     <symbol id="i-flag" viewBox="0 0 24 24"><path d="M5 21V4"/><path d="M5 4h11l-2 4 2 4H5"/></symbol>
+    <symbol id="i-megaphone" viewBox="0 0 24 24"><path d="M3 10v4a1 1 0 0 0 1 1h3l6 4V5L7 9H4a1 1 0 0 0-1 1z"/><path d="M17 8.5a5 5 0 0 1 0 7"/><path d="M7 15l1.5 5"/></symbol>
     <symbol id="i-card" viewBox="0 0 24 24"><rect x="3" y="5.5" width="18" height="13" rx="2"/><path d="M3 10h18M7 15h4"/></symbol>
     <symbol id="i-settings" viewBox="0 0 24 24"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/></symbol>
     <symbol id="a-layout" viewBox="0 0 48 48"><rect x="6" y="8" width="36" height="32" rx="4"/><path d="M6 18h36M20 18v22"/></symbol>
@@ -103,6 +104,7 @@
         <button type="button" data-section="products" aria-pressed="false"><svg class="i" aria-hidden="true" focusable="false"><use href="#i-box"/></svg><span>Products</span></button>
         <button type="button" data-section="orders" aria-pressed="false"><svg class="i" aria-hidden="true" focusable="false"><use href="#i-orders"/></svg><span>Orders</span></button>
         <button type="button" data-section="reports" aria-pressed="false"><svg class="i" aria-hidden="true" focusable="false"><use href="#i-flag"/></svg><span>Reports</span></button>
+        <button type="button" data-section="ads" aria-pressed="false"><svg class="i" aria-hidden="true" focusable="false"><use href="#i-megaphone"/></svg><span>Ads</span></button>
       </div>
       <div class="dash-nav__group">
         <button type="button" data-section="fees" aria-pressed="false"><svg class="i" aria-hidden="true" focusable="false"><use href="#i-card"/></svg><span>Store fees</span></button>
@@ -181,6 +183,58 @@
       <p class="admin-lead">Customers report a problem from My orders. Contact the customer and the seller by email, then mark the report resolved.</p>
       <div class="admin-list" id="reports-list"></div>
       <p class="empty__title admin-empty" id="reports-empty" hidden>No problem reports</p>
+    </div>
+
+    <div id="ads-section" hidden>
+      <header class="admin-app__head">
+        <div>
+          <p class="eyebrow">Owner access</p>
+          <h1 class="admin-title">Ads</h1>
+        </div>
+        <p class="admin-count" id="ads-count" aria-live="polite"></p>
+      </header>
+      <p class="admin-lead">When a seller pays you to promote a product, add it here. While the ad runs, the product pops up when a customer opens the shop (once per visit), with a close button at the top right. If several ads run at the same time, the shop shows one of them at random.</p>
+
+      <form class="auth__form" id="ad-form" novalidate>
+        <div class="field">
+          <label for="ad-product">Product</label>
+          <select id="ad-product" name="product"></select>
+        </div>
+        <div class="field">
+          <label for="ad-file">Poster image (optional)</label>
+          <input id="ad-file" name="poster" type="file" accept="image/jpeg,image/png,image/webp">
+          <p class="field__hint">The picture the seller wants shown. It fills the left half of the popup, so a square or tall picture looks best. Leave empty to use the product’s own photo.</p>
+        </div>
+        <div class="field">
+          <label for="ad-title">Headline (optional)</label>
+          <input id="ad-title" name="title" type="text" maxlength="60" placeholder="For example: Fast VPN for less">
+          <p class="field__hint">Big words at the top of the popup. Leave empty to use the product name.</p>
+        </div>
+        <div class="field">
+          <label for="ad-message">Offer line (optional)</label>
+          <input id="ad-message" name="message" type="text" maxlength="160" placeholder="For example: Enjoy 15% off this week only">
+          <p class="field__hint">One short line under the headline. Leave empty to use the start of the product description.</p>
+        </div>
+        <div class="field-row">
+          <div class="field">
+            <label for="ad-start">Starts</label>
+            <input id="ad-start" name="startsOn" type="date">
+          </div>
+          <div class="field">
+            <label for="ad-end">Ends</label>
+            <input id="ad-end" name="endsOn" type="date">
+          </div>
+        </div>
+        <div class="field">
+          <label for="ad-note">Note for you (optional)</label>
+          <input id="ad-note" name="note" type="text" maxlength="200" placeholder="For example: paid Rs. 1000 on 16 Oct">
+        </div>
+        <p class="field__error" id="ad-error" hidden></p>
+        <button class="btn btn--ink" type="submit">Add ad</button>
+      </form>
+
+      <div class="admin-list admin-list--spaced" id="ads-list"></div>
+      <p class="empty__title admin-empty" id="ads-empty" hidden>No ads yet</p>
     </div>
 
     <div id="fees-section" hidden>
