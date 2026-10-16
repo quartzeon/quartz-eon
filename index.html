@@ -99,12 +99,29 @@
       <span class="brand__word">Quartz Eon</span>
     </a>
     <div class="site-header__actions">
-      <div class="select select--cur">
-        <span class="select__face" id="currency-face" aria-hidden="true">LKR</span>
-        <select id="currency-pick" aria-label="Your country, for the currency prices are shown in">
-          <option value="LK">Sri Lanka (LKR)</option>
-        </select>
-        <svg class="i select__chev" aria-hidden="true" focusable="false"><use href="#i-chev"/></svg>
+      <div class="cur" id="cur-widget">
+        <button class="cur__btn" id="cur-toggle" type="button" aria-expanded="false" aria-controls="cur-menu" aria-label="Currency: LKR. Change your country">
+          <span id="currency-face">LKR</span>
+          <svg class="i cur__chev" aria-hidden="true" focusable="false"><use href="#i-chev"/></svg>
+        </button>
+        <div class="cur__menu" id="cur-menu" hidden>
+          <label class="cur__search">
+            <svg class="i" aria-hidden="true" focusable="false"><use href="#i-search"/></svg>
+            <input id="cur-search" type="search" placeholder="Search a country or currency" autocomplete="off" aria-label="Search a country or currency">
+          </label>
+          <div class="cur__scroll">
+            <div class="cur__group" id="cur-main">
+              <span class="cur__title">Main currencies</span>
+              <div class="cur__mains" id="cur-main-list"></div>
+            </div>
+            <div class="cur__group">
+              <span class="cur__title" id="cur-all-title">All countries</span>
+              <div id="cur-list"></div>
+              <p class="cur__empty" id="cur-empty" hidden>No country found.</p>
+            </div>
+          </div>
+          <p class="cur__note">Prices are shown in this currency. You pay in the store's own currency.</p>
+        </div>
       </div>
       <button class="icon-btn" id="theme-toggle" type="button" aria-label="Switch to dark mode">
         <svg class="i" aria-hidden="true" focusable="false"><use href="#i-moon"/></svg>

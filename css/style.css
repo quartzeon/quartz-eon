@@ -310,17 +310,62 @@ section[id] { scroll-margin-top: 76px; }
   appearance: none; -webkit-appearance: none; cursor: pointer;
 }
 .select__chev { position: absolute; right: 14px; width: 18px; height: 18px; color: var(--ink-3); pointer-events: none; }
-/* Country picker in the shop header: a small pill showing the currency code. The real select (full country
-   names) lies invisibly on top of it, so a tap opens the country list. */
-.select--cur .select__face {
-  display: inline-flex; align-items: center; height: 40px; padding: 0 32px 0 14px; border: 1.5px solid var(--line); border-radius: 999px;
-  background: var(--card); color: var(--ink); font-size: 14px; font-weight: 600; white-space: nowrap;
+/* Country picker in the shop header: a pill showing the currency code. It opens a panel with a search box,
+   the two main currencies (LKR and USD) as big choices, then every country. */
+.cur { position: relative; }
+.cur__btn {
+  display: inline-flex; align-items: center; gap: 6px; height: 40px; padding: 0 12px 0 14px;
+  border: 1.5px solid var(--line); border-radius: 999px; background: var(--card); color: var(--ink);
+  font: 600 14px/1 var(--font-mono); letter-spacing: .02em; white-space: nowrap; cursor: pointer;
+  transition: border-color .15s ease;
 }
-.select.select--cur select { position: absolute; inset: 0; width: 100%; height: 100%; padding: 0; opacity: 0; }
-.select--cur:hover .select__face { border-color: var(--ink); }
-.select--cur:has(select:focus-visible) .select__face { outline: 3px solid var(--focus); outline-offset: 2px; }
-.select--cur .select__chev { right: 10px; width: 16px; height: 16px; }
-@media (max-width: 640px) { .select.select--cur { width: auto; } }
+.cur__btn:hover, .cur__btn[aria-expanded="true"] { border-color: var(--ink); }
+.cur__chev { width: 16px; height: 16px; color: var(--ink-3); transition: transform .2s ease; }
+.cur__btn[aria-expanded="true"] .cur__chev { transform: rotate(180deg); }
+.cur__menu {
+  position: absolute; top: calc(100% + 10px); right: 0; z-index: 40;
+  display: flex; flex-direction: column; width: min(340px, calc(100vw - 2 * var(--gutter))); max-height: min(520px, calc(100vh - 100px));
+  border: 1px solid var(--line); border-radius: var(--radius-l); background: var(--card); box-shadow: var(--shadow-2); overflow: hidden;
+}
+.cur__menu[hidden] { display: none; }
+.cur__search {
+  display: flex; align-items: center; gap: 8px; margin: 10px 10px 4px; padding: 0 14px; height: 44px;
+  border: 1.5px solid var(--line); border-radius: 999px; background: var(--paper); color: var(--ink-3);
+}
+.cur__search:focus-within { border-color: var(--ink); }
+.cur__search .i { width: 18px; height: 18px; flex: none; }
+.cur__search input { flex: 1; min-width: 0; height: 100%; border: 0; background: transparent; color: var(--ink); font-size: 15px; outline: none; }
+.cur__search input::-webkit-search-cancel-button { cursor: pointer; }
+.cur__scroll { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding: 4px 6px 6px; }
+.cur__group { display: grid; padding: 8px 4px 4px; }
+.cur__group + .cur__group { margin-top: 4px; border-top: 1px solid var(--line); }
+.cur__title { padding: 6px 8px 8px; font: 500 11px/1 var(--font-mono); letter-spacing: .09em; text-transform: uppercase; color: var(--ink-3); }
+.cur__mains { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; padding: 0 4px 6px; }
+.cur__main {
+  display: grid; gap: 4px; padding: 12px 14px; text-align: left; border: 1.5px solid var(--line); border-radius: var(--radius);
+  background: transparent; color: var(--ink); cursor: pointer; transition: border-color .15s ease, background-color .15s ease;
+}
+.cur__main strong { font: 700 20px/1 var(--font-display); letter-spacing: -.01em; }
+.cur__main span { font-size: 12px; color: var(--ink-2); }
+.cur__main:hover { border-color: var(--ink); }
+.cur__main[aria-current="true"] { border-color: var(--brand); background: color-mix(in srgb, var(--brand) 9%, transparent); }
+.cur__opt {
+  display: flex; align-items: center; gap: 10px; width: 100%; min-height: 42px; padding: 0 10px; text-align: left;
+  border: 0; border-radius: 10px; background: transparent; color: var(--ink); font-size: 14px; cursor: pointer;
+}
+.cur__opt:hover, .cur__opt:focus-visible { background: var(--paper); outline: none; }
+.cur__opt:focus-visible { box-shadow: inset 0 0 0 2px var(--focus); }
+.cur__name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cur__code { font: 500 12px/1 var(--font-mono); color: var(--ink-3); }
+.cur__tick { width: 16px; height: 16px; flex: none; color: var(--brand); visibility: hidden; }
+.cur__opt[aria-current="true"] { font-weight: 600; }
+.cur__opt[aria-current="true"] .cur__tick { visibility: visible; }
+.cur__empty { padding: 10px 10px 14px; font-size: 14px; color: var(--ink-2); }
+.cur__note { padding: 10px 16px 12px; border-top: 1px solid var(--line); font-size: 12px; line-height: 1.4; color: var(--ink-3); }
+/* Phones: the pill sits mid-header, so the panel is pinned to the screen edges instead of the pill */
+@media (max-width: 640px) {
+  .cur__menu { position: fixed; top: var(--cur-top, 76px); left: var(--gutter); right: var(--gutter); width: auto; max-height: calc(100dvh - var(--cur-top, 76px) - 16px); }
+}
 
 .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 250px), 1fr)); gap: 36px 24px; }
 .product { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
@@ -731,8 +776,7 @@ dialog::backdrop { background: rgb(8 12 16 / .55); }
   .icon-btn { width: 40px; height: 40px; }
   .login__btn { min-height: 40px; padding: 0 10px; gap: 6px; }
   .login__btn > .i:first-child { display: none; }
-  .select--cur .select__face { padding: 0 26px 0 12px; font-size: 13px; }
-  .select--cur .select__chev { right: 8px; width: 14px; height: 14px; }
+  .cur__btn { height: 40px; padding: 0 8px 0 11px; gap: 4px; font-size: 13px; }
 }
 
 @media (prefers-reduced-motion: reduce) {

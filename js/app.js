@@ -784,20 +784,93 @@
     renderProducts();
   });
   /* The customer's country (kept in this browser): every price is shown in its currency.
-     The pill shows only the currency code; the full country list opens from it. */
-  const curPick = byId('currency-pick');
-  curPick.innerHTML = COUNTRIES.map((c) => `<option value="${c[0]}">${esc(c[1])} (${c[2]})</option>`).join('');
+     The pill shows only the currency code; it opens a panel with a search box, the two main
+     currencies (LKR and USD) and every country. */
+  const curToggle = byId('cur-toggle');
+  const curMenu = byId('cur-menu');
+  const curSearch = byId('cur-search');
+  const CUR_MAIN = [['LK', 'Sri Lankan rupee'], ['US', 'US dollar']];
+  byId('cur-main-list').innerHTML = CUR_MAIN.map(([code, label]) => {
+    const c = countryOf(code);
+    return `<button class="cur__main" type="button" data-country="${c[0]}"><strong>${esc(c[2])}</strong><span>${esc(label)}</span></button>`;
+  }).join('');
+  byId('cur-list').innerHTML = COUNTRIES.map((c) => `<button class="cur__opt" type="button" data-country="${c[0]}" data-find="${esc(`${c[1]} ${c[2]} ${c[0]}`.toLowerCase())}">`
+    + `<svg class="i cur__tick" aria-hidden="true" focusable="false"><use href="#i-check"/></svg>`
+    + `<span class="cur__name">${esc(c[1])}</span><span class="cur__code">${esc(c[2])}</span></button>`).join('');
   function paintCurrencyPick() {
-    curPick.value = showCountry;
-    byId('currency-face').textContent = wantedCur();
+    const cur = wantedCur();
+    byId('currency-face').textContent = cur;
+    curToggle.setAttribute('aria-label', `Currency: ${cur}. Change your country`);
+    curMenu.querySelectorAll('[data-country]').forEach((el) => {
+      el.setAttribute('aria-current', String(el.dataset.country === showCountry));
+    });
   }
-  paintCurrencyPick();
-  curPick.addEventListener('change', (event) => {
-    showCountry = countryOf(event.target.value)[0];
+  function filterCurrencyPick() {
+    const q = curSearch.value.trim().toLowerCase();
+    let shown = 0;
+    byId('cur-list').querySelectorAll('.cur__opt').forEach((el) => {
+      el.hidden = Boolean(q) && !el.dataset.find.includes(q);
+      if (!el.hidden) shown += 1;
+    });
+    byId('cur-main').hidden = Boolean(q);
+    byId('cur-all-title').textContent = q ? 'Results' : 'All countries';
+    byId('cur-empty').hidden = shown > 0;
+  }
+  function setCurMenu(open) {
+    curMenu.hidden = !open;
+    curToggle.setAttribute('aria-expanded', String(open));
+    if (!open) return;
+    curMenu.style.setProperty('--cur-top', `${Math.round(curToggle.getBoundingClientRect().bottom + 10)}px`);
+    curSearch.value = '';
+    filterCurrencyPick();
+    curMenu.querySelector('.cur__scroll').scrollTop = 0;
+    curSearch.focus();
+  }
+  function pickCountry(code) {
+    showCountry = countryOf(code)[0];
     storage.set(COUNTRY_KEY, showCountry);
     paintCurrencyPick();
+    setCurMenu(false);
+    curToggle.focus();
     renderCurrentView();
     renderRateNote();
+  }
+  paintCurrencyPick();
+  curToggle.addEventListener('click', () => setCurMenu(curMenu.hidden));
+  curSearch.addEventListener('input', filterCurrencyPick);
+  curMenu.addEventListener('click', (event) => {
+    const option = event.target.closest('[data-country]');
+    if (option) pickCountry(option.dataset.country);
+  });
+  /* Keys: Enter in the search box picks the first match, arrows move through the visible choices. */
+  curMenu.addEventListener('keydown', (event) => {
+    const choices = [...curMenu.querySelectorAll('[data-country]')].filter((el) => el.offsetParent !== null);
+    if (event.key === 'Enter' && event.target === curSearch) {
+      event.preventDefault();
+      const first = byId('cur-list').querySelector('.cur__opt:not([hidden])');
+      if (first && curSearch.value.trim()) pickCountry(first.dataset.country);
+      return;
+    }
+    if (event.key !== 'ArrowDown' && event.key !== 'ArrowUp') return;
+    event.preventDefault();
+    const at = choices.indexOf(document.activeElement);
+    if (event.key === 'ArrowDown') {
+      const next = choices[at + 1];
+      if (next) next.focus();
+    } else if (at <= 0) {
+      curSearch.focus();
+    } else {
+      choices[at - 1].focus();
+    }
+  });
+  document.addEventListener('click', (event) => {
+    if (!curMenu.hidden && !event.target.closest('#cur-widget')) setCurMenu(false);
+  });
+  document.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape' && !curMenu.hidden) { setCurMenu(false); curToggle.focus(); }
+  });
+  curMenu.addEventListener('focusout', (event) => {
+    if (!curMenu.hidden && event.relatedTarget && !event.relatedTarget.closest('#cur-widget')) setCurMenu(false);
   });
   byId('retry-load').addEventListener('click', loadCatalog);
   byId('clear-filters').addEventListener('click', () => {
