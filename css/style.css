@@ -580,6 +580,36 @@ dialog::backdrop { background: rgb(8 12 16 / .55); }
 }
 .modal .dlg { position: relative; max-height: min(90vh, 800px); max-height: min(90dvh, 800px); overflow: auto; }
 .dlg__x { position: absolute; top: 14px; right: 14px; z-index: 2; }
+
+/* Photo viewer: a product photo opens full screen; a tap zooms in where it was tapped, moving the pointer pans */
+.pd__main img { cursor: zoom-in; }
+.lightbox {
+  width: 100vw; height: 100vh; height: 100dvh; max-width: none; max-height: none; margin: 0;
+  background: rgb(8 7 16 / .94); color: #fff; overflow: hidden;
+}
+.lightbox::backdrop { background: rgb(8 7 16 / .6); }
+.lightbox__stage { position: absolute; inset: 0; display: grid; place-items: center; padding: 64px 16px 56px; overflow: hidden; }
+.lightbox__stage img {
+  max-width: 100%; max-height: 100%; object-fit: contain; border-radius: 10px; cursor: zoom-in; user-select: none;
+  transition: transform .25s ease; -webkit-user-drag: none;
+}
+.lightbox.is-zoomed .lightbox__stage { touch-action: none; }
+.lightbox.is-zoomed .lightbox__stage img { transform: scale(2.5); cursor: zoom-out; border-radius: 0; transition: transform .25s ease, transform-origin .05s linear; }
+.lightbox__btn {
+  position: absolute; z-index: 2; border-color: rgb(255 255 255 / .22); background: rgb(20 18 36 / .7); color: #fff;
+}
+.lightbox__btn:hover { border-color: #fff; }
+.lightbox__x { top: 14px; right: 14px; }
+.lightbox__prev, .lightbox__next { top: 50%; translate: 0 -50%; }
+.lightbox__prev { left: 14px; }
+.lightbox__next { right: 14px; }
+.lightbox__next .i { transform: scaleX(-1); }
+.lightbox__btn[hidden] { display: none; }
+.lightbox__bar {
+  position: absolute; left: 0; right: 0; bottom: 14px; display: flex; justify-content: center; gap: 14px;
+  font: 500 12px/1 var(--font-mono); letter-spacing: .06em; color: rgb(255 255 255 / .7); pointer-events: none;
+}
+.lightbox.is-zoomed .lightbox__prev, .lightbox.is-zoomed .lightbox__next { display: none; }
 .buy { display: grid; grid-template-columns: minmax(0, .9fr) minmax(0, 1.1fr); }
 .buy__art {
   display: grid; place-items: center; min-height: 300px;

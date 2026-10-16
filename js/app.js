@@ -1245,6 +1245,60 @@
     updatePurchase(p);
   });
 
+  /* Photo viewer: full screen photo, tap to zoom 2.5x at that spot, move to pan, arrows for other photos. */
+  const lightbox = byId('lightbox');
+  const lbImg = byId('lb-img');
+  const lb = { images: [], at: 0 };
+  function setZoom(on) {
+    lightbox.classList.toggle('is-zoomed', on);
+    byId('lb-hint').textContent = on ? 'Move to look around, tap to zoom out' : 'Tap the photo to zoom';
+  }
+  /* Zoom in around the pointer's spot on the photo (its unscaled box, so the spot does not drift while zoomed) */
+  function zoomAt(event) {
+    const stage = byId('lb-stage').getBoundingClientRect();
+    const w = lbImg.offsetWidth;
+    const h = lbImg.offsetHeight;
+    if (!w || !h) return;
+    const x = Math.min(100, Math.max(0, ((event.clientX - stage.left - lbImg.offsetLeft) / w) * 100));
+    const y = Math.min(100, Math.max(0, ((event.clientY - stage.top - lbImg.offsetTop) / h) * 100));
+    lbImg.style.transformOrigin = `${x}% ${y}%`;
+  }
+  function showLightbox(i) {
+    const n = lb.images.length;
+    lb.at = (i + n) % n;
+    setZoom(false);
+    lbImg.style.transformOrigin = '';
+    lbImg.src = photoUrl(lb.images[lb.at]);
+    byId('lb-count').textContent = n > 1 ? `${lb.at + 1} / ${n}` : '';
+    byId('lb-prev').hidden = n < 2;
+    byId('lb-next').hidden = n < 2;
+  }
+  function openLightbox(images, at) {
+    if (!images.length) return;
+    lb.images = images;
+    showLightbox(at || 0);
+    lightbox.showModal();
+  }
+  lbImg.addEventListener('click', (event) => {
+    event.stopPropagation();
+    if (lightbox.classList.contains('is-zoomed')) setZoom(false);
+    else { zoomAt(event); setZoom(true); }
+  });
+  byId('lb-stage').addEventListener('pointermove', (event) => {
+    if (lightbox.classList.contains('is-zoomed')) zoomAt(event);
+  });
+  byId('lb-stage').addEventListener('click', (event) => {
+    if (event.target === byId('lb-stage')) lightbox.close();
+  });
+  byId('lb-close').addEventListener('click', () => lightbox.close());
+  byId('lb-prev').addEventListener('click', () => showLightbox(lb.at - 1));
+  byId('lb-next').addEventListener('click', () => showLightbox(lb.at + 1));
+  lightbox.addEventListener('keydown', (event) => {
+    if (event.key === 'ArrowLeft' && lb.images.length > 1) showLightbox(lb.at - 1);
+    if (event.key === 'ArrowRight' && lb.images.length > 1) showLightbox(lb.at + 1);
+  });
+  lightbox.addEventListener('close', () => setZoom(false));
+
   productView.addEventListener('click', (event) => {
     const p = PRODUCT_BY_ID.get(view.slug);
     if (!p) return;
@@ -1254,6 +1308,10 @@
       const main = byId('pd-main-img');
       if (main) main.src = photoUrl(p.images[page.image]);
       productView.querySelectorAll('[data-pd-img]').forEach((b) => b.setAttribute('aria-pressed', String(b === thumb)));
+      return;
+    }
+    if (event.target.id === 'pd-main-img') {
+      openLightbox(p.images, page.image);
       return;
     }
     if (event.target.closest('[data-jump-reviews]')) {
