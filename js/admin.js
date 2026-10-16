@@ -64,6 +64,7 @@
     const msg = (err && err.message) || '';
     if (/invalid login credentials/i.test(msg)) return 'That email and password do not match.';
     if (/rate limit/i.test(msg)) return 'Too many attempts. Please wait a minute and try again.';
+    if (/captcha/i.test(msg)) return 'The "Verify you are human" check failed. Please try again.';
     return msg || 'Something went wrong. Please try again.';
   }
 
@@ -85,10 +86,18 @@
     const submitButton = loginForm.querySelector('button[type="submit"]');
     submitButton.disabled = true;
     submitButton.textContent = 'Please wait…';
-    const { error } = await sb.auth.signInWithOtp({
-      email,
-      options: { emailRedirectTo: window.location.origin + window.location.pathname }
-    });
+    const captcha = window.QE_CAPTCHA.attach(loginForm);
+    let error = null;
+    try {
+      const captchaToken = await captcha.token();
+      ({ error } = await sb.auth.signInWithOtp({
+        email,
+        options: { emailRedirectTo: window.location.origin + window.location.pathname, captchaToken }
+      }));
+    } catch (err) {
+      error = err;
+    }
+    captcha.reset();
     submitButton.disabled = false;
     submitButton.textContent = 'Email me a log in link';
     if (error) {
@@ -111,6 +120,7 @@
     byId('admin-app').hidden = name !== 'app';
     byId('admin-logout').hidden = name === 'login';
     if (name === 'denied') byId('admin-denied-email').textContent = email || '';
+    if (name === 'login') window.QE_CAPTCHA.attach(loginForm);
   }
 
   sb.auth.onAuthStateChange(async (event, session) => {

@@ -59,6 +59,7 @@
     const msg = (err && err.message) || '';
     if (/invalid login credentials/i.test(msg)) return 'That email and password do not match.';
     if (/rate limit/i.test(msg)) return 'Too many attempts. Please wait a minute and try again.';
+    if (/captcha/i.test(msg)) return 'The "Verify you are human" check failed. Please try again.';
     return msg || 'Something went wrong. Please try again.';
   }
 
@@ -91,7 +92,15 @@
     const submitButton = loginForm.querySelector('button[type="submit"]');
     submitButton.disabled = true;
     submitButton.textContent = 'Please wait…';
-    const { error } = await sb.auth.signInWithPassword({ email, password });
+    const captcha = window.QE_CAPTCHA.attach(loginForm);
+    let error = null;
+    try {
+      const captchaToken = await captcha.token();
+      ({ error } = await sb.auth.signInWithPassword({ email, password, options: { captchaToken } }));
+    } catch (err) {
+      error = err;
+    }
+    captcha.reset();
     submitButton.disabled = false;
     submitButton.textContent = 'Log in';
     if (error) {
@@ -111,6 +120,7 @@
     byId('seller-app').hidden = name !== 'app';
     byId('seller-logout').hidden = name === 'login';
     if (name === 'denied') byId('seller-denied-email').textContent = email || '';
+    if (name === 'login') window.QE_CAPTCHA.attach(loginForm);
   }
 
   let sellerRow = null;

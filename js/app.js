@@ -1941,6 +1941,8 @@
   }
 
   function renderAuth() {
+    const oldForm = byId('auth-form');
+    if (oldForm && oldForm.qeCaptcha) oldForm.qeCaptcha.remove();
     const role = ROLES[auth.role];
     const isSeller = auth.role === 'seller';
     const titles = { login: isSeller ? 'Welcome back' : 'Log in or sign up', signup: 'Create your store', forgot: 'Reset your password', reset: 'Choose a new password' };
@@ -1974,6 +1976,8 @@
           <button class="link" type="button" data-auth-role="${isSeller ? 'customer' : 'seller'}">${isSeller ? 'Log in as a customer' : 'Log in as a seller'}</button>
         </p>
       </div>`;
+    /* Changing the password from a reset link needs no bot check (the person already has a session). */
+    if (auth.mode !== 'reset') window.QE_CAPTCHA.attach(byId('auth-form'));
   }
 
   function focusFirstField() {
@@ -2029,6 +2033,7 @@
     if (/already registered|already exists/i.test(msg)) return 'An account with that email already exists. Try logging in instead.';
     if (/email not confirmed/i.test(msg)) return 'Please confirm your email first, then log in. Check your inbox for the confirmation link.';
     if (/rate limit/i.test(msg)) return 'Too many attempts. Please wait a minute and try again.';
+    if (/captcha/i.test(msg)) return 'The "Verify you are human" check failed. Please try again.';
     if (/should be different/i.test(msg)) return 'Choose a password that is different from your old one.';
     if (/session missing|session not found|expired/i.test(msg)) return 'This reset link has expired or was already used. Use "Forgot your password?" to get a new one.';
     return msg || 'Something went wrong. Please try again.';
@@ -2118,18 +2123,20 @@
     submitButton.disabled = true;
     const originalLabel = submitButton.textContent;
     submitButton.textContent = 'Please wait…';
+    const captcha = auth.mode === 'reset' ? null : window.QE_CAPTCHA.attach(form);
 
     try {
+      const captchaToken = captcha ? await captcha.token() : undefined;
       if (auth.mode === 'reset') {
         const { error } = await sb.auth.updateUser({ password: form.elements.password.value });
         if (error) throw error;
         showAuthDone(false);
       } else if (auth.role === 'customer') {
-        const { error } = await sb.auth.signInWithOtp({ email, options: { emailRedirectTo: redirectUrl() } });
+        const { error } = await sb.auth.signInWithOtp({ email, options: { emailRedirectTo: redirectUrl(), captchaToken } });
         if (error) throw error;
         showAuthDone(false);
       } else if (auth.mode === 'login') {
-        const { error } = await sb.auth.signInWithPassword({ email, password: form.elements.password.value });
+        const { error } = await sb.auth.signInWithPassword({ email, password: form.elements.password.value, options: { captchaToken } });
         if (error) throw error;
         /* Success closes the dialog itself, from the auth state change listener. */
       } else if (auth.mode === 'signup') {
@@ -2154,19 +2161,21 @@
           password,
           options: {
             emailRedirectTo: redirectUrl(),
+            captchaToken,
             data: { signup_role: 'seller', store_name: storeName, store_slug: storeSlug, hue, currency: form.elements.currency.value === 'USD' ? 'USD' : 'LKR' }
           }
         });
         if (error) throw error;
         showAuthDone(!signUpData.session);
       } else if (auth.mode === 'forgot') {
-        const { error } = await sb.auth.resetPasswordForEmail(email, { redirectTo: redirectUrl() });
+        const { error } = await sb.auth.resetPasswordForEmail(email, { redirectTo: redirectUrl(), captchaToken });
         if (error) throw error;
         showAuthDone(false);
       }
     } catch (err) {
       showAuthNote(friendlyAuthError(err));
     } finally {
+      if (captcha) captcha.reset();
       submitButton.disabled = false;
       submitButton.textContent = originalLabel;
     }

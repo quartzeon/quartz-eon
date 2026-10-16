@@ -23,5 +23,10 @@ window.QE_CONFIG = {
   // PayPal (optional): paste your PayPal REST app "Client ID" here (safe to be public; the secret goes into
   // the Edge Function secrets, see README.md). PayPal money goes to YOUR PayPal account, not to the seller.
   // Leave empty to switch PayPal off. Bank transfers are paid to each seller's own bank details.
-  paypalClientId: ''
+  paypalClientId: '',
+
+  // Cloudflare Turnstile bot check on the log in and sign up forms: paste the widget's "Site key" here
+  // (safe to be public). The "Secret key" goes ONLY into Supabase (Authentication, Attack Protection).
+  // Leave empty to switch the check off. Upload this file BEFORE turning the check on in Supabase.
+  turnstileSiteKey: '0x4AAAAAAFYk-5F63bin367v'
 };

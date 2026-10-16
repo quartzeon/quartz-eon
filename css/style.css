@@ -707,6 +707,8 @@ dialog::backdrop { background: rgb(8 12 16 / .55); }
 }
 .pw__toggle:hover { color: var(--ink); }
 .auth__hint { font-size: 14px; color: var(--ink-2); }
+/* Cloudflare Turnstile "Verify you are human" box (js/captcha.js) */
+.captcha { min-height: 65px; }
 .auth__or { display: flex; align-items: center; gap: 12px; margin: -4px 0; font-size: 13px; color: var(--ink-2); }
 .auth__or::before, .auth__or::after { content: ''; flex: 1; height: 1px; background: var(--line); }
 .auth__row { display: flex; justify-content: flex-end; margin-top: -6px; }
