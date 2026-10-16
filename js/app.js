@@ -808,18 +808,45 @@
     box.hidden = false;
   }
 
+  /* Grey placeholder tiles, shaped like real product tiles, shown while the catalogue loads. */
+  function skeletonTiles(count) {
+    const tile = `
+      <div class="product sk-tile" aria-hidden="true">
+        <div class="sk sk--art"></div>
+        <div class="product__info">
+          <span class="sk sk--line" style="width:40%"></span>
+          <span class="sk sk--title"></span>
+          <span class="sk sk--line" style="width:55%"></span>
+          <div class="product__buy">
+            <span class="sk sk--price"></span>
+            <span class="sk sk--btn"></span>
+          </div>
+        </div>
+      </div>`;
+    return '<p class="sr-only">Loading products</p>' + tile.repeat(count);
+  }
+
   function renderProducts() {
     renderSellersStrip();
-    if (catalog.status !== 'ready') {
-      byId('grid').innerHTML = '';
-      byId('grid').hidden = true;
+    const grid = byId('grid');
+    grid.removeAttribute('aria-busy');
+    if (catalog.status === 'loading') {
+      grid.innerHTML = skeletonTiles(10);
+      grid.setAttribute('aria-busy', 'true');
+      grid.hidden = false;
+      byId('empty').hidden = true;
       byId('result-count').textContent = '';
-      if (catalog.status === 'loading') showNotice('Loading products', 'One moment.', '');
-      else showNotice('Could not load products', 'Check your connection and try again.', 'retry');
+      return;
+    }
+    if (catalog.status !== 'ready') {
+      grid.innerHTML = '';
+      grid.hidden = true;
+      byId('result-count').textContent = '';
+      showNotice('Could not load products', 'Check your connection and try again.', 'retry');
       return;
     }
     const list = visibleProducts();
-    byId('grid').innerHTML = list.map((p) => productTile(p, true)).join('');
+    grid.innerHTML = list.map((p) => productTile(p, true)).join('');
     byId('grid').hidden = list.length === 0;
     if (list.length) byId('empty').hidden = true;
     else if (PRODUCTS.length === 0) showNotice('No products yet', 'Sellers are still setting up their stores. Please check back soon.', '');
@@ -828,6 +855,10 @@
   }
 
   function renderChips() {
+    if (catalog.status === 'loading' && !PRODUCTS.length) {
+      byId('chips').innerHTML = [64, 92, 120, 84, 104].map((w) => `<span class="sk sk--chip" style="width:${w}px" aria-hidden="true"></span>`).join('');
+      return;
+    }
     byId('chips').innerHTML = ['All', ...categoryNames()].map((name) => `
       <button class="chip" type="button" data-filter="${esc(name)}" aria-pressed="${state.cat === name}">${esc(name)} <small>${countIn(name)}</small></button>`).join('');
   }
@@ -959,6 +990,19 @@
   const initials = (name) => name.split(/\s+/).filter((w) => /[A-Za-z0-9]/.test(w.charAt(0))).slice(0, 2).map((w) => w.charAt(0)).join('').toUpperCase();
 
   function renderStore() {
+    if (catalog.status === 'loading') {
+      storeView.innerHTML = `
+        <section class="sec tone tone--paper">
+          <div class="wrap">
+            <div class="sk-store" aria-hidden="true">
+              <span class="sk sk--logo"></span>
+              <span class="sk-store__text"><span class="sk sk--title" style="width:220px"></span><span class="sk sk--line" style="width:150px"></span></span>
+            </div>
+            <div class="grid" aria-busy="true">${skeletonTiles(6)}</div>
+          </div>
+        </section>`;
+      return;
+    }
     if (catalog.status !== 'ready') {
       const failed = catalog.status === 'error';
       storeView.innerHTML = `

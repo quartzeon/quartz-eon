@@ -522,6 +522,42 @@ section[id] { scroll-margin-top: 76px; }
 .grid .rating { flex-wrap: wrap; row-gap: 2px; }
 .grid .rating > span:not(.stars) { white-space: nowrap; }
 
+/* ---------- Loading skeleton ---------- */
+/* Grey shapes in place of tiles and chips while the catalogue loads. A soft light sweeps across them. */
+.sk {
+  display: block; position: relative; overflow: hidden;
+  border-radius: 8px; background: var(--line);
+}
+.sk::after {
+  content: ""; position: absolute; inset: 0;
+  background: linear-gradient(90deg, transparent, hsl(0 0% 100% / .45), transparent);
+  transform: translateX(-100%);
+}
+:root[data-theme="dark"] .sk::after { background: linear-gradient(90deg, transparent, hsl(0 0% 100% / .06), transparent); }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .sk::after { background: linear-gradient(90deg, transparent, hsl(0 0% 100% / .06), transparent); }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .sk::after { animation: sk-sweep 1.4s ease-in-out infinite; }
+}
+@keyframes sk-sweep { to { transform: translateX(100%); } }
+.sk--art { aspect-ratio: 4 / 3; border-radius: 18px; }
+.sk--line { height: 10px; border-radius: 999px; }
+.sk--title { height: 16px; width: 85%; margin-block: 4px 2px; border-radius: 999px; }
+.sk--price { height: 19px; width: 50%; border-radius: 999px; }
+.sk--btn { height: 40px; border-radius: 12px; }
+.sk--chip { display: inline-block; height: 40px; border-radius: 999px; }
+.sk--logo { flex: none; width: 72px; height: 72px; border-radius: 50%; }
+.sk-tile .product__info { gap: 8px; }
+.sk-store { display: flex; align-items: center; gap: 20px; margin-bottom: 36px; }
+.sk-store__text { display: grid; gap: 10px; }
+@container grid (max-width: 600px) {
+  .sk--art { border-radius: 14px; }
+  .sk--title { height: 14px; }
+  .sk--price { height: 16px; }
+  .sk--btn { height: 34px; border-radius: 10px; }
+}
+
 /* ---------- Small product tiles ---------- */
 /* Tiles of about 140 to 190px (a narrow window, a tablet): the extras go, the name, price and button stay. */
 @container grid (max-width: 600px) {
