@@ -29,8 +29,10 @@ window.QE_CAPTCHA = (function () {
 
   /* Puts the check in the form, just above its submit button. Calling it again for the same form
      returns the same handle. handle.token() waits for the check and gives the one-time token,
-     handle.reset() gets a fresh one after each attempt (a token works only once). */
-  function attach(form) {
+     handle.reset() gets a fresh one after each attempt (a token works only once).
+     extraButtons (like "Continue with Google") are locked together with the submit button;
+     their click handlers must skip a button that has the is-locked class. */
+  function attach(form, extraButtons) {
     if (!siteKey || !form) return off;
     if (form.qeCaptcha) return form.qeCaptcha;
 
@@ -38,14 +40,16 @@ window.QE_CAPTCHA = (function () {
     box.className = 'captcha';
     const submit = form.querySelector('button[type="submit"]');
     form.insertBefore(box, submit || null);
+    const buttons = [submit].concat(extraButtons || []).filter(Boolean);
 
-    /* The button stays locked until the check says Success. This is a class, not the disabled
+    /* The buttons stay locked until the check says Success. This is a class, not the disabled
        attribute, because the pages turn disabled on and off themselves while they log in. */
     function lock(on) {
-      if (!submit) return;
-      submit.classList.toggle('is-locked', on);
-      submit.setAttribute('aria-disabled', on ? 'true' : 'false');
-      submit.title = on ? 'Finish the "Verify you are human" check first' : '';
+      buttons.forEach((button) => {
+        button.classList.toggle('is-locked', on);
+        button.setAttribute('aria-disabled', on ? 'true' : 'false');
+        button.title = on ? 'Finish the "Verify you are human" check first' : '';
+      });
     }
     function blockSubmit(event) {
       if (submit && submit.classList.contains('is-locked')) {

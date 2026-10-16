@@ -1977,7 +1977,7 @@
         </p>
       </div>`;
     /* Changing the password from a reset link needs no bot check (the person already has a session). */
-    if (auth.mode !== 'reset') window.QE_CAPTCHA.attach(byId('auth-form'));
+    if (auth.mode !== 'reset') window.QE_CAPTCHA.attach(byId('auth-form'), [...authDialog.querySelectorAll('[data-google-login]')]);
   }
 
   function focusFirstField() {
@@ -2078,7 +2078,12 @@
       focusFirstField();
       return;
     }
-    if (event.target.closest('[data-google-login]')) {
+    const googleButton = event.target.closest('[data-google-login]');
+    if (googleButton) {
+      if (googleButton.classList.contains('is-locked')) {
+        showAuthNote('Please finish the "Verify you are human" check first.');
+        return;
+      }
       sb.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: redirectUrl() } }).then(({ error }) => {
         if (error) showAuthNote(friendlyAuthError(error));
       });
