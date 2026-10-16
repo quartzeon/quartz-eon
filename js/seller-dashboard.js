@@ -15,6 +15,7 @@
   const icon = (id) => `<svg class="i" aria-hidden="true" focusable="false"><use href="#${id}"/></svg>`;
   const art = (name) => `<svg class="art" aria-hidden="true" focusable="false"><use href="#a-${esc(name)}"/></svg>`;
   const plural = (n, one, many) => (n === 1 ? one : many);
+  const rs = (n) => `Rs. ${Number(n).toLocaleString('en-US')}`;
   const storage = { set(key, value) { try { window.localStorage.setItem(key, value); } catch (e) { /* storage unavailable */ } } };
 
   /* ---------- Theme ---------- */
@@ -207,8 +208,9 @@
     byId('store-logo-label').textContent = sellerRow.logo ? 'Change the logo' : 'Upload a logo';
   }
 
-  /* Phone photos of a fee slip are often over 5 MB, so photos are made smaller (still easy to read) before upload.
-     PDFs are sent as they are. Resolves to the file or a smaller JPEG, whichever is smaller. */
+  /* Phone photos of a slip are often over 5 MB, so photos are made smaller (still easy to read) before upload.
+     A photo is always drawn again as a new JPEG, which also drops the hidden details a phone adds to it (where and
+     when it was taken, the phone model). PDFs are sent as they are. */
   function shrinkSlip(file) {
     if (!/^image\//.test(file.type)) return Promise.resolve(file);
     return new Promise((resolve) => {
@@ -224,12 +226,76 @@
         ctx.fillStyle = '#ffffff';
         ctx.fillRect(0, 0, canvas.width, canvas.height);
         ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-        canvas.toBlob((blob) => resolve(blob && blob.size < file.size ? blob : file), 'image/jpeg', 0.85);
+        canvas.toBlob((blob) => resolve(blob || file), 'image/jpeg', 0.85);
       };
       img.onerror = () => { URL.revokeObjectURL(url); resolve(file); };
       img.src = url;
     });
   }
+
+  const SLIP_TYPES = /^(image\/(jpeg|png|webp)|application\/pdf)$/;
+
+  /* Slips are saved under a random name, so the file name from the phone (often a date or a name) is not kept. */
+  function slipPath(kind, slip) {
+    const ext = { 'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp', 'application/pdf': 'pdf' }[slip.type] || 'jpg';
+    const id = Array.from(window.crypto.getRandomValues(new Uint8Array(16)), (b) => b.toString(16).padStart(2, '0')).join('');
+    return `${sellerRow.id}/${kind}-${id}.${ext}`;
+  }
+
+  /* The site owner's bank account is asked for only when the seller presses Pay (the store fee or an ad), and the
+     server gives it only to approved stores. */
+  let ownerBankRequest = null;
+  function getOwnerBank() {
+    if (!ownerBankRequest) {
+      ownerBankRequest = sb.rpc('get_owner_bank').then(({ data, error }) => {
+        if (error) throw error;
+        const bank = Array.isArray(data) ? data[0] : data;
+        return bank && bank.account_number ? bank : null;
+      });
+      ownerBankRequest.catch(() => { ownerBankRequest = null; });
+    }
+    return ownerBankRequest;
+  }
+
+  /* Bank details as rows split by lines; the account number has a Copy button for the bank app. */
+  function bankRows(bank) {
+    return [['Bank', bank.bank_name], ['Account name', bank.account_name], ['Account number', bank.account_number], ['Branch', bank.branch]]
+      .filter((row) => row[1])
+      .map(([k, v]) => (k === 'Account number'
+        ? `<div><dt>${esc(k)}</dt><dd class="bank-num"><span>${esc(v)}</span><button class="copy-btn" type="button" data-copy="${esc(String(v).replace(/[\s-]+/g, ''))}" aria-label="Copy the account number">${icon('i-copy')}<span>Copy</span></button></dd></div>`
+        : `<div><dt>${esc(k)}</dt><dd>${esc(v)}</dd></div>`))
+      .join('');
+  }
+
+  async function copyText(text) {
+    try {
+      await navigator.clipboard.writeText(text);
+      return true;
+    } catch (e) {
+      const area = document.createElement('textarea');
+      area.value = text;
+      area.setAttribute('readonly', '');
+      area.style.cssText = 'position:fixed;top:0;left:0;opacity:0';
+      document.body.appendChild(area);
+      area.select();
+      let done = false;
+      try { done = document.execCommand('copy'); } catch (e2) { /* nothing more to try */ }
+      area.remove();
+      return done;
+    }
+  }
+
+  document.addEventListener('click', async (event) => {
+    const button = event.target.closest('[data-copy]');
+    if (!button) return;
+    const done = await copyText(button.dataset.copy);
+    toast(done ? 'Account number copied' : 'Could not copy. Hold your finger on the number to copy it.');
+    const label = button.querySelector('span');
+    if (done && label) {
+      label.textContent = 'Copied';
+      window.setTimeout(() => { label.textContent = 'Copy'; }, 1600);
+    }
+  });
 
   /* A logo is shrunk to 600 pixels (an ad poster to 1600) on a white background (JPEG has no transparency). */
   function shrinkLogo(file, maxSide = 600) {
@@ -753,33 +819,75 @@
   /* ---------- The monthly store fee and the Verified badge ---------- */
   const FEE_STATUS = { awaiting_review: ['pending', 'Waiting for review'], approved: ['approved', 'Approved'], rejected: ['suspended', 'Not accepted'] };
   let feeSettings = { monthly_fee: CFG.sellerMonthlyFee || 500, fee_required: false };
+  let feeWaiting = null;
+  let slipPreviewUrl = '';
 
   function paintFeeStatus(payments) {
     const fee = feeState(sellerRow);
-    let html;
-    if (fee.kind === 'paid') html = `<span class="verified-pill">${verifiedIcon()} Verified</span> until ${esc(formatDate(fee.until))}`;
-    else if (fee.kind === 'trial') html = `Free trial until ${esc(formatDate(fee.until))}. Pay the fee to get the <strong>Verified</strong> badge.`;
-    else html = feeSettings.fee_required
-      ? '<strong>Your fee is due.</strong> Your store is hidden from the shop until you pay.'
-      : 'Your fee has not been paid. Pay it to get the <strong>Verified</strong> badge.';
-    byId('fee-status').innerHTML = html;
-    byId('fee-lead').textContent = `The store fee is Rs. ${Number(feeSettings.monthly_fee).toLocaleString('en-US')} per month. Pay it to the account below, then send us the slip.`;
+    const price = rs(feeSettings.monthly_fee);
+    const soon = fee.kind !== 'due' && fee.days <= 5;
+    /* The site owner's bank account is only for approved stores, so a new store cannot open it yet. */
+    const canPay = sellerRow.status === 'approved' || sellerRow.status === 'suspended';
+
+    /* One line that says where the store stands, next to a round icon in the matching colour. */
+    let tone, glyph, title, text;
+    if (!canPay && fee.kind === 'due') {
+      tone = 'warn';
+      glyph = 'i-clock';
+      title = 'Waiting for approval';
+      text = 'The site owner checks new stores first. You can pay the fee once your store is approved.';
+    } else if (fee.kind === 'paid') {
+      tone = soon ? 'warn' : 'ok';
+      glyph = 'i-check';
+      title = `Your store is <span class="verified-pill">${verifiedIcon()} Verified</span>`;
+      text = `Paid until ${formatDate(fee.until)} (${leftText(fee.days)}).`;
+    } else if (fee.kind === 'trial') {
+      tone = soon ? 'warn' : 'ok';
+      glyph = 'i-clock';
+      title = 'Free trial';
+      text = `Your trial ends on ${formatDate(fee.until)} (${leftText(fee.days)}). Pay the fee to get the Verified badge.`;
+    } else {
+      tone = 'bad';
+      glyph = 'i-card';
+      title = 'Your store fee is due';
+      text = feeSettings.fee_required
+        ? 'Your store is hidden from the shop until you pay.'
+        : 'Pay it to get the Verified badge next to your store name.';
+    }
+    byId('fee-hero').innerHTML = `
+      <span class="fee-hero__icon fee-hero__icon--${tone}">${icon(glyph)}</span>
+      <div class="fee-hero__body"><p class="fee-hero__title">${title}</p><p class="fee-hero__text">${esc(text)}</p></div>`;
 
     /* Three figures: is this month paid, how long is left, and until when. */
-    const soon = fee.kind !== 'due' && fee.days <= 5;
     const month = { paid: ['Paid', 'ok'], trial: ['Free trial', soon ? 'warn' : 'ok'], due: ['Not paid', 'bad'] }[fee.kind];
     const left = fee.kind === 'due'
       ? (fee.days ? `Ended ${dayWord(fee.days)} ago` : 'Ended today')
       : (fee.days === 0 ? 'Last day today' : dayWord(fee.days));
-    const waiting = (payments || []).find((p) => p.status === 'awaiting_review');
     byId('fee-summary').innerHTML = `
       <div class="fee-box fee-box--${month[1]}"><span>This month</span><strong>${month[0]}</strong></div>
       <div class="fee-box fee-box--${fee.kind === 'due' ? 'bad' : soon ? 'warn' : 'ok'}"><span>Time left</span><strong>${esc(left)}</strong></div>
-      <div class="fee-box"><span>${fee.kind === 'due' ? 'Ended on' : fee.kind === 'trial' ? 'Trial ends' : 'Paid until'}</span><strong>${fee.until ? esc(formatDate(fee.until)) : '-'}</strong></div>
-      ${waiting ? `<p class="fee-summary__note">Your slip from ${esc(formatDate(waiting.created_at))} is waiting for review. The days are added once the site owner approves it.</p>`
-        : soon || fee.kind === 'due' ? '<p class="fee-summary__note">Pay the fee below to keep your store Verified.</p>' : ''}`;
+      <div class="fee-box"><span>${fee.kind === 'due' ? 'Ended on' : fee.kind === 'trial' ? 'Trial ends' : 'Paid until'}</span><strong>${fee.until ? esc(formatDate(fee.until)) : '-'}</strong></div>`;
+    /* A store that is not approved yet has nothing to pay, so the red "Not paid" figures stay out of the way. */
+    byId('fee-summary').hidden = !canPay && fee.kind === 'due';
+
+    /* One slip at a time: while one is waiting, it takes the place of the Pay part. */
+    feeWaiting = (payments || []).find((p) => p.status === 'awaiting_review') || null;
+    if (feeWaiting) closeFeeFlow();
+    byId('fee-pay').hidden = !!feeWaiting;
+    byId('fee-wait').hidden = !feeWaiting;
+    byId('fee-wait-text').textContent = feeWaiting
+      ? `You sent ${rs(feeWaiting.amount_lkr)} on ${formatDate(feeWaiting.created_at)}. 30 days are added once the site owner approves it. Sent the wrong slip? Take it back and send a new one.`
+      : '';
+
+    const payButton = byId('fee-pay-open');
+    payButton.textContent = `Pay ${price}`;
+    payButton.disabled = !canPay;
+    byId('fee-lead').textContent = canPay
+      ? `${price} a month, by bank transfer to the site owner. Each payment adds 30 days.`
+      : `${price} a month. You can pay once the site owner approves your store.`;
+
     const flag = byId('fee-nav-flag');
-    flag.hidden = !(soon || fee.kind === 'due');
+    flag.hidden = !canPay || !(soon || fee.kind === 'due');
     flag.textContent = fee.kind === 'due' ? 'Due' : dayWord(fee.days);
   }
 
@@ -787,37 +895,106 @@
     return '<svg class="verified-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 1.8l2.4 1.7 2.9-.2 1.1 2.7 2.5 1.5-.5 2.9 1.2 2.7-1.9 2.2-.2 2.9-2.8.9-1.8 2.3-2.7-1.1-2.7 1.1-1.8-2.3-2.8-.9-.2-2.9L2.3 12.4l1.2-2.7-.5-2.9 2.5-1.5 1.1-2.7 2.9.2z" fill="currentColor" stroke="none"/><path d="M8 12.3l2.6 2.6L16 9.5" fill="none" stroke="#fff" stroke-width="2"/></svg>';
   }
 
+  /* A past payment as one row: a coloured dot, the amount, when it was sent and checked, and its status. */
+  function feeRow(p) {
+    const [badgeClass, label] = FEE_STATUS[p.status] || ['pending', p.status];
+    const tone = { approved: 'ok', rejected: 'bad' }[p.status] || 'warn';
+    const meta = [`Sent ${formatDate(p.created_at)}`];
+    if (p.status !== 'awaiting_review' && p.reviewed_at) meta.push(`checked ${formatDate(p.reviewed_at)}`);
+    if (p.reference) meta.push(p.reference);
+    if (p.status !== 'awaiting_review' && !p.receipt_path) meta.push('slip deleted');
+    return `
+      <div class="fee-row">
+        <span class="fee-row__dot fee-row__dot--${tone}" aria-hidden="true"></span>
+        <div class="fee-row__main">
+          <p class="fee-row__amount">${esc(rs(p.amount_lkr))}</p>
+          <p class="fee-row__meta">${meta.map(esc).join(' &middot; ')}</p>
+        </div>
+        <span class="status-badge status-badge--${badgeClass}">${esc(label)}</span>
+      </div>`;
+  }
+
   async function loadFee() {
-    const [{ data: settings }, { data: bankData }, { data: payments }] = await Promise.all([
+    const [{ data: settings }, { data: payments }] = await Promise.all([
       sb.from('site_settings').select('*').maybeSingle(),
-      sb.rpc('get_owner_bank'),
       sb.from('fee_payments').select('*').eq('seller_id', sellerRow.id).order('created_at', { ascending: false }).limit(10)
     ]);
     if (settings) feeSettings = settings;
-    paintFeeStatus(payments);
-    const bank = Array.isArray(bankData) ? bankData[0] : null;
-    const hasBank = !!(bank && bank.account_number);
-    byId('fee-bank').hidden = !hasBank;
-    byId('fee-bank').innerHTML = hasBank
-      ? [['Bank', bank.bank_name], ['Account name', bank.account_name], ['Account number', bank.account_number], ['Branch', bank.branch]]
-        .filter((row) => row[1]).map(([k, v]) => `<div><dt>${esc(k)}</dt><dd>${esc(v)}</dd></div>`).join('')
-      : '';
-    byId('fee-note').hidden = !(hasBank && bank.note);
-    byId('fee-note').textContent = hasBank && bank.note ? bank.note : '';
-    if (!hasBank) {
-      byId('fee-lead').textContent += ' The site owner has not added bank details yet, so please contact them.';
-    }
-    byId('fee-history').innerHTML = (payments || []).map((p) => {
-      const [badgeClass, label] = FEE_STATUS[p.status] || ['pending', p.status];
-      return `
-        <article class="prod-row">
-          <div class="prod-row__main"><div class="prod-row__text">
-            <p class="prod-row__name">Rs. ${Number(p.amount_lkr).toLocaleString('en-US')} <span class="status-badge status-badge--${badgeClass}">${esc(label)}</span></p>
-            <p class="prod-row__meta">${esc(formatDate(p.created_at))}${p.reference ? ` &middot; ${esc(p.reference)}` : ''}</p>
-          </div></div>
-        </article>`;
-    }).join('');
+    paintFeeStatus(payments || []);
+    byId('fee-history-wrap').hidden = !(payments && payments.length);
+    byId('fee-history').innerHTML = (payments || []).map(feeRow).join('');
   }
+
+  function paintFeeBank(bank) {
+    const price = rs(feeSettings.monthly_fee);
+    byId('fee-send-title').textContent = bank ? `Send ${price} to this account` : `Send ${price} to the site owner`;
+    byId('fee-bank').hidden = !bank;
+    byId('fee-bank').innerHTML = bank ? bankRows(bank) : '';
+    const note = bank ? bank.note : 'The site owner has not added bank details yet, so please message them first.';
+    byId('fee-note').hidden = !note;
+    byId('fee-note').textContent = note || '';
+  }
+
+  /* The bank details stay off the page until Pay is pressed, and Not now takes them off again. */
+  function closeFeeFlow() {
+    byId('fee-flow').hidden = true;
+    byId('fee-pay-open').hidden = false;
+    byId('fee-bank').innerHTML = '';
+    byId('fee-form').reset();
+    setSlipPick(null);
+    showFieldError(byId('fee-receipt'), '');
+    byId('fee-form-error').hidden = true;
+    byId('fee-pay-error').hidden = true;
+  }
+
+  byId('fee-pay-open').addEventListener('click', async () => {
+    const button = byId('fee-pay-open');
+    const label = button.textContent;
+    const errorBox = byId('fee-pay-error');
+    errorBox.hidden = true;
+    button.disabled = true;
+    button.textContent = 'Opening...';
+    try {
+      paintFeeBank(await getOwnerBank());
+      byId('fee-flow').hidden = false;
+      button.hidden = true;
+    } catch (err) {
+      errorBox.textContent = (err && err.message) || 'Could not open the payment details. Please try again.';
+      errorBox.hidden = false;
+    } finally {
+      button.disabled = false;
+      button.textContent = label;
+    }
+  });
+  byId('fee-pay-close').addEventListener('click', closeFeeFlow);
+
+  /* The chosen slip shows as a small picture (or a PDF mark) with its name, so the seller can check it first. */
+  function setSlipPick(file) {
+    if (slipPreviewUrl) { URL.revokeObjectURL(slipPreviewUrl); slipPreviewUrl = ''; }
+    const pick = byId('fee-receipt-pick');
+    pick.classList.toggle('has-file', !!file);
+    byId('fee-receipt-name').textContent = file ? file.name : 'Choose the slip';
+    pick.querySelector('small').textContent = file ? 'Tap to choose another' : 'JPG, PNG, WebP or PDF, up to 5 MB';
+    if (file && /^image\//.test(file.type)) {
+      slipPreviewUrl = URL.createObjectURL(file);
+      byId('fee-receipt-art').innerHTML = `<img src="${slipPreviewUrl}" alt="">`;
+    } else {
+      byId('fee-receipt-art').innerHTML = file ? '<span class="slip-pick__pdf">PDF</span>' : icon('i-image');
+    }
+  }
+
+  byId('fee-receipt').addEventListener('change', (event) => {
+    const input = event.target;
+    const file = (input.files || [])[0] || null;
+    showFieldError(input, '');
+    if (file && !SLIP_TYPES.test(file.type)) {
+      showFieldError(input, 'Use a JPG, PNG, WebP or PDF file.');
+      input.value = '';
+      setSlipPick(null);
+      return;
+    }
+    setSlipPick(file);
+  });
 
   byId('fee-form').addEventListener('submit', async (event) => {
     event.preventDefault();
@@ -827,41 +1004,60 @@
     errorBox.hidden = true;
     showFieldError(form.elements.receipt, '');
     if (!file) { showFieldError(form.elements.receipt, 'Attach the payment slip (a photo or a PDF).'); return; }
-    if (!/^(image\/(jpeg|png|webp)|application\/pdf)$/.test(file.type)) { showFieldError(form.elements.receipt, 'Use a JPG, PNG, WebP or PDF file.'); return; }
+    if (!SLIP_TYPES.test(file.type)) { showFieldError(form.elements.receipt, 'Use a JPG, PNG, WebP or PDF file.'); return; }
     if (file.type === 'application/pdf' && file.size > 5 * 1024 * 1024) { showFieldError(form.elements.receipt, 'That PDF is over 5 MB. Send a photo of the slip instead.'); return; }
     const button = form.querySelector('button[type="submit"]');
     button.disabled = true;
+    button.textContent = 'Sending...';
+    let path = null;
     try {
       const slip = await shrinkSlip(file);
       if (slip.size > 5 * 1024 * 1024) throw new Error('That photo is too large even after making it smaller. Try a smaller photo or a screenshot.');
-      let safeName = file.name.toLowerCase().replace(/[^a-z0-9.]+/g, '-').slice(-60);
-      if (slip !== file) safeName = safeName.replace(/\.[a-z0-9]+$/, '') + '.jpg';
-      const path = `${sellerRow.id}/fee-${Date.now()}-${safeName}`;
-      const { error: uploadError } = await sb.storage.from('receipts').upload(path, slip, { contentType: slip.type || file.type });
+      const target = slipPath('fee', slip);
+      const { error: uploadError } = await sb.storage.from('receipts').upload(target, slip, { contentType: slip.type || file.type });
       if (uploadError) {
         if (/row-level security|policy/i.test(uploadError.message || '')) throw new Error('You have sent too many slips today. Please try again tomorrow.');
         throw uploadError;
       }
+      path = target;
       const { data: paymentId, error } = await sb.rpc('submit_fee_payment', { p_reference: form.elements.reference.value.trim(), p_receipt_path: path });
-      if (error) { sb.storage.from('receipts').remove([path]).catch(() => {}); throw error; }
+      if (error) throw error;
+      path = null; /* the slip now belongs to the payment */
       /* Tell the owner on Telegram, with the slip and Approve / Reject buttons. */
       sb.functions.invoke('notify', { body: { kind: 'fee_payment', id: paymentId } }).catch(() => {});
-      form.reset();
+      closeFeeFlow();
       toast('Slip sent. You will be verified once the owner approves it.');
       loadFee();
     } catch (err) {
+      /* A slip that did not become a payment is not kept. */
+      if (path) sb.storage.from('receipts').remove([path]).catch(() => {});
       errorBox.textContent = (err && err.message) || 'Something went wrong. Please try again.';
       errorBox.hidden = false;
+      if (/still waiting/i.test((err && err.message) || '')) loadFee();
     } finally {
       button.disabled = false;
+      button.textContent = 'Send the slip';
     }
+  });
+
+  /* Take back a slip that is still waiting (a wrong photo, for example). The payment and the file are deleted. */
+  byId('fee-wait-cancel').addEventListener('click', async () => {
+    if (!feeWaiting) return;
+    if (!window.confirm('Take this slip back? It is deleted, and you can send a new one.')) return;
+    const button = byId('fee-wait-cancel');
+    button.disabled = true;
+    const { data: slip, error } = await sb.rpc('cancel_fee_payment', { p_id: feeWaiting.id });
+    button.disabled = false;
+    if (error) { toast(error.message || 'Could not take the slip back.'); loadFee(); return; }
+    if (slip) await sb.storage.from('receipts').remove([slip]).catch(() => {});
+    toast('Slip taken back and deleted');
+    loadFee();
   });
 
   /* ---------- Ads: the seller buys time in the popup the shop shows (called "spotlight" in the code and database,
      because ad blockers block addresses and classes with "ad" in them) ---------- */
   const SPOT_STATUS = { awaiting_review: ['pending', 'Waiting for review'], approved: ['approved', 'Approved'], rejected: ['suspended', 'Not accepted'] };
-  const spot = { step: 1, packs: [], pack: null, qty: 1, poster: null, posterUrl: '', bank: null };
-  const rs = (n) => `Rs. ${Number(n).toLocaleString('en-US')}`;
+  const spot = { step: 1, packs: [], pack: null, qty: 1, poster: null, posterUrl: '', bank: null, bankError: '' };
 
   /* 24 hours reads "1 day", 36 hours reads "36 hours". */
   function spanText(hours) {
@@ -915,12 +1111,11 @@
   }
 
   async function loadSpotlight() {
-    const [{ data: settings }, { data: packs }, { data: mine }, { data: requests }, { data: bankData }] = await Promise.all([
+    const [{ data: settings }, { data: packs }, { data: mine }, { data: requests }] = await Promise.all([
       sb.from('site_settings').select('owner_telegram').maybeSingle(),
       sb.from('spotlight_packages').select('*').order('hours').order('price'),
       sb.rpc('my_spotlights'),
-      sb.from('spotlight_requests').select('*').eq('seller_id', sellerRow.id).order('created_at', { ascending: false }).limit(10),
-      sb.rpc('get_owner_bank')
+      sb.from('spotlight_requests').select('*').eq('seller_id', sellerRow.id).order('created_at', { ascending: false }).limit(10)
     ]);
     const tg = settings && settings.owner_telegram;
     byId('spot-contact').hidden = !tg;
@@ -933,15 +1128,6 @@
     byId('spot-requests-wrap').hidden = !(requests && requests.length);
     byId('spot-requests').innerHTML = (requests || []).map(requestRow).join('');
     spot.packs = packs || [];
-    const bank = Array.isArray(bankData) ? bankData[0] : null;
-    spot.bank = bank && bank.account_number ? bank : null;
-    byId('spot-bank').hidden = !spot.bank;
-    byId('spot-bank').innerHTML = spot.bank
-      ? [['Bank', bank.bank_name], ['Account name', bank.account_name], ['Account number', bank.account_number], ['Branch', bank.branch]]
-        .filter((row) => row[1]).map(([k, v]) => `<div><dt>${esc(k)}</dt><dd>${esc(v)}</dd></div>`).join('')
-      : '';
-    byId('spot-bank-note').hidden = !(spot.bank && bank.note);
-    byId('spot-bank-note').textContent = spot.bank && bank.note ? bank.note : '';
     renderPacks();
   }
 
@@ -1028,19 +1214,35 @@
       ['To pay', rs(total)]
     ];
     byId('spot-summary').innerHTML = rows.map(([k, v]) => `<div><dt>${esc(k)}</dt><dd>${esc(v)}</dd></div>`).join('');
-    byId('spot-pay-lead').textContent = spot.bank
-      ? `Send ${rs(total)} to the site owner's account below, then attach the slip.`
-      : `Send ${rs(total)} to the site owner. They have not added bank details yet, so please message them first.`;
+    byId('spot-pay-lead').textContent = spot.bankError
+      ? spot.bankError
+      : spot.bank
+        ? `Send ${rs(total)} to the site owner's account below, then attach the slip.`
+        : `Send ${rs(total)} to the site owner. They have not added bank details yet, so please message them first.`;
+    byId('spot-bank').hidden = !spot.bank;
+    byId('spot-bank').innerHTML = spot.bank ? bankRows(spot.bank) : '';
+    byId('spot-bank-note').hidden = !(spot.bank && spot.bank.note);
+    byId('spot-bank-note').textContent = spot.bank && spot.bank.note ? spot.bank.note : '';
   }
 
-  function goSpotStep(n) {
+  async function goSpotStep(n) {
     if (n === 3) {
       if (!spot.pack) {
         byId('spot-pack-error').textContent = 'Choose how long your ad runs.';
         byId('spot-pack-error').hidden = false;
         return;
       }
+      try {
+        spot.bank = await getOwnerBank();
+        spot.bankError = '';
+      } catch (err) {
+        spot.bank = null;
+        spot.bankError = (err && err.message) || 'Could not open the payment details. Please try again.';
+      }
       paintSpotSummary();
+    } else {
+      /* The bank details are only on the page while the payment step is open. */
+      byId('spot-bank').innerHTML = '';
     }
     spot.step = n;
     document.querySelectorAll('[data-spot-step]').forEach((el) => { el.hidden = Number(el.dataset.spotStep) !== n; });
@@ -1068,11 +1270,12 @@
     errorBox.hidden = true;
     showFieldError(form.elements.receipt, '');
     if (!file) { showFieldError(form.elements.receipt, 'Attach the payment slip (a photo or a PDF).'); return; }
-    if (!/^(image\/(jpeg|png|webp)|application\/pdf)$/.test(file.type)) { showFieldError(form.elements.receipt, 'Use a JPG, PNG, WebP or PDF file.'); return; }
+    if (!SLIP_TYPES.test(file.type)) { showFieldError(form.elements.receipt, 'Use a JPG, PNG, WebP or PDF file.'); return; }
     if (file.type === 'application/pdf' && file.size > 5 * 1024 * 1024) { showFieldError(form.elements.receipt, 'That PDF is over 5 MB. Send a photo of the slip instead.'); return; }
     const button = form.querySelector('button[type="submit"]');
     button.disabled = true;
     let posterPath = null;
+    let slipPathSent = null;
     let sent = false;
     try {
       if (spot.poster) {
@@ -1083,14 +1286,13 @@
       }
       const slip = await shrinkSlip(file);
       if (slip.size > 5 * 1024 * 1024) throw new Error('That photo is too large even after making it smaller. Try a smaller photo or a screenshot.');
-      let safeName = file.name.toLowerCase().replace(/[^a-z0-9.]+/g, '-').slice(-60);
-      if (slip !== file) safeName = safeName.replace(/\.[a-z0-9]+$/, '') + '.jpg';
-      const slipPath = `${sellerRow.id}/spot-${Date.now()}-${safeName}`;
-      const { error: uploadError } = await sb.storage.from('receipts').upload(slipPath, slip, { contentType: slip.type || file.type });
+      const target = slipPath('spot', slip);
+      const { error: uploadError } = await sb.storage.from('receipts').upload(target, slip, { contentType: slip.type || file.type });
       if (uploadError) {
         if (/row-level security|policy/i.test(uploadError.message || '')) throw new Error('You have sent too many slips today. Please try again tomorrow.');
         throw uploadError;
       }
+      slipPathSent = target;
       const { data: requestId, error } = await sb.rpc('submit_spotlight_request', {
         p_package_id: spot.pack.id,
         p_qty: spot.qty,
@@ -1098,7 +1300,7 @@
         p_message: form.elements.message.value.trim(),
         p_image: posterPath,
         p_reference: form.elements.reference.value.trim(),
-        p_receipt_path: slipPath
+        p_receipt_path: slipPathSent
       });
       if (error) throw error;
       sent = true;
@@ -1112,6 +1314,7 @@
       loadSpotlight();
     } catch (err) {
       if (posterPath && !sent) sb.storage.from(LOGO_BUCKET).remove([posterPath]).catch(() => {});
+      if (slipPathSent && !sent) sb.storage.from('receipts').remove([slipPathSent]).catch(() => {});
       errorBox.textContent = (err && err.message) || 'Something went wrong. Please try again.';
       errorBox.hidden = false;
     } finally {

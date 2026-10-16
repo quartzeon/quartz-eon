@@ -102,15 +102,13 @@
 .pp-theme input { position: absolute; top: 12px; left: 14px; accent-color: var(--ink); width: 17px; height: 17px; margin: 0; }
 .pp-theme__name { font: 600 15px/1.3 var(--font-body); }
 .pp-theme__text { font-size: 13px; line-height: 1.45; color: var(--ink-2); }
-.fee-status { margin-bottom: 10px; font-size: 16px; }
 .verified-pill { display: inline-flex; align-items: center; gap: 6px; padding: 4px 12px 4px 8px; border-radius: 999px; background: hsl(205 85% 92%); color: hsl(208 75% 36%); font-weight: 700; }
 .verified-icon { width: 18px; height: 18px; color: hsl(207 80% 52%); }
 :root[data-theme="dark"] .verified-pill { background: hsl(208 45% 20%); color: hsl(205 85% 78%); }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) .verified-pill { background: hsl(208 45% 20%); color: hsl(205 85% 78%); }
 }
-#fee-card .auth__form { margin-top: 18px; max-width: 560px; }
-#fee-card .prod-list { margin-top: 18px; }
+#fee-card .auth__form { margin-top: 12px; max-width: 560px; }
 #availability-card .auth__form { max-width: 760px; }
 .av-hours { display: grid; max-width: 560px; border-top: 1px solid var(--line); }
 .av-row { display: grid; grid-template-columns: 96px auto minmax(0, 1fr) minmax(0, 1fr); align-items: center; gap: 10px; padding: 8px 2px; border-bottom: 1px solid var(--line); }
@@ -255,13 +253,99 @@
 .fee-box + .fee-box { border-left: 1px solid var(--line); }
 .fee-box span { font: 500 11px/1.3 var(--font-mono); letter-spacing: .06em; text-transform: uppercase; color: var(--ink-2); }
 .fee-box strong { font: 700 20px/1.2 var(--font-display); }
-.fee-box--ok strong { color: hsl(150 50% 38%); }
-.fee-box--warn strong { color: hsl(32 90% 46%); }
+.fee-box--ok strong { color: var(--fee-ok); }
+.fee-box--warn strong { color: var(--fee-warn); }
 .fee-box--bad strong { color: var(--danger); }
-.fee-summary__note { grid-column: 1 / -1; padding: 12px 2px; border-top: 1px solid var(--line); font-size: 14px; color: var(--ink-2); }
 @media (max-width: 640px) {
   .fee-summary { grid-template-columns: 1fr; }
   .fee-box { padding-inline: 2px; }
   .fee-box + .fee-box { border-left: 0; border-top: 1px solid var(--line); }
 }
 .nav-flag { margin-left: auto; padding: 1px 8px; border-radius: 999px; background: var(--danger); color: #fff; font: 600 11px/1.5 var(--font-mono); }
+
+/* Store fee colours: green for paid, amber for soon or waiting */
+:root { --fee-ok: hsl(150 50% 36%); --fee-warn: hsl(32 90% 44%); }
+:root[data-theme="dark"] { --fee-ok: hsl(150 55% 62%); --fee-warn: hsl(38 90% 62%); }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) { --fee-ok: hsl(150 55% 62%); --fee-warn: hsl(38 90% 62%); }
+}
+
+/* Store fee: one line that says where the store stands, next to a round icon in its colour */
+.fee-hero { display: flex; align-items: center; gap: 14px; }
+.fee-hero__icon { display: grid; place-items: center; width: 48px; height: 48px; flex: none; border-radius: 50%; }
+.fee-hero__icon .i { width: 24px; height: 24px; stroke-width: 2.2; }
+.fee-hero__icon--ok { background: color-mix(in srgb, var(--fee-ok) 15%, var(--card)); color: var(--fee-ok); }
+.fee-hero__icon--warn { background: color-mix(in srgb, var(--fee-warn) 16%, var(--card)); color: var(--fee-warn); }
+.fee-hero__icon--bad { background: color-mix(in srgb, var(--danger) 14%, var(--card)); color: var(--danger); }
+.fee-hero__body { min-width: 0; }
+.fee-hero__title { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; font: 700 18px/1.3 var(--font-display); }
+.fee-hero__text { margin-top: 3px; font-size: 14px; line-height: 1.45; color: var(--ink-2); }
+
+/* Pay the fee: a title and a button; pressing it opens two numbered steps */
+.fee-pay__head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px 20px; }
+.fee-pay__head > div { flex: 1 1 260px; min-width: 0; }
+.fee-pay__title, .fee-sub { font: 700 16px/1.3 var(--font-display); }
+.fee-pay__lead { margin-top: 3px; font-size: 14px; line-height: 1.45; color: var(--ink-2); }
+.fee-pay__head .btn:disabled { opacity: .45; cursor: not-allowed; transform: none; }
+#fee-pay-error { margin-top: 10px; }
+.fee-flow { display: grid; margin: 20px 0 0; padding: 0; list-style: none; }
+.fee-flow__step { position: relative; display: grid; grid-template-columns: 34px minmax(0, 1fr); gap: 14px; padding-bottom: 24px; }
+.fee-flow__step:last-child { padding-bottom: 0; }
+.fee-flow__step:not(:last-child)::before { content: ""; position: absolute; left: 16px; top: 40px; bottom: 6px; width: 2px; border-radius: 2px; background: var(--line); }
+.fee-flow__num { display: grid; place-items: center; width: 34px; height: 34px; border-radius: 50%; background: var(--ink); color: var(--paper); font: 700 15px/1 var(--font-display); }
+.fee-flow__body { min-width: 0; padding-top: 6px; }
+.fee-flow__title { font-size: 15px; font-weight: 700; }
+.fee-flow .pay__bank { max-width: 560px; margin-top: 10px; }
+.fee-flow #fee-note { max-width: 560px; margin-top: 8px; }
+.fee-form__actions { display: flex; flex-wrap: wrap; gap: 10px; }
+@media (max-width: 640px) {
+  .fee-pay__head .btn { width: 100%; }
+  .fee-form__actions .btn { flex: 1 1 140px; }
+}
+
+/* The account number with a small round Copy button next to it */
+.pay__bank div:has(> .bank-num) { align-items: center; }
+.pay__bank dd.bank-num { display: inline-flex; align-items: center; gap: 10px; user-select: auto; }
+.bank-num > span { font-size: 15px; letter-spacing: .02em; user-select: all; }
+.copy-btn { display: inline-flex; align-items: center; gap: 5px; min-height: 30px; padding: 0 12px 0 9px; border: 1.5px solid var(--ink-line); border-radius: 999px; background: transparent; color: var(--ink); font: 600 12px/1 var(--font-body); cursor: pointer; transition: border-color .15s ease; }
+.copy-btn .i { width: 15px; height: 15px; }
+.copy-btn:hover { border-color: var(--ink); }
+.copy-btn:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+
+/* Choosing the slip: a round dashed area with a small picture of the chosen slip */
+.slip-pick { display: flex; align-items: center; gap: 14px; padding: 12px 16px 12px 12px; border: 1.5px dashed var(--ink-line); border-radius: 18px; cursor: pointer; transition: border-color .15s ease, background-color .15s ease; }
+.slip-pick:hover { border-color: var(--ink); background: color-mix(in srgb, var(--ink) 3%, transparent); }
+.slip-pick.has-file { border-style: solid; }
+.field > input.sr-only { width: 1px; min-height: 0; height: 1px; padding: 0; border: 0; }
+input:focus-visible + .slip-pick { outline: 2px solid var(--focus); outline-offset: 2px; }
+input[aria-invalid="true"] + .slip-pick { border-color: var(--danger); }
+.slip-pick__art { display: grid; place-items: center; width: 56px; height: 56px; flex: none; overflow: hidden; border-radius: 14px; background: color-mix(in srgb, var(--ink) 6%, var(--card)); color: var(--ink-2); }
+.slip-pick__art img { width: 100%; height: 100%; object-fit: cover; }
+.slip-pick__pdf { font: 700 13px/1 var(--font-mono); letter-spacing: .04em; color: var(--danger); }
+.slip-pick__text { display: grid; gap: 3px; min-width: 0; }
+.slip-pick__text strong { overflow: hidden; font-size: 15px; text-overflow: ellipsis; white-space: nowrap; }
+.slip-pick__text small { font-size: 13px; color: var(--ink-2); }
+
+/* A slip waiting for the owner: one soft round row with Take it back */
+.fee-wait { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 14px; padding: 14px 16px; border-radius: 18px; background: color-mix(in srgb, var(--fee-warn) 12%, var(--card)); }
+.fee-wait__icon { display: grid; place-items: center; width: 40px; height: 40px; flex: none; border-radius: 50%; background: var(--card); color: var(--fee-warn); }
+.fee-wait__text { flex: 1 1 240px; min-width: 0; }
+.fee-wait__title { font-size: 15px; font-weight: 700; }
+#fee-wait-text { margin-top: 3px; font-size: 14px; line-height: 1.45; color: var(--ink-2); }
+.fee-wait .btn { background: var(--card); }
+
+.fee-private { display: flex; align-items: flex-start; gap: 10px; max-width: 640px; margin-top: 22px; font-size: 13px; line-height: 1.5; color: var(--ink-2); }
+.fee-private .i { width: 17px; height: 17px; margin-top: 1px; color: var(--ink-3); }
+
+/* Past payments: rows split by lines, each with a coloured dot and its status */
+.fee-sub { margin-top: 28px; padding-bottom: 12px; border-bottom: 1px solid var(--line); }
+.fee-history { display: grid; }
+.fee-row { display: flex; align-items: center; gap: 12px; padding: 12px 2px; border-bottom: 1px solid var(--line); }
+.fee-row__dot { width: 10px; height: 10px; flex: none; border-radius: 50%; }
+.fee-row__dot--ok { background: var(--fee-ok); }
+.fee-row__dot--warn { background: var(--fee-warn); }
+.fee-row__dot--bad { background: var(--danger); }
+.fee-row__main { flex: 1; min-width: 0; }
+.fee-row__amount { font-size: 15px; font-weight: 700; }
+.fee-row__meta { margin-top: 2px; font-size: 13px; color: var(--ink-2); overflow-wrap: anywhere; }
+.fee-row .status-badge { flex: none; }

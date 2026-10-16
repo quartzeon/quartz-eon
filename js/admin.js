@@ -139,7 +139,7 @@
       loadOrders().then(loadReports); /* reports show the order's product name */
       loadOwnerBank();
       loadBrands();
-      loadFees();
+      loadFees().then(forgetSlips);
       loadFeeSettings();
     } else {
       showPanel('denied', session.user.email);
@@ -601,6 +601,24 @@
     renderFees();
   }
 
+  /* Store fee and ad slips show a bank account and a name, so they are not kept: a rejected slip is deleted right
+     away, an approved one 30 days after it was approved. The database lists them, this deletes the files, and only
+     then are the paths cleared (so a failed delete is tried again next time). Runs quietly when the page opens. */
+  async function forgetSlips() {
+    const { data, error } = await sb.rpc('slips_to_forget');
+    if (error) return;
+    const paths = (data || []).map((r) => r.slip_path).filter(Boolean);
+    if (!paths.length) return;
+    const { error: removeError } = await sb.storage.from('receipts').remove(paths);
+    if (removeError) return;
+    await sb.rpc('forget_slips', { p_paths: paths });
+    const gone = (row) => { if (paths.includes(row.receipt_path)) row.receipt_path = null; };
+    feePayments.forEach(gone);
+    spotRequests.forEach(gone);
+    renderFees();
+    renderSpotRequests();
+  }
+
   function feeRow(p) {
     const [badgeClass, label] = FEE_BADGE[p.status] || ['pending', p.status];
     const store = sellers.find((s) => s.id === p.seller_id);
@@ -616,7 +634,7 @@
           <span class="seller-row__avatar">${icon('i-store')}</span>
           <div class="seller-row__text">
             <p class="seller-row__name">${esc(store ? store.store_name : 'Unknown store')} <span class="status-badge status-badge--${badgeClass}">${esc(label)}</span></p>
-            <p class="seller-row__meta">Rs. ${Number(p.amount_lkr).toLocaleString('en-US')} &middot; ${esc(store ? store.email : '')} &middot; ${formatDate(p.created_at)}${p.reference ? ` &middot; Reference: ${esc(p.reference)}` : ''}</p>
+            <p class="seller-row__meta">Rs. ${Number(p.amount_lkr).toLocaleString('en-US')} &middot; ${esc(store ? store.email : '')} &middot; ${formatDate(p.created_at)}${p.reference ? ` &middot; Reference: ${esc(p.reference)}` : ''}${p.receipt_path || p.status === 'awaiting_review' ? '' : ' &middot; Slip deleted'}</p>
           </div>
         </div>
         <div class="seller-row__actions">${actions.join('')}</div>
@@ -654,8 +672,8 @@
       if (!window.confirm('Reject this payment?')) return;
       const { error } = await sb.rpc('reject_fee_payment', { p_id: reject.dataset.feeReject });
       if (error) { toast(`Could not reject: ${error.message}`); return; }
-      toast('Payment rejected');
-      loadFees();
+      toast('Payment rejected. The slip is deleted');
+      loadFees().then(forgetSlips);
       return;
     }
     const slip = event.target.closest('[data-fee-slip]');
@@ -1070,8 +1088,8 @@
       const { error } = await sb.rpc('reject_spotlight_request', { p_id: request.id });
       if (error) { toast(`Could not reject: ${error.message}`); loadSpotRequests(); return; }
       if (request.image) sb.storage.from(BRAND_BUCKET).remove([request.image]).catch(() => {});
-      toast('Request rejected');
-      loadSpotRequests();
+      toast('Request rejected. The slip is deleted');
+      loadSpotRequests().then(forgetSlips);
       return;
     }
     const slip = event.target.closest('[data-spotreq-slip]');

@@ -1408,7 +1408,8 @@
   let paypalSdk = null;
 
   /* Phone photos of a slip are often over 5 MB, so photos are made smaller (still easy to read) before upload.
-     PDFs are sent as they are. Resolves to the file or a smaller JPEG, whichever is smaller. */
+     A photo is always drawn again as a new JPEG, which also drops the hidden details a phone adds to it (where and
+     when it was taken, the phone model). PDFs are sent as they are. */
   function shrinkSlip(file) {
     if (!/^image\//.test(file.type)) return Promise.resolve(file);
     return new Promise((resolve) => {
@@ -1424,11 +1425,18 @@
         ctx.fillStyle = '#ffffff';
         ctx.fillRect(0, 0, canvas.width, canvas.height);
         ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-        canvas.toBlob((blob) => resolve(blob && blob.size < file.size ? blob : file), 'image/jpeg', 0.85);
+        canvas.toBlob((blob) => resolve(blob || file), 'image/jpeg', 0.85);
       };
       img.onerror = () => { URL.revokeObjectURL(url); resolve(file); };
       img.src = url;
     });
+  }
+
+  /* Slips are saved under a random name, so the file name from the phone (often a date or a name) is not kept. */
+  function slipName(slip) {
+    const ext = { 'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp', 'application/pdf': 'pdf' }[slip.type] || 'jpg';
+    const id = Array.from(window.crypto.getRandomValues(new Uint8Array(16)), (b) => b.toString(16).padStart(2, '0')).join('');
+    return `${id}.${ext}`;
   }
 
   /* The server refuses a slip (row-level security) once an account has uploaded 20 slips in a day. */
@@ -1612,9 +1620,7 @@
       if (file) {
         const slip = await shrinkSlip(file);
         if (slip.size > RECEIPT_MAX) throw new Error('That photo is too large even after making it smaller. Try a smaller photo or a screenshot.');
-        let safeName = file.name.toLowerCase().replace(/[^a-z0-9.]+/g, '-').slice(-60);
-        if (slip !== file) safeName = safeName.replace(/\.[a-z0-9]+$/, '') + '.jpg';
-        receiptPath = `${session.user.id}/${Date.now()}-${safeName}`;
+        receiptPath = `${session.user.id}/${slipName(slip)}`;
         const { error: uploadError } = await sb.storage.from('receipts').upload(receiptPath, slip, { contentType: slip.type || file.type });
         if (uploadError) throw new Error(slipUploadMessage(uploadError));
       }
