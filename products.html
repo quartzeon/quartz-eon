@@ -115,6 +115,29 @@
         <input type="hidden" name="productId" value="">
 
         <section class="dash-card">
+          <h2 class="dash-card__title">What are you selling?</h2>
+          <p class="admin-lead">Pick the category first. The rest of this page changes to fit it.</p>
+          <div class="auth__form">
+            <div class="field">
+              <label for="pp-category">Category</label>
+              <select id="pp-category" name="category"></select>
+            </div>
+          </div>
+          <span class="pp-label pp-label--gap">How customers buy</span>
+          <div class="pp-themes" role="radiogroup" aria-label="How customers buy">
+            <label class="pp-theme"><input type="radio" name="saleMode" value="checkout" checked>
+              <span class="pp-theme__name">Buy on Quartz Eon</span>
+              <span class="pp-theme__text">A Buy button. The customer pays you by bank transfer and uploads the slip, you approve it, and they get the product in My orders.</span>
+            </label>
+            <label class="pp-theme"><input type="radio" name="saleMode" value="contact">
+              <span class="pp-theme__name">Customers contact me</span>
+              <span class="pp-theme__text">No Buy button. The customer gets WhatsApp and Telegram buttons and you sell to them directly in the chat.</span>
+            </label>
+          </div>
+          <p class="note" id="pp-contact-note" hidden>Add your WhatsApp number or Telegram username in <a href="seller.html#store-card">Your store</a> on your dashboard first, or customers will have no way to reach you.</p>
+        </section>
+
+        <section class="dash-card">
           <h2 class="dash-card__title">Page style</h2>
           <p class="admin-lead">Choose how this product looks to customers.</p>
           <div class="pp-themes" role="radiogroup" aria-label="Page style">
@@ -188,24 +211,7 @@
               <p class="field__error" id="pp-photo-error" hidden></p>
             </div>
 
-            <div class="field-row">
-              <div class="field">
-                <label for="pp-category">Category</label>
-                <select id="pp-category" name="category"></select>
-              </div>
-              <div class="field">
-                <label for="pp-icon">Shown as (when there is no photo)</label>
-                <select id="pp-icon" name="icon">
-                  <option value="vpn">VPN access</option>
-                  <option value="layout">Template</option>
-                  <option value="book">E-book</option>
-                  <option value="course">Course / video</option>
-                  <option value="code">Software</option>
-                  <option value="shapes">Design asset</option>
-                </select>
-              </div>
-            </div>
-            <div class="field">
+            <div class="field" id="pp-type-field">
               <label for="pp-type">File type label</label>
               <input id="pp-type" name="type" type="text" maxlength="12" placeholder="PDF, ZIP, MP4…">
               <p class="field__hint">Optional. Leave empty and customers will not see a file type.</p>
@@ -243,7 +249,7 @@
 
         <section class="dash-card" id="pp-vpn-card" hidden>
           <h2 class="dash-card__title">VPN plan</h2>
-          <p class="admin-lead">How long a VPN account lasts and how much data it allows. Every purchase creates one on your panel automatically.</p>
+          <p class="admin-lead" id="pp-vpn-lead">How long a VPN account lasts and how much data it allows. Every purchase creates one on your panel automatically.</p>
           <div class="auth__form" id="pp-vpn-simple">
             <div class="field-row">
               <div class="field">

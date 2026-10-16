@@ -509,7 +509,7 @@
         ${showSeller ? `<p class="product__seller">by ${seller.slug ? `<a href="#/store/${esc(seller.slug)}">${esc(seller.name)}</a>${verifiedBadge(seller)}` : esc(seller.name)}</p>` : ''}
         <div class="pc__foot">
           <a class="link" href="${href}">Details &rarr;</a>
-          <a class="btn ${p.soldOut ? 'btn--ghost' : 'btn--ink'} pc__buy" href="${href}">${p.soldOut ? 'Sold out' : 'Buy now'}</a>
+          <a class="btn ${p.soldOut ? 'btn--ghost' : 'btn--ink'} pc__buy" href="${href}">${p.soldOut ? 'Sold out' : p.saleMode === 'contact' ? 'Contact to buy' : 'Buy now'}</a>
         </div>
       </article>`;
   }
@@ -536,7 +536,7 @@
           ${sellerLine}
           <div class="product__buy">
             <p class="product__price">${priceHtml(p)}</p>
-            <a class="btn ${p.soldOut ? 'btn--ghost' : 'btn--ink'} btn--sm" href="${href}" aria-label="${p.soldOut ? 'See' : 'Buy'} ${esc(p.name)}">${p.soldOut ? 'Details' : 'Buy'}</a>
+            <a class="btn ${p.soldOut ? 'btn--ghost' : 'btn--ink'} btn--sm" href="${href}" aria-label="${p.soldOut ? 'See' : p.saleMode === 'contact' ? 'Contact the seller about' : 'Buy'} ${esc(p.name)}">${p.soldOut ? 'Details' : p.saleMode === 'contact' ? 'Contact' : 'Buy'}</a>
           </div>
         </div>
       </article>`;
@@ -577,6 +577,7 @@
         options: Array.isArray(p.options) ? p.options : [],
         stockLeft: p.stock_left == null ? null : p.stock_left,
         soldOut: !!p.sold_out,
+        saleMode: p.sale_mode === 'contact' ? 'contact' : 'checkout',
         vpnDays: p.vpn_days,
         vpnGb: p.vpn_data_gb,
         theme: p.theme === 'plan' ? 'plan' : 'standard',
@@ -699,6 +700,8 @@
   /* On a product page: ready-made WhatsApp and Telegram buttons to ask the seller about this product. */
   function sellerContactHtml(seller, product) {
     if (!seller.whatsapp && !seller.telegram) return '';
+    /* Contact sales already have the order buttons up top; only who is online is left to show here. */
+    if (product.saleMode === 'contact') return `<div class="contact">${presenceHtml(seller, false)}</div>`;
     const message = encodeURIComponent(`Hi, I am interested in "${product.name}" on ${CFG.storeName}.`);
     return `
       <div class="contact">
@@ -968,10 +971,27 @@
     return { text: 'Buy now', disabled: false };
   }
 
+  /* A "contact" product has no Buy button: the customer orders from the seller on WhatsApp or Telegram,
+     with a ready-made message naming the product and the chosen option. */
+  function orderButtonsHtml(p) {
+    const seller = sellerOf(p);
+    const state = purchaseState(p);
+    if (state.disabled) return `<button class="btn btn--ink btn--block pd__buy" type="button" disabled>${state.text}</button>`;
+    if (!seller.whatsapp && !seller.telegram) return '<button class="btn btn--ink btn--block pd__buy" type="button" disabled>The seller has not added a contact yet</button>';
+    const option = page.option === null ? null : p.options[page.option];
+    const link = `${window.location.origin}${window.location.pathname}#/product/${p.id}`;
+    const message = encodeURIComponent(`Hi, I would like to buy "${p.name}"${option ? ` (${option.label})` : ''} from your store on ${CFG.storeName}.\n${link}`);
+    return `
+      ${seller.whatsapp ? `<a class="btn btn--ink pd__buy" href="https://wa.me/${esc(seller.whatsapp)}?text=${message}" target="_blank" rel="noopener noreferrer">${brandIcon('whatsapp')}<span>Order on WhatsApp</span></a>` : ''}
+      ${seller.telegram ? `<a class="btn btn--ink pd__buy" href="https://t.me/${esc(seller.telegram)}?text=${message}" target="_blank" rel="noopener noreferrer">${brandIcon('telegram')}<span>Order on Telegram</span></a>` : ''}`;
+  }
+
   function updatePurchase(p) {
     const price = byId('pd-price');
     const button = byId('pd-buy');
+    const order = byId('pd-order');
     if (price) price.innerHTML = priceHtml(p, page.option);
+    if (order) order.innerHTML = orderButtonsHtml(p);
     if (button) {
       const state = purchaseState(p);
       button.textContent = state.text;
@@ -1029,14 +1049,19 @@
           </label>`).join('')}
       </fieldset>` : '';
 
+    const contactSale = p.saleMode === 'contact';
     const perks = [
-      'Delivered to your account once payment is confirmed',
+      contactSale ? `Order and pay ${seller.name} directly on WhatsApp or Telegram` : 'Delivered to your account once payment is confirmed',
+      contactSale ? `${CFG.storeName} does not take part in this payment, so agree on the details with the seller` : '',
       p.icon === 'vpn' && !p.options.length ? planText(p.vpnDays, p.vpnGb) : '',
       p.type ? `File type: ${p.type}` : '',
       `Sold by ${seller.name}`
     ].filter(Boolean);
 
     const state = purchaseState(p);
+    const buyHtml = contactSale
+      ? `<div class="pd__order" id="pd-order">${orderButtonsHtml(p)}</div>`
+      : `<button class="btn btn--ink btn--block pd__buy${p.theme === 'plan' ? ' pc__buy' : ''}" type="button" id="pd-buy" ${state.disabled ? 'disabled' : ''}>${state.text}</button>`;
 
     /* The "plan card" style: a logo, a badge, key figures, detail lines with icons, then the Buy button. */
     if (p.theme === 'plan') {
@@ -1061,7 +1086,7 @@
               ${p.info.length ? `<ul class="pc__info">${p.info.map((row) => `<li>${icon(`i-${esc(row.icon)}`)}<span>${esc(row.text)}</span></li>`).join('')}</ul>` : ''}
               ${!p.options.length && !p.soldOut && p.stockLeft != null ? `<p class="pd__stock">${p.stockLeft === 1 ? 'Only 1 left' : `${p.stockLeft} left`}</p>` : ''}
               ${options}
-              <button class="btn btn--ink btn--block pd__buy pc__buy" type="button" id="pd-buy" ${state.disabled ? 'disabled' : ''}>${state.text}</button>
+              ${buyHtml}
               ${p.description ? `<div class="pd__desc">${paragraphs(p.description)}</div>` : ''}
               <ul class="buy__list">${perks.map((text) => `<li>${icon('i-check')}<span>${esc(text)}</span></li>`).join('')}</ul>${contactHtml}
             </article>
@@ -1086,7 +1111,7 @@
               <p class="product__price pd__price" id="pd-price">${priceHtml(p, page.option)}</p>
               ${!p.options.length && !p.soldOut && p.stockLeft != null ? `<p class="pd__stock">${p.stockLeft === 1 ? 'Only 1 left' : `${p.stockLeft} left`}</p>` : ''}
               ${options}
-              <button class="btn btn--ink btn--block pd__buy" type="button" id="pd-buy" ${state.disabled ? 'disabled' : ''}>${state.text}</button>
+              ${buyHtml}
               ${p.description ? `<div class="pd__desc">${paragraphs(p.description)}</div>` : ''}
               <ul class="buy__list">${perks.map((text) => `<li>${icon('i-check')}<span>${esc(text)}</span></li>`).join('')}</ul>${contactHtml}
             </div>
@@ -1174,7 +1199,7 @@
       });
       return;
     }
-    if (event.target.closest('#pd-buy') && !purchaseState(p).disabled) startCheckout(p.id, page.option);
+    if (event.target.closest('#pd-buy') && p.saleMode !== 'contact' && !purchaseState(p).disabled) startCheckout(p.id, page.option);
   });
   /* ---------- Checkout: log in first, then pay by PayPal or bank transfer ---------- */
   const PAYPAL_ON = !!CFG.paypalClientId;

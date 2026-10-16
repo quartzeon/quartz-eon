@@ -223,7 +223,13 @@
   const ICONS = [['bolt', 'Lightning'], ['server', 'Server'], ['info', 'Info'], ['shield', 'Shield'], ['clock', 'Clock'], ['check', 'Tick'], ['star', 'Star'], ['globe', 'Globe'], ['gift', 'Gift']];
   const theme = () => (form.elements.theme.value === 'plan' ? 'plan' : 'standard');
 
-  const isVpn = () => form.elements.icon.value === 'vpn';
+  /* The category decides the picture shown when there are no photos, and whether it is VPN access (delivered to the seller's panel). */
+  const ICON_BY_CATEGORY = { 'VPN': 'vpn', 'E-books': 'book', 'Courses': 'course', 'Software': 'code', 'Design assets': 'shapes' };
+  const iconFor = (category) => ICON_BY_CATEGORY[category] || 'layout';
+  const isVpn = () => form.elements.category.value === 'VPN';
+  /* "contact": no Buy button, the customer contacts the seller on WhatsApp or Telegram instead. */
+  const isContact = () => form.elements.saleMode.value === 'contact';
+  const sellerHasContact = () => !!sellerRow && !!(sellerRow.contact_whatsapp || sellerRow.contact_telegram);
 
   /* ---------- VPN client settings (used when a client is created on the seller's panel) ---------- */
   let hasPanel = null; // whether the seller saved their panel connection; null until known
@@ -299,7 +305,7 @@
       form.elements.name.value = p.name;
       form.elements.description.value = p.description || '';
       form.elements.category.value = p.category;
-      form.elements.icon.value = p.icon;
+      form.elements.saleMode.value = p.sale_mode === 'contact' ? 'contact' : 'checkout';
       form.elements.type.value = p.type || '';
       form.elements.price.value = p.price;
       form.elements.stock.value = p.stock == null ? '' : p.stock;
@@ -418,27 +424,25 @@
     byId('pp-simple-price').hidden = hasOptions;
     byId('pp-plan-card').hidden = theme() !== 'plan';
     byId('pp-photos-field').hidden = theme() === 'plan';
+    /* VPN: the plan and (when sold here) the panel settings. Anything else: the delivery text and file. Contact sales deliver nothing here. */
     byId('pp-vpn-card').hidden = !isVpn();
-    byId('pp-vpn-client-card').hidden = !isVpn();
+    byId('pp-vpn-lead').hidden = isContact();
+    byId('pp-vpn-client-card').hidden = !isVpn() || isContact();
     byId('pp-vpn-panel-note').hidden = !(isVpn() && hasPanel === false);
-    byId('pp-delivery-card').hidden = isVpn();
+    byId('pp-delivery-card').hidden = isVpn() || isContact();
+    byId('pp-type-field').hidden = isVpn();
+    byId('pp-contact-note').hidden = !(isContact() && !sellerHasContact());
     byId('pp-vpn-simple').hidden = hasOptions;
     byId('pp-vpn-options-note').hidden = !(isVpn() && hasOptions);
     byId('pp-add-option').hidden = opts.length >= MAX_OPTIONS;
     byId('pp-add-option').querySelector('span').textContent = hasOptions ? 'Add another option' : 'Add options instead (for example 30 days, 60 days)';
   }
 
-  form.elements.icon.addEventListener('change', () => {
-    const category = form.elements.category;
-    if (isVpn() && Array.from(category.options).some((o) => o.value === 'VPN')) category.value = 'VPN';
-    renderOptions();
-    syncSections();
-  });
   form.elements.category.addEventListener('change', () => {
-    if (form.elements.category.value === 'VPN') form.elements.icon.value = 'vpn';
     renderOptions();
     syncSections();
   });
+  form.querySelectorAll('input[name="saleMode"]').forEach((radio) => radio.addEventListener('change', syncSections));
   form.addEventListener('input', (event) => {
     if (event.target.getAttribute && event.target.getAttribute('aria-invalid') === 'true') showFieldError(event.target, '');
   });
@@ -799,7 +803,11 @@
       if (cleanStats.some((s) => !s.value)) { showBox('pp-plan-error', 'Every key figure needs a value.'); ok = false; }
       else if (!logo) { showBox('pp-plan-error', 'Add a logo or icon for the plan card (or choose the Photos style).'); ok = false; }
     }
-    const vpnSettings = vpn ? readVpnSettings() : {};
+    /* Contact sales deliver nothing here, so the saved delivery text, file and panel settings are kept as they were
+       (earlier buyers keep their download, and switching back to the Buy button restores them). */
+    const contact = isContact();
+    const saved = (contact && products.find((p) => p.id === f.productId.value)) || null;
+    const vpnSettings = contact ? (saved && saved.vpn_settings) || {} : vpn ? readVpnSettings() : {};
     if (!vpnSettings) ok = false;
     if (uploading) { showBox('pp-form-error', fileUploading ? 'Wait for the file to finish uploading.' : 'Wait for the photos to finish uploading.'); ok = false; }
     if (!ok) return;
@@ -808,8 +816,9 @@
       name,
       description: f.description.value.trim(),
       category: f.category.value,
-      icon: f.icon.value,
-      type: f.type.value.trim().slice(0, 12),
+      icon: iconFor(f.category.value),
+      sale_mode: contact ? 'contact' : 'checkout',
+      type: vpn ? '' : f.type.value.trim().slice(0, 12),
       price,
       stock: opts.length ? null : stock,
       options,
@@ -822,9 +831,9 @@
       sold_out: f.soldOut.checked,
       show_stock: f.showStock.checked,
       status: f.hidden.checked ? 'hidden' : 'active',
-      delivery_info: vpn ? '' : f.deliveryInfo.value.trim(),
-      delivery_file: !vpn && file ? file.path : null,
-      delivery_file_name: !vpn && file ? file.name : '',
+      delivery_info: contact ? (saved && saved.delivery_info) || '' : vpn ? '' : f.deliveryInfo.value.trim(),
+      delivery_file: contact ? (saved && saved.delivery_file) || null : !vpn && file ? file.path : null,
+      delivery_file_name: contact ? (saved && saved.delivery_file_name) || '' : !vpn && file ? file.name : '',
       vpn_days: vpn && !opts.length ? vpnDays : 30,
       vpn_data_gb: vpn && !opts.length ? vpnGb : 0,
       vpn_settings: vpnSettings
