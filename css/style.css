@@ -522,6 +522,15 @@ section[id] { scroll-margin-top: 76px; }
 .grid .rating { flex-wrap: wrap; row-gap: 2px; }
 .grid .rating > span:not(.stars) { white-space: nowrap; }
 
+/* ---------- Tile tilt ---------- */
+/* app.js sets --tilt-x/--tilt-y while a mouse is over a tile (mouse only, not with reduced motion). It eases back
+   slowly when the pointer leaves. */
+.grid > .product, .grid > .pc--tile, .seller-chip { transition: transform .5s cubic-bezier(.2, .7, .2, 1); }
+.is-tilting {
+  transform: perspective(700px) rotateX(var(--tilt-x, 0deg)) rotateY(var(--tilt-y, 0deg)) translateY(-3px);
+  transition-duration: .15s;
+}
+
 /* ---------- Loading skeleton ---------- */
 /* Grey shapes in place of tiles and chips while the catalogue loads. A soft light sweeps across them. */
 .sk {
@@ -727,6 +736,27 @@ dialog::backdrop { background: rgb(8 12 16 / .55); }
   background: rgb(8 7 16 / .94); color: #fff; overflow: hidden;
 }
 .lightbox::backdrop { background: rgb(8 7 16 / .6); }
+/* Glass: the shop shows through, blurred, behind the photo; buttons and the counter are frosted pills.
+   Browsers without backdrop-filter keep the solid colours above. */
+@supports ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .lightbox {
+    background: rgb(8 7 16 / .62);
+    -webkit-backdrop-filter: blur(28px) saturate(150%); backdrop-filter: blur(28px) saturate(150%);
+  }
+  .lightbox::backdrop { background: transparent; }
+  .lightbox .lightbox__btn, .lightbox .lightbox__bar {
+    border: 1px solid rgb(255 255 255 / .22);
+    background: linear-gradient(160deg, rgb(255 255 255 / .2), rgb(255 255 255 / .06));
+    box-shadow: inset 0 1px 0 rgb(255 255 255 / .28), 0 8px 24px rgb(0 0 0 / .25);
+    -webkit-backdrop-filter: blur(16px) saturate(170%); backdrop-filter: blur(16px) saturate(170%);
+  }
+  .lightbox .lightbox__btn:hover { border-color: rgb(255 255 255 / .55); background: rgb(255 255 255 / .24); }
+  .lightbox .lightbox__bar {
+    left: 50%; right: auto; translate: -50% 0; width: max-content; max-width: calc(100% - 32px);
+    padding: 9px 16px; border-radius: 999px; color: rgb(255 255 255 / .85);
+  }
+}
+#lb-count:empty { display: none; }
 .lightbox__stage { position: absolute; inset: 0; display: grid; place-items: center; padding: 64px 16px 56px; overflow: hidden; }
 .lightbox__stage img {
   max-width: 100%; max-height: 100%; object-fit: contain; border-radius: 10px; cursor: zoom-in; user-select: none;

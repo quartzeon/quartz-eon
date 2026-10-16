@@ -2366,6 +2366,36 @@
     }
   });
 
+  /* ---------- Tile tilt: with a mouse, a product tile or store chip leans toward the side the pointer is on ---------- */
+  const TILT_SELECTOR = '.grid > .product:not(.sk-tile), .grid > .pc--tile, .seller-chip';
+  const TILT_DEGREES = 8;
+  if (window.matchMedia('(hover: hover) and (pointer: fine)').matches
+    && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    let tilted = null;
+    const untilt = () => {
+      if (!tilted) return;
+      tilted.classList.remove('is-tilting');
+      tilted.style.removeProperty('--tilt-x');
+      tilted.style.removeProperty('--tilt-y');
+      tilted = null;
+    };
+    document.addEventListener('pointermove', (event) => {
+      const tile = event.pointerType === 'mouse' ? event.target.closest(TILT_SELECTOR) : null;
+      if (tile !== tilted) untilt();
+      if (!tile) return;
+      const box = tile.getBoundingClientRect();
+      const x = (event.clientX - box.left) / box.width - 0.5;
+      const y = (event.clientY - box.top) / box.height - 0.5;
+      /* The side under the pointer goes down, as if pressed */
+      tile.style.setProperty('--tilt-x', `${(-y * TILT_DEGREES).toFixed(2)}deg`);
+      tile.style.setProperty('--tilt-y', `${(x * TILT_DEGREES).toFixed(2)}deg`);
+      tile.classList.add('is-tilting');
+      tilted = tile;
+    }, { passive: true });
+    document.documentElement.addEventListener('mouseleave', untilt);
+    window.addEventListener('hashchange', untilt);
+  }
+
   /* ---------- Start ---------- */
   byId('year').textContent = String(new Date().getFullYear());
   paintThemeButton();
