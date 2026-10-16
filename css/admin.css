@@ -142,8 +142,8 @@
 }
 
 /* Ads: the add form, then the list of ads (a poster or product photo as the row picture) */
-#ad-form { max-width: 620px; margin-top: 18px; }
-.ad-form__actions { display: flex; flex-wrap: wrap; gap: 10px; }
-@media (min-width: 641px) { .ad-form__actions .btn { width: auto; } }
+#spot-form { max-width: 620px; margin-top: 18px; }
+.spot-form__actions { display: flex; flex-wrap: wrap; gap: 10px; }
+@media (min-width: 641px) { .spot-form__actions .btn { width: auto; } }
 .admin-list--spaced { margin-top: 32px; border-top: 1px solid var(--line); }
 .seller-row__avatar img { width: 100%; height: 100%; object-fit: cover; border-radius: inherit; }

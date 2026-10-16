@@ -105,7 +105,7 @@
         <button type="button" data-section="products" aria-pressed="false"><svg class="i" aria-hidden="true" focusable="false"><use href="#i-box"/></svg><span>Products</span></button>
         <button type="button" data-section="orders" aria-pressed="false"><svg class="i" aria-hidden="true" focusable="false"><use href="#i-orders"/></svg><span>Orders</span></button>
         <button type="button" data-section="reports" aria-pressed="false"><svg class="i" aria-hidden="true" focusable="false"><use href="#i-flag"/></svg><span>Reports</span></button>
-        <button type="button" data-section="ads" aria-pressed="false"><svg class="i" aria-hidden="true" focusable="false"><use href="#i-megaphone"/></svg><span>Ads</span></button>
+        <button type="button" data-section="spots" aria-pressed="false"><svg class="i" aria-hidden="true" focusable="false"><use href="#i-megaphone"/></svg><span>Ads</span></button>
       </div>
       <div class="dash-nav__group">
         <button type="button" data-section="fees" aria-pressed="false"><svg class="i" aria-hidden="true" focusable="false"><use href="#i-card"/></svg><span>Store fees</span></button>
@@ -186,59 +186,59 @@
       <p class="empty__title admin-empty" id="reports-empty" hidden>No problem reports</p>
     </div>
 
-    <div id="ads-section" hidden>
+    <div id="spots-section" hidden>
       <header class="admin-app__head">
         <div>
           <p class="eyebrow">Owner access</p>
           <h1 class="admin-title">Ads</h1>
         </div>
-        <p class="admin-count" id="ads-count" aria-live="polite"></p>
+        <p class="admin-count" id="spots-count" aria-live="polite"></p>
       </header>
       <p class="admin-lead">When a seller pays you to promote a product, add it here. While the ad runs, the product pops up when a customer opens the shop (once per visit), with a close button at the top right. A tap on the post opens the seller’s store. If several ads run at the same time, the shop shows one of them at random.</p>
 
-      <form class="auth__form" id="ad-form" novalidate>
+      <form class="auth__form" id="spot-form" novalidate>
         <div class="field">
-          <label for="ad-product">Product</label>
-          <select id="ad-product" name="product"></select>
+          <label for="spot-product">Product</label>
+          <select id="spot-product" name="product"></select>
         </div>
         <div class="field">
-          <label for="ad-file">Poster image (optional)</label>
-          <input id="ad-file" name="poster" type="file" accept="image/jpeg,image/png,image/webp">
+          <label for="spot-file">Poster image (optional)</label>
+          <input id="spot-file" name="poster" type="file" accept="image/jpeg,image/png,image/webp">
           <p class="field__hint">The picture the seller wants shown (the whole picture is shown, never cut). Leave empty to use the product’s own photo. When editing an ad, leave empty to keep its current poster.</p>
         </div>
         <div class="field">
-          <label for="ad-title">Headline (optional)</label>
-          <input id="ad-title" name="title" type="text" maxlength="60" placeholder="For example: Fast VPN for less">
+          <label for="spot-title">Headline (optional)</label>
+          <input id="spot-title" name="title" type="text" maxlength="60" placeholder="For example: Fast VPN for less">
           <p class="field__hint">Big words at the top of the popup. Leave empty to use the product name.</p>
         </div>
         <div class="field">
-          <label for="ad-message">Offer line (optional)</label>
-          <input id="ad-message" name="message" type="text" maxlength="160" placeholder="For example: Enjoy 15% off this week only">
+          <label for="spot-message">Offer line (optional)</label>
+          <input id="spot-message" name="message" type="text" maxlength="160" placeholder="For example: Enjoy 15% off this week only">
           <p class="field__hint">One short line under the headline. Leave empty to use the start of the product description.</p>
         </div>
         <div class="field-row">
           <div class="field">
-            <label for="ad-start">Starts</label>
-            <input id="ad-start" name="startsOn" type="date">
+            <label for="spot-start">Starts</label>
+            <input id="spot-start" name="startsOn" type="date">
           </div>
           <div class="field">
-            <label for="ad-end">Ends</label>
-            <input id="ad-end" name="endsOn" type="date">
+            <label for="spot-end">Ends</label>
+            <input id="spot-end" name="endsOn" type="date">
           </div>
         </div>
         <div class="field">
-          <label for="ad-note">Note for you (optional)</label>
-          <input id="ad-note" name="note" type="text" maxlength="200" placeholder="For example: paid Rs. 1000 on 16 Oct">
+          <label for="spot-note">Note for you (optional)</label>
+          <input id="spot-note" name="note" type="text" maxlength="200" placeholder="For example: paid Rs. 1000 on 16 Oct">
         </div>
-        <p class="field__error" id="ad-error" hidden></p>
-        <div class="ad-form__actions">
-          <button class="btn btn--ink" type="submit" id="ad-submit">Add ad</button>
-          <button class="btn btn--ghost" type="button" id="ad-cancel" hidden>Cancel</button>
+        <p class="field__error" id="spot-error" hidden></p>
+        <div class="spot-form__actions">
+          <button class="btn btn--ink" type="submit" id="spot-submit">Add ad</button>
+          <button class="btn btn--ghost" type="button" id="spot-cancel" hidden>Cancel</button>
         </div>
       </form>
 
-      <div class="admin-list admin-list--spaced" id="ads-list"></div>
-      <p class="empty__title admin-empty" id="ads-empty" hidden>No ads yet</p>
+      <div class="admin-list admin-list--spaced" id="spots-list"></div>
+      <p class="empty__title admin-empty" id="spots-empty" hidden>No ads yet</p>
     </div>
 
     <div id="fees-section" hidden>

@@ -867,34 +867,34 @@ button.is-locked { opacity: .55; cursor: not-allowed; }
   .brand__word { display: none; }
 }
 
-/* ---------- Ad popup: a promoted product when the shop opens (js/app.js showAd) ---------- */
-.modal.modal--ad { width: min(840px, calc(100% - 32px)); height: fit-content; max-height: calc(100% - 32px); border-radius: 22px; }
-.modal.modal--ad .dlg { height: auto; max-height: min(92vh, 860px); max-height: min(92dvh, 860px); }
-.ad { display: grid; grid-template-columns: 1fr 1fr; }
-.ad__media { position: relative; display: block; min-height: 440px; overflow: hidden; background: hsl(var(--h) var(--art-s) var(--art-l)); }
-.ad { cursor: pointer; }
-.ad__blur { position: absolute; inset: -24px; background: center / cover no-repeat; filter: blur(22px) brightness(.7); }
-.ad__poster { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; }
-.ad__art { position: absolute; inset: 0; display: grid; place-items: center; color: hsl(var(--h) var(--art-fg-s) var(--art-fg-l)); }
-.ad__art .art { width: 120px; height: 120px; }
-.ad__logo { width: 120px; height: 120px; object-fit: contain; border-radius: 24px; }
-.ad__info { display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 64px 40px 44px; min-width: 0; }
-.ad__label { font: 500 12px/1.4 var(--font-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--ink-3); }
-.ad__name { margin: 12px 0 0; font: 800 clamp(1.7rem, 3.4vw, 2.3rem)/1.08 var(--font-display); letter-spacing: -.025em; text-transform: uppercase; overflow-wrap: anywhere; }
-.ad__rule { display: block; width: 120px; height: 2px; margin: 18px auto 20px; border-radius: 2px; background: var(--ink-line); }
-.ad__message { max-width: 30ch; font-size: 1.2rem; line-height: 1.4; color: var(--ink-2); }
-.ad__product { margin-top: 12px; font-weight: 600; }
-.ad__price { margin-top: 16px; }
-.ad__cta { width: 100%; max-width: 300px; margin-top: 26px; padding-block: 14px; font-size: 1.02rem; }
+/* ---------- Spotlight popup: a promoted product when the shop opens (js/app.js showSpotlight) ---------- */
+.modal.modal--spot { width: min(840px, calc(100% - 32px)); height: fit-content; max-height: calc(100% - 32px); border-radius: 22px; }
+.modal.modal--spot .dlg { height: auto; max-height: min(92vh, 860px); max-height: min(92dvh, 860px); }
+.spot { display: grid; grid-template-columns: 1fr 1fr; }
+.spot__media { position: relative; display: block; min-height: 440px; overflow: hidden; background: hsl(var(--h) var(--art-s) var(--art-l)); }
+.spot { cursor: pointer; }
+.spot__blur { position: absolute; inset: -24px; background: center / cover no-repeat; filter: blur(22px) brightness(.7); }
+.spot__poster { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; }
+.spot__art { position: absolute; inset: 0; display: grid; place-items: center; color: hsl(var(--h) var(--art-fg-s) var(--art-fg-l)); }
+.spot__art .art { width: 120px; height: 120px; }
+.spot__logo { width: 120px; height: 120px; object-fit: contain; border-radius: 24px; }
+.spot__info { display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 64px 40px 44px; min-width: 0; }
+.spot__label { font: 500 12px/1.4 var(--font-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--ink-3); }
+.spot__name { margin: 12px 0 0; font: 800 clamp(1.7rem, 3.4vw, 2.3rem)/1.08 var(--font-display); letter-spacing: -.025em; text-transform: uppercase; overflow-wrap: anywhere; }
+.spot__rule { display: block; width: 120px; height: 2px; margin: 18px auto 20px; border-radius: 2px; background: var(--ink-line); }
+.spot__message { max-width: 30ch; font-size: 1.2rem; line-height: 1.4; color: var(--ink-2); }
+.spot__product { margin-top: 12px; font-weight: 600; }
+.spot__price { margin-top: 16px; }
+.spot__cta { width: 100%; max-width: 300px; margin-top: 26px; padding-block: 14px; font-size: 1.02rem; }
 @media (max-width: 640px) {
-  .modal.modal--ad { width: min(440px, calc(100% - 24px)); }
-  .ad { grid-template-columns: 1fr; }
-  .ad__media { min-height: 0; }
-  .ad__media--art { aspect-ratio: 16 / 9; }
-  .ad__poster { position: relative; display: block; height: auto; max-height: 46vh; max-height: 46dvh; }
-  .ad__info { padding: 24px 22px 26px; }
-  .ad__name { font-size: 1.6rem; }
-  .ad__rule { margin: 14px auto 14px; }
-  .ad__message { font-size: 1.05rem; }
-  .ad__cta { max-width: none; margin-top: 20px; }
+  .modal.modal--spot { width: min(440px, calc(100% - 24px)); }
+  .spot { grid-template-columns: 1fr; }
+  .spot__media { min-height: 0; }
+  .spot__media--art { aspect-ratio: 16 / 9; }
+  .spot__poster { position: relative; display: block; height: auto; max-height: 46vh; max-height: 46dvh; }
+  .spot__info { padding: 24px 22px 26px; }
+  .spot__name { font-size: 1.6rem; }
+  .spot__rule { margin: 14px auto 14px; }
+  .spot__message { font-size: 1.05rem; }
+  .spot__cta { max-width: none; margin-top: 20px; }
 }

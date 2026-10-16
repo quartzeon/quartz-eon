@@ -263,7 +263,7 @@
     byId('reports-section').hidden = chip.dataset.section !== 'reports';
     byId('settings-section').hidden = chip.dataset.section !== 'settings';
     byId('fees-section').hidden = chip.dataset.section !== 'fees';
-    byId('ads-section').hidden = chip.dataset.section !== 'ads';
+    byId('spots-section').hidden = chip.dataset.section !== 'spots';
   });
 
   /* ---------- Products list (moderation: hide, show again, delete) ---------- */
@@ -777,7 +777,7 @@
   const addDays = (n) => { const d = new Date(); d.setDate(d.getDate() + n); return isoDay(d); };
 
   function fillAdForm() {
-    const f = byId('ad-form').elements;
+    const f = byId('spot-form').elements;
     const live = products.filter((p) => p.status === 'active');
     const storeName = (p) => { const s = sellers.find((row) => row.id === p.seller_id); return s ? s.store_name : 'Unknown store'; };
     const chosen = f.product.value;
@@ -803,8 +803,8 @@
     const state = adState(a);
     const picture = a.image || (p && p.images && p.images[0]);
     const toggle = a.active
-      ? `<button class="btn btn--ghost btn--sm" type="button" data-ad-pause="${esc(a.id)}">${icon('i-pause')}<span>Pause</span></button>`
-      : `<button class="btn btn--ink btn--sm" type="button" data-ad-run="${esc(a.id)}">${icon('i-play')}<span>Run</span></button>`;
+      ? `<button class="btn btn--ghost btn--sm" type="button" data-spot-pause="${esc(a.id)}">${icon('i-pause')}<span>Pause</span></button>`
+      : `<button class="btn btn--ink btn--sm" type="button" data-spot-run="${esc(a.id)}">${icon('i-play')}<span>Run</span></button>`;
     return `
       <article class="seller-row" style="--h:${Number(store && store.hue) || 0}">
         <div class="seller-row__main">
@@ -815,24 +815,24 @@
           </div>
         </div>
         <div class="seller-row__actions">
-          <button class="btn btn--ghost btn--sm" type="button" data-ad-edit="${esc(a.id)}">${icon('i-edit')}<span>Edit</span></button>
+          <button class="btn btn--ghost btn--sm" type="button" data-spot-edit="${esc(a.id)}">${icon('i-edit')}<span>Edit</span></button>
           ${toggle}
-          <button class="btn btn--ghost btn--sm" type="button" data-ad-delete="${esc(a.id)}">${icon('i-trash')}<span>Delete</span></button>
+          <button class="btn btn--ghost btn--sm" type="button" data-spot-delete="${esc(a.id)}">${icon('i-trash')}<span>Delete</span></button>
         </div>
       </article>`;
   }
 
   function renderAds() {
-    byId('ads-list').innerHTML = ads.map(adRow).join('');
-    byId('ads-list').hidden = ads.length === 0;
-    byId('ads-empty').hidden = ads.length > 0;
+    byId('spots-list').innerHTML = ads.map(adRow).join('');
+    byId('spots-list').hidden = ads.length === 0;
+    byId('spots-empty').hidden = ads.length > 0;
     const running = ads.filter((a) => adState(a).label === 'Running').length;
-    byId('ads-count').textContent = `${ads.length} ${plural(ads.length, 'ad', 'ads')} · ${running} running`;
+    byId('spots-count').textContent = `${ads.length} ${plural(ads.length, 'ad', 'ads')} · ${running} running`;
   }
 
   async function loadAds() {
     fillAdForm();
-    const { data, error } = await sb.from('ads').select('*').order('created_at', { ascending: false });
+    const { data, error } = await sb.from('spotlights').select('*').order('created_at', { ascending: false });
     if (error) {
       toast(`Could not load ads: ${error.message}`);
       return;
@@ -845,17 +845,17 @@
   let editingAd = null;
 
   function resetAdForm() {
-    const form = byId('ad-form');
+    const form = byId('spot-form');
     editingAd = null;
     form.reset();
-    byId('ad-error').hidden = true;
-    byId('ad-submit').textContent = 'Add ad';
-    byId('ad-cancel').hidden = true;
+    byId('spot-error').hidden = true;
+    byId('spot-submit').textContent = 'Add ad';
+    byId('spot-cancel').hidden = true;
     fillAdForm();
   }
 
   function startAdEdit(ad) {
-    const f = byId('ad-form').elements;
+    const f = byId('spot-form').elements;
     fillAdForm();
     if (![...f.product.options].some((o) => o.value === ad.product_id)) {
       const p = products.find((row) => row.id === ad.product_id);
@@ -869,19 +869,19 @@
     f.title.value = ad.title || '';
     f.message.value = ad.message || '';
     f.note.value = ad.note || '';
-    byId('ad-error').hidden = true;
-    byId('ad-submit').textContent = 'Save changes';
-    byId('ad-cancel').hidden = false;
-    byId('ad-form').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    byId('spot-error').hidden = true;
+    byId('spot-submit').textContent = 'Save changes';
+    byId('spot-cancel').hidden = false;
+    byId('spot-form').scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
 
-  byId('ad-cancel').addEventListener('click', resetAdForm);
+  byId('spot-cancel').addEventListener('click', resetAdForm);
 
-  byId('ad-form').addEventListener('submit', async (event) => {
+  byId('spot-form').addEventListener('submit', async (event) => {
     event.preventDefault();
-    const form = byId('ad-form');
+    const form = byId('spot-form');
     const f = form.elements;
-    const error = byId('ad-error');
+    const error = byId('spot-error');
     const fail = (message) => { error.textContent = message; error.hidden = false; };
     error.hidden = true;
     const file = f.poster.files[0];
@@ -891,13 +891,13 @@
     if (f.endsOn.value < f.startsOn.value) return fail('The end day must be on or after the start day.');
 
     const editing = editingAd;
-    const button = byId('ad-submit');
+    const button = byId('spot-submit');
     button.disabled = true;
     let path = null;
     try {
       if (file) {
         const blob = await shrinkImage(file, 1200);
-        path = `ads/${Date.now()}.jpg`;
+        path = `spotlight/${Date.now()}.jpg`; /* not "ads/": ad blockers hide pictures from such folders */
         const { error: uploadError } = await sb.storage.from(BRAND_BUCKET).upload(path, blob, { contentType: 'image/jpeg' });
         if (uploadError) throw uploadError;
       }
@@ -911,7 +911,7 @@
       };
       if (editing) {
         if (path) fields.image = path; /* no new file: keep the current poster */
-        const { data, error: updateError } = await sb.from('ads').update(fields).eq('id', editing.id).select().maybeSingle();
+        const { data, error: updateError } = await sb.from('spotlights').update(fields).eq('id', editing.id).select().maybeSingle();
         if (updateError) throw updateError;
         if (!data) throw new Error('This ad no longer exists. Reload the page.');
         if (path && editing.image) sb.storage.from(BRAND_BUCKET).remove([editing.image]).catch(() => {});
@@ -920,7 +920,7 @@
         resetAdForm();
         toast('Ad saved');
       } else {
-        const { data, error: insertError } = await sb.from('ads').insert({ ...fields, image: path }).select().maybeSingle();
+        const { data, error: insertError } = await sb.from('spotlights').insert({ ...fields, image: path }).select().maybeSingle();
         if (insertError) throw insertError;
         ads.unshift(data);
         renderAds();
@@ -935,18 +935,18 @@
     }
   });
 
-  byId('ads-list').addEventListener('click', async (event) => {
-    const pause = event.target.closest('[data-ad-pause]');
-    const run = event.target.closest('[data-ad-run]');
-    const del = event.target.closest('[data-ad-delete]');
-    const edit = event.target.closest('[data-ad-edit]');
-    const id = (pause && pause.dataset.adPause) || (run && run.dataset.adRun) || (del && del.dataset.adDelete) || (edit && edit.dataset.adEdit);
+  byId('spots-list').addEventListener('click', async (event) => {
+    const pause = event.target.closest('[data-spot-pause]');
+    const run = event.target.closest('[data-spot-run]');
+    const del = event.target.closest('[data-spot-delete]');
+    const edit = event.target.closest('[data-spot-edit]');
+    const id = (pause && pause.dataset.spotPause) || (run && run.dataset.spotRun) || (del && del.dataset.spotDelete) || (edit && edit.dataset.spotEdit);
     const ad = ads.find((a) => a.id === id);
     if (!ad) return;
     if (edit) { startAdEdit(ad); return; }
     if (del) {
       if (!window.confirm('Delete this ad? It stops showing in the shop.')) return;
-      const { error } = await sb.from('ads').delete().eq('id', ad.id);
+      const { error } = await sb.from('spotlights').delete().eq('id', ad.id);
       if (error) { toast(`Could not delete: ${error.message}`); return; }
       if (ad.image) sb.storage.from(BRAND_BUCKET).remove([ad.image]).catch(() => {});
       ads = ads.filter((a) => a.id !== ad.id);
@@ -956,7 +956,7 @@
       return;
     }
     const active = Boolean(run);
-    const { error } = await sb.from('ads').update({ active }).eq('id', ad.id);
+    const { error } = await sb.from('spotlights').update({ active }).eq('id', ad.id);
     if (error) { toast(`Could not save: ${error.message}`); return; }
     ad.active = active;
     renderAds();
