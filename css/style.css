@@ -281,6 +281,30 @@ section[id] { scroll-margin-top: 76px; }
   letter-spacing: -.04em; text-wrap: balance;
 }
 .search { position: relative; display: flex; align-items: center; flex: 1 1 320px; max-width: 460px; }
+/* Four short reasons to trust the shop, under the title and search */
+.trust {
+  display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px 24px;
+  margin-top: clamp(22px, 3vw, 32px); padding-top: clamp(18px, 2.5vw, 24px);
+  border-top: 1px solid hsl(var(--h) 40% 45% / .16);
+}
+.trust li { display: flex; align-items: center; gap: 12px; min-width: 0; }
+.trust__icon {
+  display: grid; place-items: center; flex: none; width: 40px; height: 40px; border-radius: 50%;
+  background: var(--card); color: hsl(var(--h) var(--dot-s) var(--dot-l));
+}
+.trust__icon .i { width: 20px; height: 20px; }
+.trust__text { display: grid; gap: 3px; min-width: 0; }
+.trust__text strong { font-size: 14.5px; font-weight: 600; line-height: 1.2; color: var(--ink); }
+.trust__text small { font-size: 13px; line-height: 1.35; color: var(--ink-2); }
+@media (max-width: 960px) { .trust { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 560px) {
+  .trust { gap: 10px 12px; }
+  .trust li { gap: 8px; }
+  .trust__icon { width: 32px; height: 32px; }
+  .trust__icon .i { width: 16px; height: 16px; }
+  .trust__text strong { font-size: 13px; }
+  .trust__text small { display: none; }
+}
 .search .i {
   position: absolute; left: 16px; top: 50%; width: 18px; height: 18px; transform: translateY(-50%);
   color: var(--ink-3); pointer-events: none;
@@ -303,6 +327,20 @@ section[id] { scroll-margin-top: 76px; }
 .chip small { font: 500 11px/1 var(--font-mono); opacity: .75; }
 .chip:hover { border-color: var(--ink); color: var(--ink); }
 .chip[aria-pressed="true"] { background: var(--ink); border-color: var(--ink); color: var(--paper); }
+@media (max-width: 640px) {
+  .chips {
+    flex: 1 1 100%; flex-wrap: nowrap; min-width: 0; overflow-x: auto; scrollbar-width: none;
+    margin-inline: calc(-1 * var(--gutter)); padding-inline: var(--gutter); scroll-padding-inline: var(--gutter);
+  }
+  .chips::-webkit-scrollbar { display: none; }
+  .chips > * { flex: none; }
+  .chips.fade-r { -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 44px), transparent); mask-image: linear-gradient(to right, #000 calc(100% - 44px), transparent); }
+  .chips.fade-l { -webkit-mask-image: linear-gradient(to left, #000 calc(100% - 44px), transparent); mask-image: linear-gradient(to left, #000 calc(100% - 44px), transparent); }
+  .chips.fade-l.fade-r {
+    -webkit-mask-image: linear-gradient(to right, transparent, #000 44px, #000 calc(100% - 44px), transparent);
+    mask-image: linear-gradient(to right, transparent, #000 44px, #000 calc(100% - 44px), transparent);
+  }
+}
 
 .select { position: relative; display: flex; align-items: center; }
 .select select {
@@ -458,6 +496,29 @@ section[id] { scroll-margin-top: 76px; }
 .pd-option__stock { grid-column: 2 / -1; font: 500 12px/1.2 var(--font-mono); color: var(--ink-3); }
 .pd-option__stock:empty { display: none; }
 @media (max-width: 760px) { .pd { grid-template-columns: minmax(0, 1fr); } }
+@media (min-width: 761px) {
+  .pd__gallery, .pd__info { position: sticky; top: 88px; }
+}
+
+/* 3. Phones: price and Buy button at the bottom of a product page once the main button scrolls away (app.js) */
+.buybar {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 25;
+  padding: 10px 0 calc(10px + env(safe-area-inset-bottom, 0px));
+  border-top: 1px solid var(--line); background: var(--card);
+  box-shadow: 0 -14px 34px -20px rgb(15 12 30 / .4);
+}
+.buybar__row { display: flex; align-items: center; gap: 12px; }
+.buybar__text { display: grid; gap: 4px; flex: 1 1 auto; min-width: 0; }
+.buybar__name { overflow: hidden; font-size: 13px; color: var(--ink-2); white-space: nowrap; text-overflow: ellipsis; }
+.buybar__price { display: flex; align-items: baseline; gap: 8px; min-width: 0; overflow: hidden; white-space: nowrap; }
+.buybar__price .price { font-size: 20px; }
+.buybar__price .usd { overflow: hidden; text-overflow: ellipsis; font-size: 12px; }
+.buybar__btn { flex: none; min-height: 46px; padding: 0 22px; border-radius: 999px; }
+body.has-buybar { padding-bottom: calc(68px + env(safe-area-inset-bottom, 0px)); }
+@keyframes buybar-in { from { transform: translateY(100%); } }
+@media (prefers-reduced-motion: no-preference) {
+  .buybar:not([hidden]) { animation: buybar-in .22s ease-out; }
+}
 
 /* ---------- Plan card (logo, badge, key figures, detail lines) ---------- */
 .product__logo { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; padding: 18%; background: #fff; }
@@ -749,6 +810,13 @@ section[id] { scroll-margin-top: 76px; }
 .seller-chip__count { font-size: 12px; color: var(--ink-2); }
 .empty { display: grid; justify-items: start; gap: 12px; padding: 48px 0; color: var(--ink-2); }
 .empty__title { font: 700 24px/1.1 var(--font-display); letter-spacing: -.02em; color: var(--ink); }
+.empty:has(> .empty__icon) { justify-items: center; padding: 56px 16px; text-align: center; }
+.empty:has(> .empty__icon) > p:not(.empty__title) { max-width: 46ch; }
+.empty__icon {
+  display: grid; place-items: center; width: 72px; height: 72px; margin-bottom: 4px; border-radius: 50%;
+  background: hsl(var(--h) var(--art-s) var(--art-l)); color: hsl(var(--h) var(--art-fg-s) var(--art-fg-l));
+}
+.empty__icon .i { width: 32px; height: 32px; }
 .rate { max-width: 70ch; padding-bottom: 64px; font: 400 13px/1.6 var(--font-mono); color: var(--ink-3); }
 
 /* ---------- Seller store page ---------- */
@@ -1006,6 +1074,47 @@ button.is-locked { opacity: .55; cursor: not-allowed; }
 .footer__links { display: flex; flex-wrap: wrap; gap: 6px 20px; }
 .footer__links a { color: var(--footer-ink-2); text-underline-offset: 3px; }
 .footer__links a:hover { color: var(--footer-ink); }
+.footer__about { max-width: 36ch; }
+.footer__mail { display: inline-block; margin-top: 12px; color: var(--footer-ink); font-size: 14px; text-underline-offset: 3px; }
+.footer__cols { display: grid; grid-template-columns: repeat(3, minmax(120px, auto)); gap: 24px clamp(32px, 6vw, 80px); }
+.footer__head { margin-bottom: 14px; font: 500 12px/1.2 var(--font-mono); letter-spacing: .09em; text-transform: uppercase; color: var(--footer-ink-2); }
+.footer__col ul { display: grid; gap: 10px; }
+.footer__col a { color: var(--footer-ink); font-size: 15px; text-decoration: none; }
+.footer__col a:hover, .footer a[aria-current="page"] { text-decoration: underline; text-underline-offset: 3px; }
+.footer__links a[aria-current="page"] { color: var(--footer-ink); }
+.footer__links .footer__up { font-size: inherit; color: var(--footer-ink); }
+@media (max-width: 640px) {
+  .footer__cols { grid-template-columns: repeat(2, minmax(0, 1fr)); width: 100%; }
+}
+
+/* 6. Shop home: how buying works in three steps, then a banner for sellers */
+.how { --h: 234; border-top: 1px solid var(--line); }
+.how__steps { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 28px clamp(24px, 4vw, 48px); margin: 28px 0 0; padding: 0; list-style: none; }
+.how__step { display: grid; align-content: start; gap: 8px; min-width: 0; }
+.how__num {
+  display: grid; place-items: center; width: 42px; height: 42px; margin-bottom: 6px; border-radius: 50%;
+  background: hsl(var(--h) var(--art-s) var(--art-l)); color: hsl(var(--h) var(--art-fg-s) var(--art-fg-l));
+  font: 700 18px/1 var(--font-display);
+}
+.how__title { font: 700 20px/1.15 var(--font-display); letter-spacing: -.02em; }
+.how__step p { max-width: 38ch; color: var(--ink-2); }
+@media (max-width: 760px) {
+  .how__steps { grid-template-columns: minmax(0, 1fr); gap: 22px; }
+  .how__step { grid-template-columns: 42px minmax(0, 1fr); column-gap: 14px; row-gap: 4px; }
+  .how__num { grid-row: span 2; margin: 0; }
+}
+.sell-cta {
+  display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 18px 32px;
+  margin-top: clamp(32px, 5vw, 52px); padding: clamp(22px, 3.5vw, 36px);
+  border: 1px solid var(--footer-line); border-radius: var(--radius-l); background: var(--footer-bg); color: var(--footer-ink);
+}
+.sell-cta__text { flex: 1 1 320px; min-width: 0; }
+.sell-cta__title { font: 700 clamp(1.35rem, 1.1rem + 1vw, 1.8rem)/1.1 var(--font-display); letter-spacing: -.02em; }
+.sell-cta__text p { max-width: 54ch; margin-top: 8px; color: var(--footer-ink-2); }
+.sell-cta__btn { background: var(--footer-ink); color: var(--footer-bg); }
+.sell-cta__btn:hover { background: #fff; color: var(--footer-bg); }
+.sell-cta__btn .i { width: 18px; height: 18px; }
+
 /* The slim footer on the dashboards and legal pages has no top part */
 .footer--slim { padding-block: 0 24px; }
 .footer--slim .footer__base { margin-top: 0; border-top: 0; }

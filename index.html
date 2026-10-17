@@ -181,6 +181,14 @@
         <input id="q" type="search" placeholder="Search VPN plans, accounts, e-books" autocomplete="off">
       </div>
     </div>
+    <div class="wrap">
+      <ul class="trust" aria-label="Why buy here">
+        <li><span class="trust__icon"><svg class="i" aria-hidden="true" focusable="false"><use href="#i-shield"/></svg></span><span class="trust__text"><strong>Reviewed stores</strong><small>Every store is checked before it opens</small></span></li>
+        <li><span class="trust__icon"><svg class="i" aria-hidden="true" focusable="false"><use href="#i-bolt"/></svg></span><span class="trust__text"><strong>Pay the seller directly</strong><small>Bank transfer to the seller's own account</small></span></li>
+        <li><span class="trust__icon"><svg class="i" aria-hidden="true" focusable="false"><use href="#i-bag"/></svg></span><span class="trust__text"><strong>Delivered online</strong><small>Find it in My orders after payment</small></span></li>
+        <li><span class="trust__icon"><svg class="i" aria-hidden="true" focusable="false"><use href="#i-info"/></svg></span><span class="trust__text"><strong>Help on every order</strong><small>Report a problem and we hear about it at once</small></span></li>
+      </ul>
+    </div>
   </section>
 
   <section id="shop" class="sec tone tone--paper" aria-labelledby="shop-title">
@@ -208,12 +216,44 @@
       <div class="sellers-strip" id="sellers-strip" hidden></div>
       <div class="grid" id="grid"></div>
       <div class="empty" id="empty" hidden>
+        <span class="empty__icon" aria-hidden="true"><svg class="i" aria-hidden="true" focusable="false"><use href="#i-search"/></svg></span>
         <p class="empty__title" id="empty-title">Loading products</p>
         <p id="empty-text">One moment.</p>
         <button class="btn btn--ink" type="button" id="clear-filters" hidden>Clear filters</button>
         <button class="btn btn--ink" type="button" id="retry-load" hidden>Try again</button>
       </div>
       <noscript><p class="note">The shop needs JavaScript to show products. Please turn it on and reload the page.</p></noscript>
+    </div>
+  </section>
+
+  <section class="sec how" aria-labelledby="how-title">
+    <div class="wrap">
+      <p class="eyebrow">How it works</p>
+      <h2 class="h2" id="how-title">Buy in three steps</h2>
+      <ol class="how__steps">
+        <li class="how__step">
+          <span class="how__num" aria-hidden="true">1</span>
+          <h3 class="how__title">Pick a product</h3>
+          <p>Compare stores and prices. Every product shows its seller, stock and reviews.</p>
+        </li>
+        <li class="how__step">
+          <span class="how__num" aria-hidden="true">2</span>
+          <h3 class="how__title">Pay the seller</h3>
+          <p>Transfer the amount to the seller's own bank account and upload a photo of the slip.</p>
+        </li>
+        <li class="how__step">
+          <span class="how__num" aria-hidden="true">3</span>
+          <h3 class="how__title">Get it online</h3>
+          <p>Once the seller confirms, your login, code, file or VPN link is waiting in My orders.</p>
+        </li>
+      </ol>
+      <div class="sell-cta">
+        <div class="sell-cta__text">
+          <h3 class="sell-cta__title">Have digital products to sell?</h3>
+          <p>Open your own store, get order alerts on Telegram and deliver VPN plans to customers automatically.</p>
+        </div>
+        <a class="btn sell-cta__btn" href="#/sell" data-sell><svg class="i" aria-hidden="true" focusable="false"><use href="#i-store"/></svg><span>Open a store</span></a>
+      </div>
     </div>
   </section>
   </div>
@@ -235,26 +275,61 @@
   </div>
 </main>
 
+<!-- Phones: the price and the Buy button stay at the bottom of a product page once the main button scrolls away (app.js) -->
+<div class="buybar" id="buybar" hidden>
+  <div class="wrap buybar__row">
+    <div class="buybar__text">
+      <span class="buybar__name" id="buybar-name"></span>
+      <span class="buybar__price" id="buybar-price"></span>
+    </div>
+    <button class="btn btn--ink buybar__btn" type="button" id="buybar-btn"></button>
+  </div>
+</div>
+
 <footer class="footer">
   <div class="wrap">
     <div class="footer__top">
-      <div>
+      <div class="footer__about">
         <a class="brand" href="#/" aria-label="Quartz Eon, home">
           <img class="brand__mark" src="assets/logo.png" alt="" width="34" height="34">
           <span class="brand__word">Quartz Eon</span>
         </a>
-        <p class="footer__blurb">A marketplace for digital products, made by independent sellers.</p>
+        <p class="footer__blurb">A marketplace in Sri Lanka for digital products, sold by independent sellers.</p>
+        <a class="footer__mail" href="mailto:quartzeon@gmail.com">quartzeon@gmail.com</a>
       </div>
-      <a class="footer__up" href="#top">Back to top</a>
+      <nav class="footer__cols" aria-label="Site">
+        <div class="footer__col">
+          <p class="footer__head">Shop</p>
+          <ul>
+            <li><a href="#/">All products</a></li>
+            <li><a href="#/saved">Saved products</a></li>
+            <li><a href="#/orders">My orders</a></li>
+          </ul>
+        </div>
+        <div class="footer__col">
+          <p class="footer__head">Sell</p>
+          <ul>
+            <li><a href="#/sell" data-sell>Open a store</a></li>
+            <li><a href="about.html#sell">How selling works</a></li>
+            <li><a href="seller.html">Seller dashboard</a></li>
+          </ul>
+        </div>
+        <div class="footer__col">
+          <p class="footer__head">Help</p>
+          <ul>
+            <li><a href="about.html">About</a></li>
+            <li><a href="faq.html">FAQ</a></li>
+            <li><a href="mailto:quartzeon@gmail.com">Contact us</a></li>
+          </ul>
+        </div>
+      </nav>
     </div>
     <div class="footer__base">
       <p>&copy; <span id="year"></span> Quartz Eon. All rights reserved.</p>
       <nav class="footer__links" aria-label="Legal">
-        <a href="about.html">About</a>
-        <a href="faq.html">FAQ</a>
         <a href="terms.html">Terms of Service</a>
         <a href="privacy.html">Privacy Policy</a>
-        <a href="mailto:quartzeon@gmail.com">Contact</a>
+        <a class="footer__up" href="#top">Back to top</a>
       </nav>
     </div>
   </div>

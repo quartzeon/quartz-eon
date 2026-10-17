@@ -26,6 +26,8 @@
   const esc = (value) => String(value == null ? '' : value).replace(/[&<>"']/g, (c) => ESCAPES[c]);
   const plural = (n, one, many) => (n === 1 ? one : many);
   const icon = (id) => `<svg class="i" aria-hidden="true" focusable="false"><use href="#${id}"/></svg>`;
+  /* The round picture at the top of an empty page ("Nothing saved yet", "No orders yet"...) */
+  const emptyIcon = (id) => `<span class="empty__icon" aria-hidden="true">${icon(id)}</span>`;
   const art = (name) => `<svg class="art" aria-hidden="true" focusable="false"><use href="#a-${esc(name)}"/></svg>`;
   const hueOf = (item) => Number(item.hue) || 0;
   /* Store page header styles a seller can pick (sellers.theme); the colour is the store's hue. */
@@ -233,6 +235,8 @@
     paintAccountUI();
     /* The seller opened the link from a "reset your password" email: ask for the new password. */
     if (event === 'PASSWORD_RECOVERY') openAuth('seller', 'reset');
+    if (event === 'INITIAL_SESSION' && authDialog.open && auth.role === 'seller' && auth.mode === 'signup'
+      && profile && (profile.role === 'seller' || profile.role === 'admin')) window.location.href = 'seller.html';
     if (event === 'SIGNED_IN' && authDialog.open && auth.mode !== 'reset') {
       authDialog.close();
       /* A seller who just logged in through the Seller form lands straight on their dashboard. */
@@ -764,7 +768,27 @@
     }
     byId('chips').innerHTML = ['All', ...categoryNames()].map((name) => `
       <button class="chip" type="button" data-filter="${esc(name)}" aria-pressed="${state.cat === name}">${esc(name)} <small>${countIn(name)}</small></button>`).join('');
+    /* A kept category further along the row is brought into view */
+    const chips = byId('chips');
+    const pressed = chips.querySelector('[aria-pressed="true"]');
+    if (pressed && chips.scrollWidth > chips.clientWidth) {
+      const left = pressed.getBoundingClientRect().left - chips.getBoundingClientRect().left + chips.scrollLeft;
+      if (left < chips.scrollLeft || left + pressed.offsetWidth > chips.scrollLeft + chips.clientWidth) {
+        chips.scrollLeft = left - (chips.clientWidth - pressed.offsetWidth) / 2;
+      }
+    }
+    paintChipsFade();
   }
+
+  /* fade-l / fade-r show that more chips hide on that side (CSS, phones only) */
+  function paintChipsFade() {
+    const chips = byId('chips');
+    const room = chips.scrollWidth - chips.clientWidth;
+    chips.classList.toggle('fade-l', room > 4 && chips.scrollLeft > 4);
+    chips.classList.toggle('fade-r', room > 4 && chips.scrollLeft < room - 4);
+  }
+  byId('chips').addEventListener('scroll', paintChipsFade, { passive: true });
+  window.addEventListener('resize', paintChipsFade);
 
   byId('chips').addEventListener('click', (event) => {
     const chip = event.target.closest('[data-filter]');
@@ -830,6 +854,7 @@
         <section class="sec tone tone--paper">
           <div class="wrap">
             <div class="empty">
+              ${emptyIcon(failed ? 'i-info' : 'i-store')}
               <p class="empty__title">${failed ? 'Could not load this store' : 'Loading store'}</p>
               <p>${failed ? 'Check your connection and try again.' : 'One moment.'}</p>
               ${failed ? '<button class="btn btn--ink" type="button" id="retry-store">Try again</button>' : ''}
@@ -846,6 +871,7 @@
         <section class="sec tone tone--paper">
           <div class="wrap">
             <div class="empty">
+              ${emptyIcon('i-store')}
               <p class="empty__title">Store not found</p>
               <p>There is no seller store at this address.</p>
               <a class="btn btn--ink" href="#/">Back to all products</a>
@@ -925,6 +951,7 @@
     } else if (catalog.status !== 'ready') {
       inner = `
         <div class="empty">
+          ${emptyIcon('i-info')}
           <p class="empty__title">Could not load your saved products</p>
           <p>Check your connection and try again.</p>
           <button class="btn btn--ink" type="button" data-retry-catalog>Try again</button>
@@ -932,6 +959,7 @@
     } else if (!savedIds.length) {
       inner = `
         <div class="empty">
+          ${emptyIcon('i-heart')}
           <p class="empty__title">Nothing saved yet</p>
           <p>Tap the heart on a product to keep it here for later. The list stays in this browser.</p>
           <a class="btn btn--ink" href="#/">Browse products</a>
@@ -1014,6 +1042,7 @@
     else if (view.name === 'product') renderProduct();
     else if (view.name === 'saved') renderSaved();
     else renderProducts();
+    watchBuybar();
   }
 
   function parseHash(hash) {
@@ -1096,7 +1125,28 @@
     window.history.back();
   });
 
+  /* A seller goes to the dashboard; anyone else gets the seller sign up form. */
+  function startSelling() {
+    if (profile && (profile.role === 'seller' || profile.role === 'admin')) {
+      window.location.href = 'seller.html';
+      return;
+    }
+    openAuth('seller', 'signup');
+  }
+
+  document.addEventListener('click', (event) => {
+    const link = event.target.closest('[data-sell]');
+    if (!link || event.ctrlKey || event.metaKey || event.shiftKey || event.button !== 0) return;
+    event.preventDefault();
+    startSelling();
+  });
+
   function route() {
+    if (window.location.hash === '#/sell') {
+      /* "Open a store" from another page (index.html#/sell): the shop with the sign up form on top */
+      try { window.history.replaceState(window.history.state, '', '#/'); } catch (e) { /* keep the address */ }
+      startSelling();
+    }
     const hash = window.location.hash;
     const next = parseHash(hash);
     const changed = next.name !== view.name || next.slug !== view.slug;
@@ -1190,7 +1240,57 @@
       button.textContent = state.text;
       button.disabled = state.disabled;
     }
+    paintBuybar();
   }
+
+  /* ---------- Buy bar: on phones the price and Buy button stay at the bottom once the main button scrolls away ---------- */
+  const buybar = byId('buybar');
+  const buybarQuery = window.matchMedia('(max-width: 760px)');
+  let buybarTarget = null; /* the page's own Buy button (or the WhatsApp/Telegram buttons) */
+  let buybarOut = false;   /* that button is off the screen */
+  const buybarWatch = 'IntersectionObserver' in window ? new IntersectionObserver((entries) => {
+    entries.forEach((entry) => { if (entry.target === buybarTarget) buybarOut = !entry.isIntersecting; });
+    paintBuybar();
+  }, { rootMargin: '-70px 0px 0px 0px' }) : null;
+
+  function buybarProduct() {
+    return view.name === 'product' && catalog.status === 'ready' ? PRODUCT_BY_ID.get(view.slug) : null;
+  }
+
+  function paintBuybar() {
+    const p = buybarProduct();
+    const show = !!(p && buybarQuery.matches && buybarTarget && buybarOut);
+    buybar.hidden = !show;
+    document.body.classList.toggle('has-buybar', show);
+    if (!show) return;
+    const state = purchaseState(p);
+    byId('buybar-name').textContent = p.name;
+    byId('buybar-price').innerHTML = priceHtml(p, page.option);
+    const button = byId('buybar-btn');
+    button.textContent = state.disabled ? state.text : p.saleMode === 'contact' ? 'Order' : 'Buy now';
+    button.disabled = !!p.soldOut;
+  }
+
+  function watchBuybar() {
+    if (buybarWatch) buybarWatch.disconnect();
+    buybarTarget = view.name === 'product' ? (byId('pd-buy') || byId('pd-order')) : null;
+    buybarOut = false;
+    if (buybarTarget && buybarWatch) buybarWatch.observe(buybarTarget);
+    paintBuybar();
+  }
+
+  byId('buybar-btn').addEventListener('click', () => {
+    const p = buybarProduct();
+    if (!p) return;
+    if (p.saleMode !== 'contact' && !purchaseState(p).disabled) {
+      startCheckout(p.id, page.option);
+      return;
+    }
+    /* An option must be chosen first, or the order buttons are up on the page */
+    const place = (p.options.length && page.option === null && productView.querySelector('.pd-options')) || buybarTarget;
+    if (place) place.scrollIntoView({ behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'center' });
+  });
+  buybarQuery.addEventListener('change', paintBuybar);
 
   function renderProduct() {
     if (catalog.status === 'loading') {
@@ -1219,6 +1319,7 @@
     if (catalog.status !== 'ready') {
       productView.innerHTML = `
         <section class="sec tone tone--paper"><div class="wrap"><div class="empty">
+          ${emptyIcon('i-info')}
           <p class="empty__title">Could not load this product</p>
           <p>Check your connection and try again.</p>
           <button class="btn btn--ink" type="button" id="retry-product">Try again</button>
@@ -1231,6 +1332,7 @@
     if (!p) {
       productView.innerHTML = `
         <section class="sec tone tone--paper"><div class="wrap"><div class="empty">
+          ${emptyIcon('i-search')}
           <p class="empty__title">Product not found</p>
           <p>This product is not for sale any more, or the address is wrong.</p>
           <a class="btn btn--ink" href="#/">Back to all products</a>
@@ -1890,6 +1992,7 @@
     if (!session) {
       inner = `
         <div class="empty">
+          ${emptyIcon('i-user')}
           <p class="empty__title">Log in to see your orders</p>
           <p>Your purchases and downloads are kept in your account.</p>
           <button class="btn btn--ink" type="button" data-login-first>Log in</button>
@@ -1898,7 +2001,7 @@
       if (ordersState.status === 'idle') { loadOrders(); return; }
       if (ordersState.status === 'loading') inner = '<p class="note">Loading your orders…</p>';
       else if (ordersState.status === 'error') inner = '<p class="note">Could not load your orders. Please refresh the page.</p>';
-      else if (!ordersState.rows.length) inner = '<div class="empty"><p class="empty__title">No orders yet</p><p>When you buy something it shows up here.</p><a class="btn btn--ink" href="#/">Browse products</a></div>';
+      else if (!ordersState.rows.length) inner = `<div class="empty">${emptyIcon('i-bag')}<p class="empty__title">No orders yet</p><p>When you buy something it shows up here.</p><a class="btn btn--ink" href="#/">Browse products</a></div>`;
       else inner = `<div class="orders">${ordersState.rows.map(orderCard).join('')}</div>`;
     }
     ordersView.innerHTML = `
