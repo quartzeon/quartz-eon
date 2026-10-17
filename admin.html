@@ -58,10 +58,11 @@
       <span class="admin-tag">Admin</span>
     </a>
     <div class="site-header__actions">
+      <div class="cur" id="cur-widget"></div>
       <button class="icon-btn" id="theme-toggle" type="button" aria-label="Switch to dark mode">
         <svg class="i" aria-hidden="true" focusable="false"><use href="#i-moon"/></svg>
       </button>
-      <button class="btn btn--ghost" id="admin-logout" type="button" hidden>
+      <button class="btn btn--ghost btn--logout" id="admin-logout" type="button" aria-label="Log out" hidden>
         <svg class="i" aria-hidden="true" focusable="false"><use href="#i-logout"/></svg>
         <span>Log out</span>
       </button>
@@ -426,6 +427,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <script src="js/supabase-client.js"></script>
 <script src="js/config.js"></script>
+<script src="js/money.js"></script>
 <script src="js/captcha.js"></script>
 <script src="js/admin.js"></script>
   <!-- Cloudflare Web Analytics --><script type='module' src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "404ff71ccce14b5d8955fb5785a01c32"}'></script><!-- End Cloudflare Web Analytics -->

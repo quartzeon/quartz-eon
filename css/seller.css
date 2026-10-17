@@ -8,6 +8,12 @@
 .admin-header .site-header__row { flex-wrap: wrap; gap: 10px 16px; padding-block: 10px; }
 .admin-header .site-header__actions { flex-wrap: wrap; justify-content: flex-end; gap: 8px; }
 @media (max-width: 560px) { .admin-header .site-header__actions .btn { padding-inline: 14px; min-height: 40px; font-size: 14px; } }
+@media (max-width: 400px) {
+  .admin-header .site-header__row { gap: 8px 6px; }
+  .admin-header .site-header__actions { gap: 4px; }
+  .admin-header .site-header__actions .btn { padding-inline: 10px; min-height: 36px; font-size: 13.5px; }
+  .admin-header .site-header__actions .btn--logout { width: 36px; padding: 0; }
+}
 .admin-tag {
   padding: 3px 9px; border-radius: 999px; background: var(--ink); color: var(--paper);
   font: 500 11px/1 var(--font-mono); letter-spacing: .08em; text-transform: uppercase;

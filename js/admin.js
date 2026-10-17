@@ -123,6 +123,18 @@
     if (name === 'login') window.QE_CAPTCHA.attach(loginForm);
   }
 
+  /* Currency picker: the same one as the shop header. */
+  const M = window.QE_MONEY;
+  M.mountPicker(byId('cur-widget'), 'Amounts are shown in this currency. Payments stay in the original currency.');
+  M.onChange(() => {
+    if (byId('admin-app').hidden) return;
+    renderProducts();
+    renderOrders();
+    renderFees();
+    renderSpotRequests();
+    renderSpotPacks();
+  });
+
   sb.auth.onAuthStateChange(async (event, session) => {
     if (!session) {
       showPanel('login');
@@ -302,7 +314,7 @@
           <span class="seller-row__avatar"><svg class="art" aria-hidden="true" focusable="false"><use href="#a-${esc(p.icon)}"/></svg></span>
           <div class="seller-row__text">
             <p class="seller-row__name">${esc(p.name)} ${badge}</p>
-            <p class="seller-row__meta">${esc(store ? store.store_name : 'Unknown store')} &middot; ${esc(p.category)} &middot; ${store && store.currency === 'USD' ? '$' : 'Rs. '}${Number(p.price).toLocaleString('en-US')}${p.type ? ` &middot; ${esc(p.type)}` : ''}</p>
+            <p class="seller-row__meta">${esc(store ? store.store_name : 'Unknown store')} &middot; ${esc(p.category)} &middot; ${esc(M.dual(p.price, store && store.currency))}${p.type ? ` &middot; ${esc(p.type)}` : ''}</p>
           </div>
         </div>
         <div class="seller-row__actions">
@@ -386,7 +398,7 @@
   function orderRow(o) {
     const [badgeClass, label] = ORDER_BADGE[o.status] || ['pending', o.status];
     const store = sellers.find((s) => s.id === o.seller_id);
-    const amount = o.method === 'paypal' && o.amount_usd ? `$${Number(o.amount_usd).toFixed(2)} via PayPal` : `${o.currency === 'USD' ? '$' : 'Rs. '}${Number(o.amount_lkr).toLocaleString('en-US')} by bank transfer`;
+    const amount = o.method === 'paypal' && o.amount_usd ? `$${Number(o.amount_usd).toFixed(2)} via PayPal` : `${M.dual(o.amount_lkr, o.currency)} by bank transfer`;
     const actions = [];
     if (o.status === 'awaiting_review') {
       if (o.receipt_path) actions.push(`<button class="btn btn--ghost btn--sm" type="button" data-slip="${esc(o.id)}"><span>View slip</span></button>`);
@@ -634,7 +646,7 @@
           <span class="seller-row__avatar">${icon('i-store')}</span>
           <div class="seller-row__text">
             <p class="seller-row__name">${esc(store ? store.store_name : 'Unknown store')} <span class="status-badge status-badge--${badgeClass}">${esc(label)}</span></p>
-            <p class="seller-row__meta">Rs. ${Number(p.amount_lkr).toLocaleString('en-US')} &middot; ${esc(store ? store.email : '')} &middot; ${formatDate(p.created_at)}${p.reference ? ` &middot; Reference: ${esc(p.reference)}` : ''}${p.receipt_path || p.status === 'awaiting_review' ? '' : ' &middot; Slip deleted'}</p>
+            <p class="seller-row__meta">${esc(M.dual(p.amount_lkr, 'LKR'))} &middot; ${esc(store ? store.email : '')} &middot; ${formatDate(p.created_at)}${p.reference ? ` &middot; Reference: ${esc(p.reference)}` : ''}${p.receipt_path || p.status === 'awaiting_review' ? '' : ' &middot; Slip deleted'}</p>
           </div>
         </div>
         <div class="seller-row__actions">${actions.join('')}</div>
@@ -815,7 +827,7 @@
   /* datetime-local inputs hold the device's own time, like "2026-10-16T09:30" */
   const localInput = (date) => `${date.getFullYear()}-${pad2(date.getMonth() + 1)}-${pad2(date.getDate())}T${pad2(date.getHours())}:${pad2(date.getMinutes())}`;
   const hoursFromNow = (hours) => localInput(new Date(Date.now() + hours * 3600000));
-  const rs = (n) => `Rs. ${Number(n).toLocaleString('en-US')}`;
+  const rs = (n) => esc(M.dual(n, 'LKR'));
 
   function formatDateTime(value) {
     const d = new Date(value);
@@ -1151,7 +1163,7 @@
     const max = Number(f.maxQty.value);
     const out = byId('spot-pack-preview');
     if (!hours || !Number.isInteger(price) || price < 1 || !Number.isInteger(max) || max < 1) { out.textContent = ''; return; }
-    out.textContent = `Sellers see: ${spanText(hours)} for ${rs(price)}${max > 1 ? `. They can take up to ${max}: ${spanText(hours * max)} for ${rs(price * max)}.` : ', one at a time.'}`;
+    out.textContent = `Sellers see: ${spanText(hours)} for ${M.own(price, 'LKR')}${max > 1 ? `. They can take up to ${max}: ${spanText(hours * max)} for ${M.own(price * max, 'LKR')}.` : ', one at a time.'}`;
   }
 
   function resetPackForm() {

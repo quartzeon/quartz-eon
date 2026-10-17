@@ -383,7 +383,7 @@ section[id] { scroll-margin-top: 76px; }
 }
 .product__art .art { width: 36%; height: 36%; }
 .product__art .badge { top: 10px; left: 10px; padding: 4px 8px; font-size: 10px; }
-.product__art .badge--soldout { left: auto; right: 10px; }
+.product__art .badge--soldout { top: auto; bottom: 10px; left: 10px; right: auto; } /* the top right corner has the heart */
 .badge {
   position: absolute; top: 12px; left: 12px; padding: 5px 9px; border-radius: 6px;
   background: var(--ink); color: var(--paper);
@@ -560,6 +560,14 @@ section[id] { scroll-margin-top: 76px; }
 .sk-tile .product__info { gap: 8px; }
 .sk-store { display: flex; align-items: center; gap: 20px; margin-bottom: 36px; }
 .sk-store__text { display: grid; gap: 10px; }
+/* Product page while it loads */
+.sk--back { width: 110px; height: 14px; margin-bottom: 24px; }
+.sk--pd { border-radius: var(--radius-l); }
+.sk-pd { gap: 14px; }
+.sk--h1 { height: 30px; width: 80%; border-radius: 999px; }
+.sk--pd-price { height: 26px; width: 35%; }
+.sk--row { height: 52px; border-radius: 14px; }
+.sk--pd-btn { height: 52px; border-radius: 999px; }
 @container grid (max-width: 600px) {
   .sk--art { border-radius: 14px; }
   .sk--title { height: 14px; }
@@ -574,7 +582,7 @@ section[id] { scroll-margin-top: 76px; }
   .product__art { border-radius: 14px; }
   .product__art .art { width: 40%; height: 40%; }
   .product__art .badge { top: 7px; left: 7px; padding: 3px 6px; font-size: 9px; }
-  .product__art .badge--soldout { left: auto; right: 7px; }
+  .product__art .badge--soldout { top: auto; bottom: 7px; left: 7px; }
   .product__cat { font-size: 9px; }
   .product__name { font-size: 14px; }
   .product__seller { overflow: hidden; font-size: 12px; white-space: nowrap; text-overflow: ellipsis; }
@@ -607,7 +615,7 @@ section[id] { scroll-margin-top: 76px; }
   .product__art { border-radius: 12px; }
   .product__art .art { width: 44%; height: 44%; }
   .product__art .badge { top: 5px; left: 5px; padding: 3px 4px; font-size: 8px; letter-spacing: .04em; }
-  .product__art .badge--soldout { left: auto; right: 5px; }
+  .product__art .badge--soldout { top: auto; bottom: 5px; left: 5px; }
   .product.is-soldout .product__art .badge:not(.badge--soldout) { display: none; }
   .product__cat { display: none; }
   .product__name, .pc--tile .pc__title { margin-top: 0; font-size: 12.5px; line-height: 1.2; }
@@ -646,6 +654,57 @@ section[id] { scroll-margin-top: 76px; }
 .contact__buttons { display: flex; flex-wrap: wrap; gap: 8px; }
 .contact__buttons .btn { gap: 10px; }
 .contact__buttons .social__icon { width: 20px; height: 20px; padding: 0; background: transparent; }
+/* Dark mode (and the always dark "midnight" store header): see-through buttons instead of white circles */
+:root[data-theme="dark"] .social__btn, .store-head--midnight .social__btn { background: hsl(0 0% 100% / .07); color: var(--ink); }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .social__btn { background: hsl(0 0% 100% / .07); color: var(--ink); }
+}
+
+/* ---------- Saved products: the heart on tiles, on the product page and in the header ---------- */
+.product, .pc--tile { position: relative; }
+.save-btn {
+  position: absolute; top: 8px; right: 8px; z-index: 1;
+  display: grid; place-items: center; width: 34px; height: 34px; padding: 0;
+  border: 1px solid hsl(0 0% 100% / .7); border-radius: 50%;
+  background: hsl(0 0% 100% / .8); color: #333;
+  -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px);
+  box-shadow: 0 2px 8px hsl(0 0% 0% / .12);
+  cursor: pointer; transition: transform .15s ease, color .15s ease;
+}
+.save-btn .i { width: 18px; height: 18px; stroke-width: 2.1; }
+.save-btn:hover { transform: scale(1.08); }
+.save-btn[aria-pressed="true"], .save-pd[aria-pressed="true"] { color: hsl(350 78% 52%); }
+.save-btn[aria-pressed="true"] .i, .save-pd[aria-pressed="true"] .i { fill: currentColor; }
+.save-btn.is-pop .i { animation: save-pop .35s ease; }
+@keyframes save-pop { 45% { transform: scale(1.35); } }
+:root[data-theme="dark"] .save-btn { border-color: hsl(0 0% 100% / .14); background: hsl(225 14% 14% / .72); color: #eee; }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .save-btn { border-color: hsl(0 0% 100% / .14); background: hsl(225 14% 14% / .72); color: #eee; }
+}
+:root[data-theme="dark"] .save-btn[aria-pressed="true"] { color: hsl(350 85% 64%); }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .save-btn[aria-pressed="true"] { color: hsl(350 85% 64%); }
+}
+/* Plan tiles: the heart sits in the top right corner, so the name keeps clear of it */
+.pc--tile .pc__head { padding-right: 30px; }
+@container grid (max-width: 600px) {
+  .pc--tile .pc__head { padding-right: 0; }
+  .save-btn { top: 6px; right: 6px; width: 30px; height: 30px; }
+  .save-btn .i { width: 16px; height: 16px; }
+}
+@container grid (max-width: 440px) {
+  .save-btn { top: 4px; right: 4px; width: 26px; height: 26px; }
+  .save-btn .i { width: 14px; height: 14px; }
+}
+.save-pd { gap: 8px; }
+.save-pd .i { width: 18px; height: 18px; }
+.save-pd[aria-pressed="true"] { border-color: currentColor; }
+.saved-link__count {
+  position: absolute; top: -5px; right: -6px; min-width: 20px; padding: 0 5px;
+  font-size: 11px; line-height: 18px; text-align: center;
+}
+.saved-note { margin: -8px 0 20px; }
+.saved-gone { margin-top: 24px; }
 
 /* ---------- Verified badge ---------- */
 .vbadge { display: inline-grid; place-items: center; width: 1.05em; height: 1.05em; margin-left: .3em; vertical-align: -.14em; color: hsl(207 85% 55%); }
@@ -1017,6 +1076,29 @@ button.is-locked { opacity: .55; cursor: not-allowed; }
   .login__btn > .i:first-child { display: none; }
   .cur__btn { height: 40px; padding: 0 8px 0 11px; gap: 4px; font-size: 13px; }
 }
+/* Dashboards on phones: a short "Shop" link and an icon-only Log out keep the header on one row */
+.narrow-only { display: none; }
+@media (max-width: 560px) {
+  .site-header .narrow-only { display: inline; }
+  .site-header .wide-only { display: none; }
+  .btn--logout { width: 40px; padding: 0; justify-content: center; }
+  .btn--logout span { display: none; }
+}
+
+/* Small phones: brand, currency, saved, theme and log in must fit one row */
+@media (max-width: 400px) {
+  .site-header__row { gap: 4px; }
+  .site-header__actions { gap: 3px; }
+  .brand { gap: 5px; }
+  .brand__mark { width: 26px; height: 26px; }
+  .brand__word { font-size: 17px; }
+  .icon-btn { width: 36px; height: 36px; }
+  .login__btn { min-height: 36px; padding: 0 9px; }
+  .cur__btn { height: 36px; padding: 0 6px 0 9px; font-size: 12.5px; }
+  /* Dashboards: the "Seller"/"Admin" tag next to the logo makes way for the buttons */
+  .brand .admin-tag { display: none; }
+  .btn--logout { width: 36px; min-height: 36px; }
+}
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; }
@@ -1173,6 +1255,8 @@ button.is-locked { opacity: .55; cursor: not-allowed; }
 }
 .spot-total:empty { display: none; }
 .spot-total__price { font: 800 1.6rem/1 var(--font-display); letter-spacing: -.02em; }
+.spot-total__sum { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; }
+.spot-total__own { font-size: 12.5px; color: var(--ink-2); }
 
 /* The rest of the seller's Ads page */
 .spot-sub { margin: 28px 0 12px; font: 700 1.05rem/1.3 var(--font-display); letter-spacing: -.01em; }

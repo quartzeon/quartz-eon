@@ -73,6 +73,7 @@
     <symbol id="i-globe" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M3.5 12h17M12 3.5c2.5 2.6 3.7 5.4 3.7 8.5s-1.2 5.9-3.7 8.5c-2.5-2.6-3.7-5.4-3.7-8.5s1.2-5.9 3.7-8.5z"/></symbol>
     <symbol id="i-gift" viewBox="0 0 24 24"><rect x="4" y="9" width="16" height="11" rx="2"/><path d="M4 12.5h16M12 9v11M12 9c-2.5 0-4-1-4-2.4S9.2 4.5 10.6 5C11.8 5.4 12 9 12 9zM12 9c2.5 0 4-1 4-2.4s-1.2-2.1-2.6-1.6C12.2 5.4 12 9 12 9z"/></symbol>
     <symbol id="i-star" viewBox="0 0 24 24"><path d="M12 3.5l2.6 5.4 5.9.8-4.3 4.1 1 5.9L12 16.9l-5.2 2.8 1-5.9L3.5 9.7l5.9-.8z"/></symbol>
+    <symbol id="i-heart" viewBox="0 0 24 24"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1-1.1a5.5 5.5 0 0 0-7.8 7.8l1 1.1L12 21.2l7.8-7.7 1-1.1a5.5 5.5 0 0 0 0-7.8z"/></symbol>
     <symbol id="i-logout" viewBox="0 0 24 24"><path d="M15 4h-3a3 3 0 0 0-3 3v10a3 3 0 0 0 3 3h3M10 12h11M17 8l4 4-4 4"/></symbol>
 
     <symbol id="a-layout" viewBox="0 0 48 48"><rect x="6" y="8" width="36" height="32" rx="4"/><path d="M6 18h36M20 18v22"/></symbol>
@@ -99,30 +100,12 @@
       <span class="brand__word">Quartz Eon</span>
     </a>
     <div class="site-header__actions">
-      <div class="cur" id="cur-widget">
-        <button class="cur__btn" id="cur-toggle" type="button" aria-expanded="false" aria-controls="cur-menu" aria-label="Currency: LKR. Change your country">
-          <span id="currency-face">LKR</span>
-          <svg class="i cur__chev" aria-hidden="true" focusable="false"><use href="#i-chev"/></svg>
-        </button>
-        <div class="cur__menu" id="cur-menu" hidden>
-          <label class="cur__search">
-            <svg class="i" aria-hidden="true" focusable="false"><use href="#i-search"/></svg>
-            <input id="cur-search" type="search" placeholder="Search a country or currency" autocomplete="off" aria-label="Search a country or currency">
-          </label>
-          <div class="cur__scroll">
-            <div class="cur__group" id="cur-main">
-              <span class="cur__title">Main currencies</span>
-              <div class="cur__mains" id="cur-main-list"></div>
-            </div>
-            <div class="cur__group">
-              <span class="cur__title" id="cur-all-title">All countries</span>
-              <div id="cur-list"></div>
-              <p class="cur__empty" id="cur-empty" hidden>No country found.</p>
-            </div>
-          </div>
-          <p class="cur__note">Prices are shown in this currency. You pay in the store's own currency.</p>
-        </div>
-      </div>
+      <!-- Country and currency picker, built by js/money.js -->
+      <div class="cur" id="cur-widget"></div>
+      <a class="icon-btn saved-link" id="saved-link" href="#/saved" aria-label="Saved products" title="Saved products">
+        <svg class="i" aria-hidden="true" focusable="false"><use href="#i-heart"/></svg>
+        <span class="count-badge saved-link__count" id="saved-count" aria-hidden="true" hidden></span>
+      </a>
       <button class="icon-btn" id="theme-toggle" type="button" aria-label="Switch to dark mode">
         <svg class="i" aria-hidden="true" focusable="false"><use href="#i-moon"/></svg>
       </button>
@@ -241,6 +224,9 @@
   <!-- One product with its photos, options and price, filled in by app.js when the address is #/product/<id> -->
   <div id="product-view" hidden></div>
 
+  <!-- Products the customer saved with the heart (kept in this browser), filled in by app.js when the address is #/saved -->
+  <div id="saved-view" hidden></div>
+
   <!-- The logged-in customer's orders, filled in by app.js when the address is #/orders -->
   <div id="orders-view" hidden></div>
 
@@ -305,6 +291,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <script src="js/supabase-client.js"></script>
 <script src="js/config.js"></script>
+<script src="js/money.js"></script>
 <script src="js/captcha.js"></script>
 <script src="js/app.js"></script>
   <!-- Cloudflare Web Analytics --><script type='module' src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "404ff71ccce14b5d8955fb5785a01c32"}'></script><!-- End Cloudflare Web Analytics -->

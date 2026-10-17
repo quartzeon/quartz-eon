@@ -15,7 +15,9 @@
   const icon = (id) => `<svg class="i" aria-hidden="true" focusable="false"><use href="#${id}"/></svg>`;
   const art = (name) => `<svg class="art" aria-hidden="true" focusable="false"><use href="#a-${esc(name)}"/></svg>`;
   const plural = (n, one, many) => (n === 1 ? one : many);
-  const rs = (n) => `Rs. ${Number(n).toLocaleString('en-US')}`;
+  /* Amounts follow the currency picked in the header (js/money.js, shared with the shop), with the exact amount next to it. */
+  const M = window.QE_MONEY;
+  const rs = (n) => M.dual(n, 'LKR');
   const storage = { set(key, value) { try { window.localStorage.setItem(key, value); } catch (e) { /* storage unavailable */ } } };
 
   /* ---------- Theme ---------- */
@@ -150,6 +152,18 @@
     loadTelegram();
     loadFee();
     loadSpotlight();
+  });
+
+  /* ---------- Currency picker: the same one as the shop header ---------- */
+  M.mountPicker(byId('cur-widget'), 'Amounts are shown in this currency. Payments stay in the original currency.');
+  M.onChange(() => {
+    if (!sellerRow) return;
+    renderSales();
+    if (feeLastPayments) paintFeeStatus(feeLastPayments);
+    if (!byId('fee-flow').hidden) paintFeeSendTitle();
+    byId('spot-requests').innerHTML = spot.requests.map(requestRow).join('');
+    if (spot.packs.length) renderPacks();
+    if (spot.step === 3) paintSpotSummary();
   });
 
   /* ---------- Status banner ---------- */
@@ -556,7 +570,7 @@
 
   function saleRow(o) {
     const [badgeClass, label] = SALE_STATUS[o.status] || ['pending', o.status];
-    const amount = o.method === 'paypal' && o.amount_usd ? `$${Number(o.amount_usd).toFixed(2)} via PayPal` : `${o.currency === 'USD' ? '$' : 'Rs. '}${Number(o.amount_lkr).toLocaleString('en-US')} by bank transfer`;
+    const amount = o.method === 'paypal' && o.amount_usd ? `$${Number(o.amount_usd).toFixed(2)} via PayPal` : `${M.dual(o.amount_lkr, o.currency)} by bank transfer`;
     const actions = [];
     if (o.status === 'awaiting_review') {
       if (o.receipt_path) actions.push(`<button class="btn btn--ghost btn--sm" type="button" data-slip="${esc(o.id)}"><span>View slip</span></button>`);
@@ -666,7 +680,7 @@
     if (approve) {
       /* A slip photo can be faked: make the seller check the bank first. */
       const o = sales.find((s) => s.id === approve.dataset.orderApprove);
-      const money = o ? `${o.currency === 'USD' ? '$' : 'Rs. '}${Number(o.amount_lkr).toLocaleString('en-US')}${o.reference ? ` (reference ${o.reference})` : ''}` : 'the money';
+      const money = o ? `${M.own(o.amount_lkr, o.currency)}${o.reference ? ` (reference ${o.reference})` : ''}` : 'the money';
       if (window.confirm(`Did ${money} really arrive in your bank account?\n\nCheck your bank app or statement first. A slip photo can be faked. Once approved, the product is delivered and this cannot be undone.`)) approveSale(approve.dataset.orderApprove);
       return;
     }
@@ -861,12 +875,14 @@
   /* ---------- The monthly store fee and the Verified badge ---------- */
   const FEE_STATUS = { awaiting_review: ['pending', 'Waiting for review'], approved: ['approved', 'Approved'], rejected: ['suspended', 'Not accepted'] };
   let feeSettings = { monthly_fee: CFG.sellerMonthlyFee || 500, fee_required: false };
+  let feeLastPayments = null; /* kept so a currency change can repaint without asking the server again */
   let feeWaiting = null;
   let slipPreviewUrl = '';
 
   function paintFeeStatus(payments) {
     const fee = feeState(sellerRow);
     const price = rs(feeSettings.monthly_fee);
+    feeLastPayments = payments || [];
     const soon = fee.kind !== 'due' && fee.days <= 5;
     /* The site owner's bank account is only for approved stores, so a new store cannot open it yet. */
     const canPay = sellerRow.status === 'approved' || sellerRow.status === 'suspended';
@@ -922,7 +938,7 @@
       : '';
 
     const payButton = byId('fee-pay-open');
-    payButton.textContent = `Pay ${price}`;
+    payButton.textContent = `Pay ${M.shown(feeSettings.monthly_fee, 'LKR')}`;
     payButton.disabled = !canPay;
     byId('fee-lead').textContent = canPay
       ? `${price} a month, by bank transfer to the site owner. Each payment adds 30 days.`
@@ -931,6 +947,9 @@
     const flag = byId('fee-nav-flag');
     flag.hidden = !canPay || !(soon || fee.kind === 'due');
     flag.textContent = fee.kind === 'due' ? 'Due' : dayWord(fee.days);
+
+    byId('fee-history-wrap').hidden = !feeLastPayments.length;
+    byId('fee-history').innerHTML = feeLastPayments.map(feeRow).join('');
   }
 
   function verifiedIcon() {
@@ -963,14 +982,17 @@
     ]);
     if (settings) feeSettings = settings;
     paintFeeStatus(payments || []);
-    byId('fee-history-wrap').hidden = !(payments && payments.length);
-    byId('fee-history').innerHTML = (payments || []).map(feeRow).join('');
+  }
+
+  /* The exact rupee amount comes first: that is what has to be sent. */
+  function paintFeeSendTitle() {
+    const price = M.pay(feeSettings.monthly_fee, 'LKR');
+    byId('fee-send-title').textContent = byId('fee-bank').hidden ? `Send ${price} to the site owner` : `Send ${price} to this account`;
   }
 
   function paintFeeBank(bank) {
-    const price = rs(feeSettings.monthly_fee);
-    byId('fee-send-title').textContent = bank ? `Send ${price} to this account` : `Send ${price} to the site owner`;
     byId('fee-bank').hidden = !bank;
+    paintFeeSendTitle();
     byId('fee-bank').innerHTML = bank ? bankRows(bank) : '';
     const note = bank ? bank.note : 'The site owner has not added bank details yet, so please message them first.';
     byId('fee-note').hidden = !note;
@@ -1099,7 +1121,7 @@
   /* ---------- Ads: the seller buys time in the popup the shop shows (called "spotlight" in the code and database,
      because ad blockers block addresses and classes with "ad" in them) ---------- */
   const SPOT_STATUS = { awaiting_review: ['pending', 'Waiting for review'], approved: ['approved', 'Approved'], rejected: ['suspended', 'Not accepted'] };
-  const spot = { step: 1, packs: [], pack: null, qty: 1, poster: null, posterUrl: '', bank: null, bankError: '' };
+  const spot = { step: 1, packs: [], pack: null, qty: 1, poster: null, posterUrl: '', bank: null, bankError: '', requests: [] };
 
   /* 24 hours reads "1 day", 36 hours reads "36 hours". */
   function spanText(hours) {
@@ -1168,7 +1190,8 @@
     byId('spot-mine-wrap').hidden = !(mine && mine.length);
     byId('spot-mine').innerHTML = (mine || []).map(myAdRow).join('');
     byId('spot-requests-wrap').hidden = !(requests && requests.length);
-    byId('spot-requests').innerHTML = (requests || []).map(requestRow).join('');
+    spot.requests = requests || [];
+    byId('spot-requests').innerHTML = spot.requests.map(requestRow).join('');
     spot.packs = packs || [];
     renderPacks();
   }
@@ -1188,8 +1211,8 @@
       <button type="button" class="spot-pack" role="radio" aria-checked="${p.id === spot.pack.id}" data-pack="${esc(p.id)}">
         <span class="spot-pack__check">${icon('i-check')}</span>
         <span class="spot-pack__time">${esc(spanText(p.hours))}</span>
-        <span class="spot-pack__price">${esc(rs(p.price))}</span>
-        <span class="spot-pack__note">${p.max_qty > 1 ? `Buy up to ${p.max_qty} at once` : 'One at a time'}</span>
+        <span class="spot-pack__price">${esc(M.shown(p.price, 'LKR'))}</span>
+        <span class="spot-pack__note">${M.isConverted('LKR') ? `${esc(M.own(p.price, 'LKR'))} &middot; ` : ''}${p.max_qty > 1 ? `Buy up to ${p.max_qty} at once` : 'One at a time'}</span>
       </button>`).join('');
     paintQty();
   }
@@ -1203,7 +1226,7 @@
     byId('spot-qty-minus').disabled = spot.qty <= 1;
     byId('spot-qty-plus').disabled = spot.qty >= p.max_qty;
     byId('spot-qty-max').textContent = `× ${spanText(p.hours)}, up to ${p.max_qty}`;
-    byId('spot-total').innerHTML = `<span>Your ad runs for <strong>${esc(spanText(p.hours * spot.qty))}</strong></span><span class="spot-total__price">${esc(rs(p.price * spot.qty))}</span>`;
+    byId('spot-total').innerHTML = `<span>Your ad runs for <strong>${esc(spanText(p.hours * spot.qty))}</strong></span><span class="spot-total__sum"><span class="spot-total__price">${esc(M.shown(p.price * spot.qty, 'LKR'))}</span>${M.isConverted('LKR') ? `<span class="spot-total__own">${esc(M.own(p.price * spot.qty, 'LKR'))}</span>` : ''}</span>`;
   }
 
   byId('spot-packs').addEventListener('click', (event) => {
@@ -1253,14 +1276,14 @@
       ['Offer line', form.elements.message.value.trim() || 'The About text of your store'],
       ['Poster', spot.poster ? 'Added' : 'Your store logo'],
       ['Time', spot.qty > 1 ? `${spot.qty} × ${spanText(p.hours)} = ${spanText(p.hours * spot.qty)}` : spanText(p.hours)],
-      ['To pay', rs(total)]
+      ['To pay', M.pay(total, 'LKR')]
     ];
     byId('spot-summary').innerHTML = rows.map(([k, v]) => `<div><dt>${esc(k)}</dt><dd>${esc(v)}</dd></div>`).join('');
     byId('spot-pay-lead').textContent = spot.bankError
       ? spot.bankError
       : spot.bank
-        ? `Send ${rs(total)} to the site owner's account below, then attach the slip.`
-        : `Send ${rs(total)} to the site owner. They have not added bank details yet, so please message them first.`;
+        ? `Send ${M.pay(total, 'LKR')} to the site owner's account below, then attach the slip.`
+        : `Send ${M.pay(total, 'LKR')} to the site owner. They have not added bank details yet, so please message them first.`;
     byId('spot-bank').hidden = !spot.bank;
     byId('spot-bank').innerHTML = spot.bank ? bankRows(spot.bank) : '';
     byId('spot-bank-note').hidden = !(spot.bank && spot.bank.note);

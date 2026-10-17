@@ -23,7 +23,9 @@
   /* The store's currency (LKR or USD) decides how prices are written and labelled. */
   const usd = () => !!sellerRow && sellerRow.currency === 'USD';
   const unit = () => (usd() ? 'US dollars' : 'rupees');
-  const rupees = (n) => `${usd() ? '$' : 'Rs. '}${Math.round(Number(n)).toLocaleString('en-US')}`;
+  /* List prices follow the currency picked in the header (js/money.js), with the store's own price next to it. */
+  const M = window.QE_MONEY;
+  const rupees = (n) => M.dual(n, usd() ? 'USD' : 'LKR');
   const storage = { set(key, value) { try { window.localStorage.setItem(key, value); } catch (e) { /* storage unavailable */ } } };
   const photoUrl = (path) => sb.storage.from(BUCKET).getPublicUrl(path).data.publicUrl;
   /* A logo is either an uploaded file (a storage path) or one picked from the brand library, saved as "si:<name>". */
@@ -126,10 +128,15 @@
     return p.stock != null && Number(p.stock) <= 0;
   }
 
+  let productsLoaded = false;
+  M.mountPicker(byId('cur-widget'), 'Amounts are shown in this currency. Payments stay in the original currency.');
+  M.onChange(() => { if (productsLoaded) renderList(); });
+
   async function loadProducts() {
     const { data, error } = await sb.from('products').select('*').eq('seller_id', sellerRow.id).order('created_at', { ascending: false });
     if (error) { toast(`Could not load products: ${error.message}`); return; }
     products = data || [];
+    productsLoaded = true;
     renderList();
   }
 

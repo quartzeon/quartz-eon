@@ -244,132 +244,19 @@
     checkOrderUpdates();
   });
 
-  /* ---------- Money: stores price in rupees or dollars; customers see prices in their own country's currency ---------- */
-  const RATE_KEY = 'quartz-eon.usd-rates';
-  const RATE_MAX_AGE = 12 * 60 * 60 * 1000;
-  const RATE_SOURCES = [
-    'https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@latest/v1/currencies/usd.json',
-    'https://latest.currency-api.pages.dev/v1/currencies/usd.json'
-  ];
-  /* value: rupees per US dollar. rates: units of each currency per US dollar (lower case codes, as the source gives them).
-     status: 'loading' until the first answer, then 'live' (real rates) or 'fallback' (config value, rupees and dollars only) */
-  const rate = { value: CFG.fallbackUsdRate, rates: {}, date: '', status: 'loading' };
-
-  const money2 = (n) => n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-  const dollars = (n) => `$${money2(n / rate.value)}`;
-  const rupeeNumber = (n) => Math.round(n).toLocaleString('en-US');
-
-  /* A store prices in rupees (LKR) or dollars (USD). Its own price is what the customer pays. */
+  /* ---------- Money: stores price in rupees or dollars; customers see prices in their own country's currency ----------
+     Rates, the chosen country and the picker live in js/money.js (shared with the seller, products and admin pages). */
+  const M = window.QE_MONEY;
+  const rate = M.rate;
+  const { countryOf, wanted: wantedCur, perUsd, shownCur, convert, currencyName, moneyParts, money2, toLkr } = M;
   const isUsd = (currency) => currency === 'USD';
+  const rupeeNumber = (n) => Math.round(n).toLocaleString('en-US');
+  const dollars = (n) => `$${money2(n / rate.value)}`;
+  /* A store's own price, exactly what the customer pays: "Rs. 1,200" or "$5". */
   const amountText = (n, currency) => (isUsd(currency) ? `$${rupeeNumber(n)}` : `${CFG.currencySymbol} ${rupeeNumber(n)}`);
-  const toLkr = (n, currency) => (isUsd(currency) ? n * rate.value : n);
   const otherText = (n, currency) => (isUsd(currency) ? `${CFG.currencySymbol} ${rupeeNumber(n * rate.value)}` : dollars(n));
-
-  /* Countries the customer can pick in the header: [code, name, currency, device time zones]. Choosing one shows
-     every price in its currency. On a first visit the device time zone picks the country (Sri Lanka if unknown). */
-  const COUNTRIES = [
-    ['LK', 'Sri Lanka', 'LKR', 'Asia/Colombo'],
-    ['AU', 'Australia', 'AUD', 'Australia/Sydney Australia/Melbourne Australia/Brisbane Australia/Perth Australia/Adelaide Australia/Hobart Australia/Darwin'],
-    ['AT', 'Austria', 'EUR', 'Europe/Vienna'],
-    ['BH', 'Bahrain', 'BHD', 'Asia/Bahrain'],
-    ['BD', 'Bangladesh', 'BDT', 'Asia/Dhaka'],
-    ['BE', 'Belgium', 'EUR', 'Europe/Brussels'],
-    ['CA', 'Canada', 'CAD', 'America/Toronto America/Vancouver America/Edmonton America/Winnipeg America/Halifax America/Regina America/St_Johns'],
-    ['CN', 'China', 'CNY', 'Asia/Shanghai Asia/Urumqi'],
-    ['CY', 'Cyprus', 'EUR', 'Asia/Nicosia Europe/Nicosia'],
-    ['DK', 'Denmark', 'DKK', 'Europe/Copenhagen'],
-    ['FI', 'Finland', 'EUR', 'Europe/Helsinki'],
-    ['FR', 'France', 'EUR', 'Europe/Paris'],
-    ['DE', 'Germany', 'EUR', 'Europe/Berlin'],
-    ['GR', 'Greece', 'EUR', 'Europe/Athens'],
-    ['HK', 'Hong Kong', 'HKD', 'Asia/Hong_Kong'],
-    ['IN', 'India', 'INR', 'Asia/Kolkata Asia/Calcutta'],
-    ['ID', 'Indonesia', 'IDR', 'Asia/Jakarta Asia/Makassar Asia/Jayapura'],
-    ['IE', 'Ireland', 'EUR', 'Europe/Dublin'],
-    ['IL', 'Israel', 'ILS', 'Asia/Jerusalem Asia/Tel_Aviv'],
-    ['IT', 'Italy', 'EUR', 'Europe/Rome'],
-    ['JP', 'Japan', 'JPY', 'Asia/Tokyo'],
-    ['JO', 'Jordan', 'JOD', 'Asia/Amman'],
-    ['KW', 'Kuwait', 'KWD', 'Asia/Kuwait'],
-    ['LB', 'Lebanon', 'LBP', 'Asia/Beirut'],
-    ['MY', 'Malaysia', 'MYR', 'Asia/Kuala_Lumpur Asia/Kuching'],
-    ['MV', 'Maldives', 'MVR', 'Indian/Maldives'],
-    ['NP', 'Nepal', 'NPR', 'Asia/Kathmandu Asia/Katmandu'],
-    ['NL', 'Netherlands', 'EUR', 'Europe/Amsterdam'],
-    ['NZ', 'New Zealand', 'NZD', 'Pacific/Auckland'],
-    ['NO', 'Norway', 'NOK', 'Europe/Oslo'],
-    ['OM', 'Oman', 'OMR', 'Asia/Muscat'],
-    ['PK', 'Pakistan', 'PKR', 'Asia/Karachi'],
-    ['PH', 'Philippines', 'PHP', 'Asia/Manila'],
-    ['PL', 'Poland', 'PLN', 'Europe/Warsaw'],
-    ['PT', 'Portugal', 'EUR', 'Europe/Lisbon'],
-    ['QA', 'Qatar', 'QAR', 'Asia/Qatar'],
-    ['RO', 'Romania', 'RON', 'Europe/Bucharest'],
-    ['RU', 'Russia', 'RUB', 'Europe/Moscow'],
-    ['SA', 'Saudi Arabia', 'SAR', 'Asia/Riyadh'],
-    ['SG', 'Singapore', 'SGD', 'Asia/Singapore'],
-    ['KR', 'South Korea', 'KRW', 'Asia/Seoul'],
-    ['ES', 'Spain', 'EUR', 'Europe/Madrid'],
-    ['SE', 'Sweden', 'SEK', 'Europe/Stockholm'],
-    ['CH', 'Switzerland', 'CHF', 'Europe/Zurich'],
-    ['TH', 'Thailand', 'THB', 'Asia/Bangkok'],
-    ['AE', 'United Arab Emirates', 'AED', 'Asia/Dubai'],
-    ['GB', 'United Kingdom', 'GBP', 'Europe/London'],
-    ['US', 'United States', 'USD', 'America/New_York America/Chicago America/Denver America/Los_Angeles America/Phoenix America/Anchorage America/Detroit Pacific/Honolulu'],
-    ['VN', 'Vietnam', 'VND', 'Asia/Ho_Chi_Minh Asia/Saigon']
-  ];
-  const countryOf = (code) => COUNTRIES.find((c) => c[0] === code) || COUNTRIES[0];
-  const COUNTRY_KEY = 'quartz-eon.country';
-
-  function startCountry() {
-    const saved = storage.get(COUNTRY_KEY);
-    if (COUNTRIES.some((c) => c[0] === saved)) return saved;
-    const old = storage.get('quartz-eon.currency'); /* the earlier rupees / dollars switch */
-    if (old === 'USD') return 'US';
-    if (old === 'LKR') return 'LK';
-    let zone = '';
-    try { zone = Intl.DateTimeFormat().resolvedOptions().timeZone || ''; } catch (e) { /* no time zone */ }
-    const hit = COUNTRIES.find((c) => c[3].split(' ').includes(zone));
-    return hit ? hit[0] : 'LK';
-  }
-  let showCountry = startCountry();
-  const wantedCur = () => countryOf(showCountry)[2];
-
-  /* Units of a currency per US dollar, or undefined while that rate is not loaded. */
-  const perUsd = (cur) => (cur === 'USD' ? 1 : cur === 'LKR' ? rate.value : rate.rates[cur.toLowerCase()]);
-  /* The currency a price is shown in: the customer's, or the store's own until the live rates have loaded. */
-  const shownCur = (storeCur) => (perUsd(wantedCur()) ? wantedCur() : storeCur);
-  const convert = (n, from, to) => (from === to ? n : (n / perUsd(from)) * perUsd(to));
-
-  function currencyName(cur) {
-    try { return new Intl.DisplayNames(['en'], { type: 'currency' }).of(cur); } catch (e) { return cur; }
-  }
-
-  /* A price split into its sign and number, e.g. { sign: '€', number: '12.40' }. Rupees keep "Rs." and whole numbers.
-     A store's own price ("exact") and big converted amounts are whole numbers; small converted amounts keep cents. */
-  function moneyParts(n, cur, exact) {
-    if (cur === 'LKR') return { sign: CFG.currencySymbol, number: rupeeNumber(n) };
-    const whole = exact || n >= 1000 ? { minimumFractionDigits: 0, maximumFractionDigits: 0 } : {};
-    try {
-      const parts = new Intl.NumberFormat('en-US', { style: 'currency', currency: cur, ...whole }).formatToParts(n);
-      return {
-        sign: parts.filter((x) => x.type === 'currency').map((x) => x.value).join(''),
-        number: parts.filter((x) => x.type !== 'currency' && x.type !== 'literal').map((x) => x.value).join('')
-      };
-    } catch (e) {
-      return { sign: cur, number: money2(n) };
-    }
-  }
-  /* "€12.40", but "AED 45" and "Rs. 1,200" with a space after a lettered sign. */
-  function moneyText(n, cur, exact) {
-    const m = moneyParts(n, cur, exact);
-    return /[A-Za-z.]$/.test(m.sign) ? `${m.sign} ${m.number}` : `${m.sign}${m.number}`;
-  }
   /* A store price written in the currency the customer chose. */
-  const shownText = (n, storeCur) => {
-    const cur = shownCur(storeCur);
-    return moneyText(convert(n, storeCur, cur), cur, cur === storeCur);
-  };
+  const shownText = (n, storeCur) => M.shown(n, storeCur);
 
   /* What a price looks like. With several options and none chosen it reads "From Rs. ...". */
   function priceHtml(p, optionIndex) {
@@ -407,7 +294,7 @@
     const per = `1 USD = ${CFG.currencySymbol} ${money2(rate.value)}`;
     const cur = wantedCur();
     const base = 'Each store prices in rupees or US dollars, and you pay the store in its own currency.';
-    const showing = `Prices are shown in ${currencyName(cur)} for ${countryOf(showCountry)[1]} (change the country at the top of the page).`;
+    const showing = `Prices are shown in ${currencyName(cur)} for ${countryOf(M.country())[1]} (change the country at the top of the page).`;
     let text;
     if (rate.status === 'live') text = `${base} ${showing} Other currencies are approximate, at today's exchange rates (${per}${rate.date ? `, rate of ${formatDate(rate.date)}` : ''}).`;
     else if (rate.status === 'fallback') text = `${base} The live exchange rates could not be loaded, so an estimated ${per} is used${perUsd(cur) ? '' : ' and prices are shown in each store\'s own currency'}.`;
@@ -415,60 +302,10 @@
     byId('rate-note').textContent = text;
   }
 
-  function applyRate(value, rates, date, status) {
-    rate.value = value;
-    rate.rates = rates;
-    rate.date = date;
-    rate.status = status;
+  M.onChange(() => {
     renderCurrentView();
     renderRateNote();
-  }
-
-  const goodLkr = (value) => value > 50 && value < 2000;
-
-  function readCachedRate() {
-    try {
-      const cached = JSON.parse(storage.get(RATE_KEY));
-      if (cached && goodLkr(cached.value) && cached.rates) return cached;
-    } catch (e) { /* no usable cache */ }
-    return null;
-  }
-
-  async function fetchRate() {
-    for (const url of RATE_SOURCES) {
-      try {
-        const response = await fetch(url, { cache: 'no-cache' });
-        if (!response.ok) continue;
-        const data = await response.json();
-        const all = (data && data.usd) || {};
-        const value = Number(all.lkr);
-        if (!goodLkr(value)) continue;
-        /* Keep only the currencies of the country list. */
-        const rates = {};
-        COUNTRIES.forEach((c) => {
-          const v = Number(all[c[2].toLowerCase()]);
-          if (v > 0) rates[c[2].toLowerCase()] = v;
-        });
-        return { value, rates, date: data.date || '', fetchedAt: Date.now() };
-      } catch (e) { /* try the next source */ }
-    }
-    return null;
-  }
-
-  async function loadRate() {
-    const cached = readCachedRate();
-    if (cached) {
-      applyRate(cached.value, cached.rates, cached.date, 'live');
-      if (Date.now() - cached.fetchedAt < RATE_MAX_AGE) return;
-    }
-    const fresh = await fetchRate();
-    if (fresh) {
-      storage.set(RATE_KEY, JSON.stringify(fresh));
-      applyRate(fresh.value, fresh.rates, fresh.date, 'live');
-    } else if (!cached) {
-      applyRate(CFG.fallbackUsdRate, {}, '', 'fallback');
-    }
-  }
+  });
 
   /* ---------- Stars ---------- */
   /* Five stars filled up to the rating (halves allowed, e.g. 4.5). */
@@ -487,6 +324,19 @@
       : `<p><a class="rating rating--link" href="#/product/${esc(p.id)}">${inner}</a></p>`;
   }
 
+  /* ---------- Saved products: the heart on a product keeps it in a list in this browser (no account needed) ---------- */
+  const SAVED_KEY = 'qe-saved';
+  const SAVED_MAX = 200;
+  function readSaved() {
+    try {
+      const list = JSON.parse(window.localStorage.getItem(SAVED_KEY) || '[]');
+      return Array.isArray(list) ? list.filter((id) => typeof id === 'string').slice(0, SAVED_MAX) : [];
+    } catch (e) { return []; }
+  }
+  let savedIds = readSaved();
+  const isSaved = (id) => savedIds.includes(id);
+  const saveBtnHtml = (p) => `<button class="save-btn" type="button" data-save="${esc(p.id)}" aria-pressed="${isSaved(p.id)}" aria-label="Save ${esc(p.name)}" title="Save for later">${icon('i-heart')}</button>`;
+
   /* ---------- Product cards ---------- */
   /* A "plan card" product in a list: logo, name and badge, the key figures and detail lines, then the price and
      Buy like the other tiles. Tiles get small on phones, so style.css trims them as the list narrows. */
@@ -504,6 +354,7 @@
             ${ratingLine(p)}
           </div>
         </header>
+        ${saveBtnHtml(p)}
         ${p.stats.length ? `<div class="pc__stats">${p.stats.map(stat).join('')}</div>` : ''}
         ${p.info.length ? `<ul class="pc__info">${p.info.map((row) => `<li>${icon(`i-${esc(row.icon)}`)}<span>${esc(row.text)}</span></li>`).join('')}</ul>` : ''}
         ${showSeller ? `<p class="product__seller">by ${seller.slug ? `<a href="#/store/${esc(seller.slug)}">${esc(seller.name)}</a>${verifiedBadge(seller)}` : esc(seller.name)}</p>` : ''}
@@ -529,6 +380,7 @@
           ${p.theme === 'plan' && p.badge ? `<span class="badge">${esc(p.badge)}</span>` : p.type ? `<span class="badge">${esc(p.type)}</span>` : ''}
           ${p.soldOut ? '<span class="badge badge--soldout">Sold out</span>' : ''}
         </a>
+        ${saveBtnHtml(p)}
         <div class="product__info">
           <p class="product__cat">${esc(p.category)}</p>
           <h3 class="product__name"><a href="${href}">${esc(p.name)}</a></h3>
@@ -666,6 +518,21 @@
 
   /* ---------- Home page: search, categories, sort ---------- */
   const state = { cat: 'All', q: '', sort: 'featured' };
+  /* The chosen category, search and sort survive a refresh (kept for this tab only). */
+  const SHOP_KEY = 'qe-shop';
+  try {
+    const kept = JSON.parse(window.sessionStorage.getItem(SHOP_KEY) || 'null');
+    if (kept && typeof kept === 'object') {
+      if (typeof kept.cat === 'string' && kept.cat) state.cat = kept.cat;
+      if (typeof kept.q === 'string') state.q = kept.q.slice(0, 100);
+      if (Array.from(byId('sort').options).some((o) => o.value === kept.sort)) state.sort = kept.sort;
+    }
+  } catch (e) { /* storage unavailable */ }
+  byId('q').value = state.q;
+  byId('sort').value = state.sort;
+  function keepShopState() {
+    try { window.sessionStorage.setItem(SHOP_KEY, JSON.stringify(state)); } catch (e) { /* storage unavailable */ }
+  }
   const categoryNames = () => (CFG.categories.length ? CFG.categories : Array.from(new Set(PRODUCTS.map((p) => p.category))));
   const countIn = (name) => PRODUCTS.filter((p) => name === 'All' || p.category === name).length;
 
@@ -890,6 +757,11 @@
       byId('chips').innerHTML = [64, 92, 120, 84, 104].map((w) => `<span class="sk sk--chip" style="width:${w}px" aria-hidden="true"></span>`).join('');
       return;
     }
+    /* A kept category that no longer exists falls back to All */
+    if (catalog.status === 'ready' && state.cat !== 'All' && !categoryNames().includes(state.cat)) {
+      state.cat = 'All';
+      keepShopState();
+    }
     byId('chips').innerHTML = ['All', ...categoryNames()].map((name) => `
       <button class="chip" type="button" data-filter="${esc(name)}" aria-pressed="${state.cat === name}">${esc(name)} <small>${countIn(name)}</small></button>`).join('');
   }
@@ -898,6 +770,7 @@
     const chip = event.target.closest('[data-filter]');
     if (!chip) return;
     state.cat = chip.dataset.filter;
+    keepShopState();
     renderChips();
     renderProducts();
     const again = byId('chips').querySelector('[aria-pressed="true"]');
@@ -905,106 +778,22 @@
   });
   byId('q').addEventListener('input', (event) => {
     state.q = event.target.value.trim();
+    keepShopState();
     renderProducts();
   });
   byId('sort').addEventListener('change', (event) => {
     state.sort = event.target.value;
+    keepShopState();
     renderProducts();
   });
-  /* The customer's country (kept in this browser): every price is shown in its currency.
-     The pill shows only the currency code; it opens a panel with a search box, the two main
-     currencies (LKR and USD) and every country. */
-  const curToggle = byId('cur-toggle');
-  const curMenu = byId('cur-menu');
-  const curSearch = byId('cur-search');
-  const CUR_MAIN = [['LK', 'Sri Lankan rupee'], ['US', 'US dollar']];
-  byId('cur-main-list').innerHTML = CUR_MAIN.map(([code, label]) => {
-    const c = countryOf(code);
-    return `<button class="cur__main" type="button" data-country="${c[0]}"><strong>${esc(c[2])}</strong><span>${esc(label)}</span></button>`;
-  }).join('');
-  byId('cur-list').innerHTML = COUNTRIES.map((c) => `<button class="cur__opt" type="button" data-country="${c[0]}" data-find="${esc(`${c[1]} ${c[2]} ${c[0]}`.toLowerCase())}">`
-    + `<svg class="i cur__tick" aria-hidden="true" focusable="false"><use href="#i-check"/></svg>`
-    + `<span class="cur__name">${esc(c[1])}</span><span class="cur__code">${esc(c[2])}</span></button>`).join('');
-  function paintCurrencyPick() {
-    const cur = wantedCur();
-    byId('currency-face').textContent = cur;
-    curToggle.setAttribute('aria-label', `Currency: ${cur}. Change your country`);
-    curMenu.querySelectorAll('[data-country]').forEach((el) => {
-      el.setAttribute('aria-current', String(el.dataset.country === showCountry));
-    });
-  }
-  function filterCurrencyPick() {
-    const q = curSearch.value.trim().toLowerCase();
-    let shown = 0;
-    byId('cur-list').querySelectorAll('.cur__opt').forEach((el) => {
-      el.hidden = Boolean(q) && !el.dataset.find.includes(q);
-      if (!el.hidden) shown += 1;
-    });
-    byId('cur-main').hidden = Boolean(q);
-    byId('cur-all-title').textContent = q ? 'Results' : 'All countries';
-    byId('cur-empty').hidden = shown > 0;
-  }
-  function setCurMenu(open) {
-    curMenu.hidden = !open;
-    curToggle.setAttribute('aria-expanded', String(open));
-    if (!open) return;
-    curMenu.style.setProperty('--cur-top', `${Math.round(curToggle.getBoundingClientRect().bottom + 10)}px`);
-    curSearch.value = '';
-    filterCurrencyPick();
-    curMenu.querySelector('.cur__scroll').scrollTop = 0;
-    curSearch.focus();
-  }
-  function pickCountry(code) {
-    showCountry = countryOf(code)[0];
-    storage.set(COUNTRY_KEY, showCountry);
-    paintCurrencyPick();
-    setCurMenu(false);
-    curToggle.focus();
-    renderCurrentView();
-    renderRateNote();
-  }
-  paintCurrencyPick();
-  curToggle.addEventListener('click', () => setCurMenu(curMenu.hidden));
-  curSearch.addEventListener('input', filterCurrencyPick);
-  curMenu.addEventListener('click', (event) => {
-    const option = event.target.closest('[data-country]');
-    if (option) pickCountry(option.dataset.country);
-  });
-  /* Keys: Enter in the search box picks the first match, arrows move through the visible choices. */
-  curMenu.addEventListener('keydown', (event) => {
-    const choices = [...curMenu.querySelectorAll('[data-country]')].filter((el) => el.offsetParent !== null);
-    if (event.key === 'Enter' && event.target === curSearch) {
-      event.preventDefault();
-      const first = byId('cur-list').querySelector('.cur__opt:not([hidden])');
-      if (first && curSearch.value.trim()) pickCountry(first.dataset.country);
-      return;
-    }
-    if (event.key !== 'ArrowDown' && event.key !== 'ArrowUp') return;
-    event.preventDefault();
-    const at = choices.indexOf(document.activeElement);
-    if (event.key === 'ArrowDown') {
-      const next = choices[at + 1];
-      if (next) next.focus();
-    } else if (at <= 0) {
-      curSearch.focus();
-    } else {
-      choices[at - 1].focus();
-    }
-  });
-  document.addEventListener('click', (event) => {
-    if (!curMenu.hidden && !event.target.closest('#cur-widget')) setCurMenu(false);
-  });
-  document.addEventListener('keydown', (event) => {
-    if (event.key === 'Escape' && !curMenu.hidden) { setCurMenu(false); curToggle.focus(); }
-  });
-  curMenu.addEventListener('focusout', (event) => {
-    if (!curMenu.hidden && event.relatedTarget && !event.relatedTarget.closest('#cur-widget')) setCurMenu(false);
-  });
+  /* The customer's country (kept in this browser): every price is shown in its currency. */
+  M.mountPicker(byId('cur-widget'));
   byId('retry-load').addEventListener('click', loadCatalog);
   byId('clear-filters').addEventListener('click', () => {
     state.cat = 'All';
     state.q = '';
     byId('q').value = '';
+    keepShopState();
     renderChips();
     renderProducts();
   });
@@ -1014,6 +803,7 @@
   const storeView = byId('store-view');
   const ordersView = byId('orders-view');
   const productView = byId('product-view');
+  const savedView = byId('saved-view');
   const view = { name: 'home', slug: '' };
   const DEFAULT_DESCRIPTION = 'Buy VPN plans, premium accounts, e-books and other digital products from independent sellers in Sri Lanka. Pay the seller by bank transfer and get your product online.';
   const HOME_TITLE = `${CFG.storeName} | VPN plans, premium accounts and digital products in Sri Lanka`;
@@ -1083,7 +873,7 @@
     return `
       <section class="store-head store-head--${theme}" style="--h:${hueOf(seller)}" aria-labelledby="store-title">
         <div class="wrap">
-          <a class="back" href="#/">${icon('i-back')}<span>All products</span></a>
+          ${backLinkHtml('#/', 'All products', true)}
           <div class="store-panel">
             <div class="store-head__row">
               ${sellerLogoHtml(seller, `store-avatar${seller.logo ? ' store-avatar--img' : ''}`)}
@@ -1127,22 +917,195 @@
       </div>`;
   }
 
+  /* ---------- Saved products page (address: index.html#/saved) ---------- */
+  function renderSaved() {
+    let inner;
+    if (catalog.status === 'loading') {
+      inner = `<div class="grid" aria-busy="true">${skeletonTiles(Math.min(Math.max(savedIds.length, 3), 10))}</div>`;
+    } else if (catalog.status !== 'ready') {
+      inner = `
+        <div class="empty">
+          <p class="empty__title">Could not load your saved products</p>
+          <p>Check your connection and try again.</p>
+          <button class="btn btn--ink" type="button" data-retry-catalog>Try again</button>
+        </div>`;
+    } else if (!savedIds.length) {
+      inner = `
+        <div class="empty">
+          <p class="empty__title">Nothing saved yet</p>
+          <p>Tap the heart on a product to keep it here for later. The list stays in this browser.</p>
+          <a class="btn btn--ink" href="#/">Browse products</a>
+        </div>`;
+    } else {
+      const list = savedIds.map((id) => PRODUCT_BY_ID.get(id)).filter(Boolean);
+      const gone = savedIds.length - list.length;
+      inner = `
+        ${list.length ? `<div class="grid">${list.map((p) => productTile(p, true)).join('')}</div>` : ''}
+        ${gone ? `<p class="note saved-gone">${gone} saved ${plural(gone, 'product is', 'products are')} not for sale right now.
+          <button class="link" type="button" id="saved-forget">Remove ${gone === 1 ? 'it' : 'them'}</button></p>` : ''}`;
+    }
+    const count = catalog.status === 'ready' ? savedIds.filter((id) => PRODUCT_BY_ID.has(id)).length : 0;
+    savedView.innerHTML = `
+      <section class="sec tone tone--paper" aria-labelledby="saved-title">
+        <div class="wrap">
+          ${backLinkHtml('#/', 'All products', true)}
+          <header class="sec__head">
+            <h1 class="h2" id="saved-title">Saved products</h1>
+            <p class="sec__count">${count ? `${count} ${plural(count, 'product', 'products')}` : ''}</p>
+          </header>
+          ${count ? '<p class="note saved-note">Kept in this browser. Open a product to buy it.</p>' : ''}
+          ${inner}
+        </div>
+      </section>`;
+  }
+
+  savedView.addEventListener('click', (event) => {
+    if (event.target.closest('[data-retry-catalog]')) { loadCatalog(); return; }
+    if (!event.target.closest('#saved-forget')) return;
+    savedIds = savedIds.filter((id) => PRODUCT_BY_ID.has(id));
+    storeSaved();
+  });
+
+  function storeSaved() {
+    try { window.localStorage.setItem(SAVED_KEY, JSON.stringify(savedIds)); } catch (e) { /* storage unavailable: kept for this visit only */ }
+    if (view.name === 'saved') renderSaved();
+    paintSaved();
+  }
+
+  /* The heart in the header shows how many products are saved; every heart on the page shows its own state. */
+  function paintSaved() {
+    const count = savedIds.length;
+    const badge = byId('saved-count');
+    badge.textContent = String(count);
+    badge.hidden = count === 0;
+    byId('saved-link').setAttribute('aria-label', count ? `Saved products: ${count}` : 'Saved products');
+    document.querySelectorAll('[data-save]').forEach((btn) => {
+      const on = isSaved(btn.dataset.save);
+      btn.setAttribute('aria-pressed', String(on));
+      const text = btn.querySelector('.save-pd__text');
+      if (text) text.textContent = on ? 'Saved' : 'Save for later';
+    });
+  }
+
+  document.addEventListener('click', (event) => {
+    const btn = event.target.closest('[data-save]');
+    if (!btn) return;
+    const id = btn.dataset.save;
+    const adding = !isSaved(id);
+    savedIds = adding ? [id, ...savedIds].slice(0, SAVED_MAX) : savedIds.filter((x) => x !== id);
+    storeSaved();
+    if (adding && btn.isConnected) {
+      btn.classList.remove('is-pop');
+      void btn.offsetWidth; /* restart the little pop */
+      btn.classList.add('is-pop');
+    }
+  });
+  /* Another tab changed the list */
+  window.addEventListener('storage', (event) => {
+    if (event.key !== SAVED_KEY) return;
+    savedIds = readSaved();
+    if (view.name === 'saved') renderSaved();
+    paintSaved();
+  });
+
   function renderCurrentView() {
     if (view.name === 'store') renderStore();
     else if (view.name === 'orders') renderOrders();
     else if (view.name === 'product') renderProduct();
+    else if (view.name === 'saved') renderSaved();
     else renderProducts();
   }
 
-  function route() {
-    const hash = window.location.hash;
+  function parseHash(hash) {
     const store = hash.match(/^#\/store\/([\w-]+)$/);
     const product = hash.match(/^#\/product\/([\w-]+)$/);
-    const next = hash === '#/orders'
-      ? { name: 'orders', slug: '' }
+    return hash === '#/orders' ? { name: 'orders', slug: '' }
+      : hash === '#/saved' ? { name: 'saved', slug: '' }
       : product ? { name: 'product', slug: product[1] }
       : store ? { name: 'store', slug: store[1] } : { name: 'home', slug: '' };
+  }
+
+  /* ---------- History: each entry remembers the page it came from and how far down it was scrolled ---------- */
+  /* With this, Back links return to where the customer was (the shop, a store, Saved...) instead of always
+     going to the store, and Back/Forward put the page at the same scroll place instead of the top. */
+  const SCROLL_KEY = 'qe-scroll';
+  let scrollMemory = {};
+  try { scrollMemory = JSON.parse(window.sessionStorage.getItem(SCROLL_KEY) || '{}') || {}; } catch (e) { scrollMemory = {}; }
+  let entryId = '';        /* the history entry on screen */
+  let lastHash = null;     /* the address before this one (null on the first page of the visit) */
+  let pendingScroll = null; /* { top, until }: a place to go back to once the page has its content */
+  let scrollSaveTimer = 0;
+  if ('scrollRestoration' in window.history) window.history.scrollRestoration = 'manual';
+
+  const entryState = () => (window.history.state && typeof window.history.state === 'object' ? window.history.state : {});
+
+  /* A new history entry (a link was followed, or the first page of the visit): give it an id and note where the
+     customer came from. */
+  function markEntry() {
+    const id = `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`;
+    try { window.history.replaceState({ ...entryState(), qeId: id, qeFrom: lastHash }, ''); } catch (e) { return; }
+    const ids = Object.keys(scrollMemory);
+    if (ids.length > 60) ids.slice(0, ids.length - 60).forEach((old) => { delete scrollMemory[old]; });
+  }
+
+  window.addEventListener('scroll', () => {
+    if (!entryId) return;
+    if (pendingScroll) {
+      if (Date.now() < pendingScroll.until) return; /* still waiting for the page to fill in */
+      pendingScroll = null;
+    }
+    scrollMemory[entryId] = Math.round(window.scrollY);
+    clearTimeout(scrollSaveTimer);
+    scrollSaveTimer = setTimeout(() => {
+      try { window.sessionStorage.setItem(SCROLL_KEY, JSON.stringify(scrollMemory)); } catch (e) { /* storage unavailable */ }
+    }, 300);
+  }, { passive: true });
+
+  const viewReady = () => (view.name === 'orders'
+    ? ordersState.status === 'ready' || ordersState.status === 'error'
+    : catalog.status !== 'loading');
+
+  function applyPendingScroll() {
+    if (!pendingScroll || !viewReady()) return;
+    const top = pendingScroll.top;
+    pendingScroll = null;
+    window.scrollTo({ top, behavior: 'instant' });
+  }
+
+  /* "Back" to the page the customer came from, when it was inside the shop. Otherwise a plain link to the
+     fallback. onlyFromHome: use history only when they came from the shop's home page. */
+  function backLinkHtml(fallbackHref, fallbackLabel, onlyFromHome) {
+    const from = entryState().qeFrom;
+    const usable = typeof from === 'string' && (!onlyFromHome || parseHash(from).name === 'home');
+    let label = fallbackLabel;
+    if (usable) {
+      const where = parseHash(from);
+      const seller = where.name === 'store' ? SELLER_BY_SLUG.get(where.slug) : null;
+      label = where.name === 'home' ? 'All products'
+        : where.name === 'orders' ? 'My orders'
+        : where.name === 'saved' ? 'Saved products'
+        : seller ? seller.name : 'Back';
+    }
+    return `<a class="back" href="${esc(usable ? from || '#/' : fallbackHref)}"${usable ? ' data-go-back' : ''}>${icon('i-back')}<span>${esc(label)}</span></a>`;
+  }
+
+  document.addEventListener('click', (event) => {
+    const link = event.target.closest('[data-go-back]');
+    if (!link || event.ctrlKey || event.metaKey || event.shiftKey || event.button !== 0) return;
+    event.preventDefault();
+    window.history.back();
+  });
+
+  function route() {
+    const hash = window.location.hash;
+    const next = parseHash(hash);
     const changed = next.name !== view.name || next.slug !== view.slug;
+    const fresh = !entryState().qeId;
+    if (fresh) markEntry();
+    const id = entryState().qeId || '';
+    const arrived = id ? id !== entryId : changed;
+    entryId = id;
+    lastHash = hash;
     if (changed) page.productId = '';
     view.name = next.name;
     view.slug = next.slug;
@@ -1150,17 +1113,26 @@
     storeView.hidden = view.name !== 'store';
     ordersView.hidden = view.name !== 'orders';
     productView.hidden = view.name !== 'product';
+    savedView.hidden = view.name !== 'saved';
     const seller = SELLER_BY_SLUG.get(view.slug);
     const item = view.name === 'product' ? PRODUCT_BY_ID.get(view.slug) : null;
     document.title = view.name === 'store' && seller ? `${seller.name} | ${CFG.storeName}`
       : item ? `${item.name} | ${CFG.storeName}`
-      : view.name === 'orders' ? `My orders | ${CFG.storeName}` : HOME_TITLE;
+      : view.name === 'orders' ? `My orders | ${CFG.storeName}`
+      : view.name === 'saved' ? `Saved products | ${CFG.storeName}` : HOME_TITLE;
     const description = item ? (item.description || DEFAULT_DESCRIPTION).slice(0, 160)
       : view.name === 'store' && seller && seller.about ? seller.about : DEFAULT_DESCRIPTION;
     const meta = document.querySelector('meta[name="description"]');
     if (meta) meta.setAttribute('content', description);
     renderCurrentView();
-    if (changed) window.scrollTo({ top: 0, behavior: 'instant' });
+    if (arrived) {
+      /* A new page starts at the top; Back/Forward (or a refresh) returns to where it was */
+      const top = fresh ? 0 : Number(scrollMemory[id]) || 0;
+      pendingScroll = top > 0 && !viewReady() ? { top, until: Date.now() + 8000 } : null;
+      window.scrollTo({ top, behavior: 'instant' });
+    } else {
+      applyPendingScroll();
+    }
   }
 
   window.addEventListener('hashchange', route);
@@ -1221,13 +1193,35 @@
   }
 
   function renderProduct() {
+    if (catalog.status === 'loading') {
+      /* Grey shapes in the places of the photo, name, price and button until the product arrives */
+      productView.innerHTML = `
+        <section class="sec tone tone--paper"><div class="wrap">
+          <span class="sk sk--line sk--back" aria-hidden="true"></span>
+          <div class="pd" aria-busy="true">
+            <p class="sr-only">Loading product</p>
+            <div class="pd__gallery" aria-hidden="true"><span class="sk sk--art sk--pd"></span></div>
+            <div class="pd__info sk-pd" aria-hidden="true">
+              <span class="sk sk--line" style="width:90px"></span>
+              <span class="sk sk--h1"></span>
+              <span class="sk sk--line" style="width:40%"></span>
+              <span class="sk sk--price sk--pd-price"></span>
+              <span class="sk sk--row"></span>
+              <span class="sk sk--row"></span>
+              <span class="sk sk--btn sk--pd-btn"></span>
+              <span class="sk sk--line" style="width:85%"></span>
+              <span class="sk sk--line" style="width:65%"></span>
+            </div>
+          </div>
+        </div></section>`;
+      return;
+    }
     if (catalog.status !== 'ready') {
-      const failed = catalog.status === 'error';
       productView.innerHTML = `
         <section class="sec tone tone--paper"><div class="wrap"><div class="empty">
-          <p class="empty__title">${failed ? 'Could not load this product' : 'Loading product'}</p>
-          <p>${failed ? 'Check your connection and try again.' : 'One moment.'}</p>
-          ${failed ? '<button class="btn btn--ink" type="button" id="retry-product">Try again</button>' : ''}
+          <p class="empty__title">Could not load this product</p>
+          <p>Check your connection and try again.</p>
+          <button class="btn btn--ink" type="button" id="retry-product">Try again</button>
         </div></div></section>`;
       const retry = byId('retry-product');
       if (retry) retry.addEventListener('click', loadCatalog);
@@ -1283,6 +1277,9 @@
     const buyHtml = contactSale
       ? `<div class="pd__order" id="pd-order">${orderButtonsHtml(p)}</div>`
       : `<button class="btn btn--ink btn--block pd__buy${p.theme === 'plan' ? ' pc__buy' : ''}" type="button" id="pd-buy" ${state.disabled ? 'disabled' : ''}>${state.text}</button>`;
+    const saveHtml = `<button class="btn btn--ghost btn--block save-pd" type="button" data-save="${esc(p.id)}" aria-pressed="${isSaved(p.id)}">${icon('i-heart')}<span class="save-pd__text">${isSaved(p.id) ? 'Saved' : 'Save for later'}</span></button>`;
+    /* Back to where the customer came from in the shop; someone who opened a shared link goes to the store */
+    const backHtml = backLinkHtml(seller.slug ? `#/store/${seller.slug}` : '#/', seller.slug ? seller.name : 'All products', false);
 
     /* The "plan card" style: a logo, a badge, key figures, detail lines with icons, then the Buy button. */
     if (p.theme === 'plan') {
@@ -1290,7 +1287,7 @@
       productView.innerHTML = `
         <section class="sec tone tone--paper" aria-labelledby="pd-title">
           <div class="wrap">
-            <a class="back" href="${seller.slug ? `#/store/${esc(seller.slug)}` : '#/'}">${icon('i-back')}<span>${seller.slug ? esc(seller.name) : 'All products'}</span></a>
+            ${backHtml}
             <article class="pc${p.soldOut ? ' is-soldout' : ''}" style="--h:${hueOf(p)}">
               <header class="pc__head">
                 ${p.logo ? `<img class="pc__logo" src="${esc(logoUrl(p.logo))}" alt="">` : `<span class="pc__logo pc__logo--art">${art(p.icon)}</span>`}
@@ -1308,6 +1305,7 @@
               ${!p.options.length && !p.soldOut && p.stockLeft != null ? `<p class="pd__stock">${p.stockLeft === 1 ? 'Only 1 left' : `${p.stockLeft} left`}</p>` : ''}
               ${options}
               ${buyHtml}
+              ${saveHtml}
               ${p.description ? `<div class="pd__desc">${paragraphs(p.description)}</div>` : ''}
               <ul class="buy__list">${perks.map((text) => `<li>${icon('i-check')}<span>${esc(text)}</span></li>`).join('')}</ul>${contactHtml}
             </article>
@@ -1321,7 +1319,7 @@
     productView.innerHTML = `
       <section class="sec tone tone--paper" aria-labelledby="pd-title">
         <div class="wrap">
-          <a class="back" href="${seller.slug ? `#/store/${esc(seller.slug)}` : '#/'}">${icon('i-back')}<span>${seller.slug ? esc(seller.name) : 'All products'}</span></a>
+          ${backHtml}
           <div class="pd" style="--h:${hueOf(p)}">
             <div class="pd__gallery">${gallery}</div>
             <div class="pd__info">
@@ -1333,6 +1331,7 @@
               ${!p.options.length && !p.soldOut && p.stockLeft != null ? `<p class="pd__stock">${p.stockLeft === 1 ? 'Only 1 left' : `${p.stockLeft} left`}</p>` : ''}
               ${options}
               ${buyHtml}
+              ${saveHtml}
               ${p.description ? `<div class="pd__desc">${paragraphs(p.description)}</div>` : ''}
               <ul class="buy__list">${perks.map((text) => `<li>${icon('i-check')}<span>${esc(text)}</span></li>`).join('')}</ul>${contactHtml}
             </div>
@@ -1601,7 +1600,7 @@
       .filter((row) => row[1])
       .map(([k, v]) => `<div><dt>${esc(k)}</dt><dd>${esc(v)}</dd></div>`).join('');
     panel.innerHTML = `
-      <p class="auth__hint">Transfer <strong>${esc(amountText(offerOf(p, checkout.option).price, p.currency))}</strong> to ${esc(sellerOf(p).name)}’s account below, then send the slip so they can confirm your payment.</p>
+      <p class="auth__hint">Transfer <strong>${esc(M.pay(offerOf(p, checkout.option).price, p.currency))}</strong> to ${esc(sellerOf(p).name)}’s account below, then send the slip so they can confirm your payment.</p>
       <dl class="pay__bank">${rows}</dl>
       ${bank.note ? `<p class="auth__hint">${esc(bank.note)}</p>` : ''}
       <form class="auth__form" id="bank-form" novalidate>
@@ -1872,7 +1871,7 @@
     } else {
       detail = '<p class="note">The seller could not confirm this payment. If you already paid, please contact the seller with your transfer slip.</p>';
     }
-    const price = o.method === 'paypal' && o.amount_usd ? `$${money2(Number(o.amount_usd))} via PayPal` : `${esc(amountText(o.amount_lkr, o.currency))} by bank transfer`;
+    const price = o.method === 'paypal' && o.amount_usd ? `$${money2(Number(o.amount_usd))} via PayPal` : `${esc(M.dual(o.amount_lkr, o.currency))} by bank transfer`;
     return `
       <article class="order">
         <div class="order__head">
@@ -1905,11 +1904,12 @@
     ordersView.innerHTML = `
       <section class="sec tone tone--paper" aria-labelledby="orders-title">
         <div class="wrap">
-          <a class="back" href="#/">${icon('i-back')}<span>All products</span></a>
+          ${backLinkHtml('#/', 'All products', true)}
           <header class="sec__head"><h1 class="h2" id="orders-title">My orders</h1></header>
           ${inner}
         </div>
       </section>`;
+    applyPendingScroll();
   }
 
   ordersView.addEventListener('input', (event) => {
@@ -2065,7 +2065,7 @@
           </div>
           ${email}
           ${passwordHtml('new-password', 'At least 8 characters.')}
-          <p class="auth__hint">Your store is reviewed before it goes live. After approval, the store fee is ${esc(CFG.currencySymbol)} ${rupeeNumber(CFG.sellerMonthlyFee)} per month.</p>
+          <p class="auth__hint">Your store is reviewed before it goes live. After approval, the store fee is ${esc(M.dual(CFG.sellerMonthlyFee, 'LKR'))} per month.</p>
           <button class="btn btn--ink btn--block" type="submit">Create seller account</button>
           ${legalNote('creating an account')}
         </form>`;
@@ -2408,12 +2408,12 @@
   /* ---------- Start ---------- */
   byId('year').textContent = String(new Date().getFullYear());
   paintThemeButton();
+  paintSaved();
   renderChips();
   route();
   /* Also catches a password reset link if the PASSWORD_RECOVERY event fired before this script was ready. */
   if (/[#&]type=recovery(&|$)/.test(window.location.hash)) openAuth('seller', 'reset');
   renderRateNote();
-  loadRate();
   loadCatalog();
 })();
 
