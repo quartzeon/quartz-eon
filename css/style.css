@@ -681,18 +681,27 @@ body.has-buybar { padding-bottom: calc(68px + env(safe-area-inset-bottom, 0px));
   .product__seller { font-size: 11px; }
   .rating > span:not(.stars) { display: none; }
   .grid .stars .i { width: 10px; height: 10px; }
-  .product__info > :nth-last-child(2) { margin-bottom: 6px; }
+  .product__info > :nth-last-child(2), .product__info > :nth-last-child(3):has(+ .product__seller) { margin-bottom: 6px; }
+  /* Shorter tiles (owner: they looked stretched): no store name here (it only fit as "by Nadula v...",
+     the product page shows it) and the plan badge stays on one line */
+  .grid .product__seller { display: none; }
   .product__buy, .pc__foot { gap: 6px; padding-top: 7px; }
   .product__buy .price, .pc__foot .price { font-size: 14px; line-height: 1.15; }
   .product__buy .price__cur, .pc__foot .price__cur { font-size: 10px; }
   .product__buy .usd, .pc__foot .usd { font-size: 9.5px; }
   .product__buy .btn, .pc--tile .pc__buy { min-height: 30px; padding: 0 6px; border-radius: 9px; font-size: 12px; }
 
-  .pc--tile { gap: 7px; padding: 8px; border-radius: 14px; }
+  .pc--tile { gap: 6px; padding: 8px; border-radius: 14px; }
   .pc--tile .pc__head { flex-direction: column; gap: 6px; }
   .pc--tile .pc__head > div { width: 100%; }
-  .pc--tile .pc__logo { width: 34px; height: 34px; border-radius: 9px; }
-  .pc--tile .pc__badge { max-width: 100%; font-size: 9px; }
+  /* block, so no empty line-height space under the logo and the stars */
+  .pc--tile .pc__logo { display: block; width: 34px; height: 34px; border-radius: 9px; }
+  .pc--tile .rating--link { display: flex; }
+  .pc--tile .pc__badge {
+    display: block; width: fit-content; max-width: 100%; overflow: hidden;
+    padding: 2px 6px; font-size: 9px; white-space: nowrap; text-overflow: ellipsis;
+  }
+  .pc--tile .pc__badge .i { display: none; }
   /* Key figures turn into short lines ("30 DAYS") instead of side by side columns */
   .pc--tile .pc__stats { flex-direction: column; padding: 2px 7px; }
   /* A long value ("Unlimited") pushes its label under it instead of breaking in the middle of the word */
