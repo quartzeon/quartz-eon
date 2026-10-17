@@ -221,6 +221,8 @@ section[id] { scroll-margin-top: 76px; }
   padding-block: 9px; font: 500 12px/1.3 var(--font-mono); letter-spacing: .04em;
 }
 .promo__sep { width: 6px; height: 6px; background: var(--brand); transform: rotate(45deg); }
+/* Phones: no promo bar (owner: it only takes space; it wraps to two lines there) */
+@media (max-width: 560px) { .promo { display: none; } }
 
 .site-header {
   position: sticky; top: env(safe-area-inset-top, 0px); z-index: 30;
