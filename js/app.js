@@ -28,6 +28,8 @@
   const icon = (id) => `<svg class="i" aria-hidden="true" focusable="false"><use href="#${id}"/></svg>`;
   const art = (name) => `<svg class="art" aria-hidden="true" focusable="false"><use href="#a-${esc(name)}"/></svg>`;
   const hueOf = (item) => Number(item.hue) || 0;
+  /* Store page header styles a seller can pick (sellers.theme); the colour is the store's hue. */
+  const STORE_THEMES = ['glass', 'aurora', 'midnight', 'plain'];
   const sellerOf = (p) => SELLER_BY_ID.get(p.sellerId) || { id: '', slug: '', name: 'Unknown seller', about: '', hue: 0 };
   const storage = {
     get(key) { try { return window.localStorage.getItem(key); } catch (e) { return null; } },
@@ -559,7 +561,7 @@
     if (stores.error || products.error) {
       catalog.status = 'error';
     } else {
-      SELLERS = stores.data.map((s) => ({ id: s.id, slug: s.store_slug, name: s.store_name, about: s.about, hue: s.hue, logo: s.logo || '', whatsapp: s.contact_whatsapp || '', telegram: s.contact_telegram || '', facebook: s.social_facebook || '', instagram: s.social_instagram || '', website: s.social_website || '', verified: !!s.verified, availabilityMode: s.availability_mode || 'none', availabilityHours: Array.isArray(s.availability_hours) ? s.availability_hours : [], currency: s.currency === 'USD' ? 'USD' : 'LKR' }));
+      SELLERS = stores.data.map((s) => ({ id: s.id, slug: s.store_slug, name: s.store_name, about: s.about, hue: s.hue, logo: s.logo || '', whatsapp: s.contact_whatsapp || '', telegram: s.contact_telegram || '', facebook: s.social_facebook || '', instagram: s.social_instagram || '', website: s.social_website || '', verified: !!s.verified, availabilityMode: s.availability_mode || 'none', availabilityHours: Array.isArray(s.availability_hours) ? s.availability_hours : [], currency: s.currency === 'USD' ? 'USD' : 'LKR', theme: STORE_THEMES.includes(s.theme) ? s.theme : 'glass' }));
       SELLER_BY_ID = new Map(SELLERS.map((s) => [s.id, s]));
       SELLER_BY_SLUG = new Map(SELLERS.map((s) => [s.slug, s]));
       PRODUCTS = products.data.map((p) => ({
@@ -1065,28 +1067,35 @@
     const list = PRODUCTS.filter((p) => p.sellerId === seller.id);
     const categories = Array.from(new Set(list.map((p) => p.category)));
     storeView.innerHTML = `
-      <section class="store-head tone" style="--h:${hueOf(seller)}" aria-labelledby="store-title">
-        <div class="wrap">
-          <a class="back" href="#/">${icon('i-back')}<span>All products</span></a>
-          <div class="store-head__row">
-            ${sellerLogoHtml(seller, `store-avatar${seller.logo ? ' store-avatar--img' : ''}`)}
-            <div>
-              <p class="eyebrow">Seller store</p>
-              <h1 class="store-title" id="store-title">${esc(seller.name)}${verifiedBadge(seller, true)}</h1>
-              ${seller.about ? `<p class="store-about">${esc(seller.about)}</p>` : ''}
-              ${presenceHtml(seller, true)}
-              ${socialLinksHtml(seller)}
-              <p class="store-meta">${list.length} ${plural(list.length, 'product', 'products')}${categories.length ? ` &middot; ${esc(categories.join(', '))}` : ''}</p>
-            </div>
-          </div>
-          ${ownStoreBar(seller)}
-        </div>
-      </section>
+      ${storeHeadHtml(seller, list.length, categories, ownStoreBar(seller))}
       <section class="sec tone tone--paper" aria-label="Products from ${esc(seller.name)}">
         <div class="wrap">
           ${list.length
             ? `<div class="grid">${list.map((p) => productTile(p, false)).join('')}</div>`
             : '<p class="note">This seller has no products yet.</p>'}
+        </div>
+      </section>`;
+  }
+
+  /* The store page header in the seller's chosen style (store-head--glass/aurora/midnight/plain). */
+  function storeHeadHtml(seller, count, categories, extra) {
+    const theme = STORE_THEMES.includes(seller.theme) ? seller.theme : 'glass';
+    return `
+      <section class="store-head store-head--${theme}" style="--h:${hueOf(seller)}" aria-labelledby="store-title">
+        <div class="wrap">
+          <a class="back" href="#/">${icon('i-back')}<span>All products</span></a>
+          <div class="store-panel">
+            <div class="store-head__row">
+              ${sellerLogoHtml(seller, `store-avatar${seller.logo ? ' store-avatar--img' : ''}`)}
+              <div class="store-head__text">
+                <h1 class="store-title" id="store-title">${esc(seller.name)}${verifiedBadge(seller, true)}</h1>
+                ${seller.about ? `<p class="store-about">${esc(seller.about)}</p>` : ''}
+                <div class="store-head__line">${presenceHtml(seller, true)}${socialLinksHtml(seller)}</div>
+                <p class="store-meta">Seller store &middot; ${count} ${plural(count, 'product', 'products')}${categories.length ? ` &middot; ${esc(categories.join(', '))}` : ''}</p>
+              </div>
+            </div>
+            ${extra || ''}
+          </div>
         </div>
       </section>`;
   }

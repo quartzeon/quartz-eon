@@ -367,10 +367,50 @@
     storeForm.elements.facebook.value = sellerRow.social_facebook || '';
     storeForm.elements.instagram.value = sellerRow.social_instagram || '';
     storeForm.elements.website.value = sellerRow.social_website || '';
+    storeForm.querySelectorAll('input[name="theme"]').forEach((r) => { r.checked = r.value === (STORE_THEMES.includes(sellerRow.theme) ? sellerRow.theme : 'glass'); });
+    renderLookColors(Number(sellerRow.hue) || 0);
     renderStoreLogo();
     fillAvailability();
     renderStatusBanner();
   }
+
+  /* ---------- Store look: header style (sellers.theme) and colour (sellers.hue), with a small live preview ---------- */
+  const STORE_THEMES = ['glass', 'aurora', 'midnight', 'plain'];
+  const LOOK_HUES = [0, 20, 38, 95, 150, 175, 200, 220, 248, 275, 300, 330];
+  let lookHue = 0;
+
+  function renderLookColors(hue) {
+    lookHue = hue;
+    const colors = LOOK_HUES.includes(hue) ? LOOK_HUES : [hue, ...LOOK_HUES];
+    byId('look-colors').innerHTML = colors.map((h) => `
+      <button type="button" class="look-color${h === hue ? ' is-on' : ''}" role="radio" aria-checked="${h === hue}" aria-label="Colour ${h}" data-hue="${h}" style="--h:${h}"></button>`).join('');
+    renderLookPreview();
+  }
+
+  function renderLookPreview() {
+    const picked = storeForm.querySelector('input[name="theme"]:checked');
+    const theme = picked ? picked.value : 'glass';
+    const name = storeForm.elements.storeName.value.trim() || sellerRow.store_name;
+    const letters = name.split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w.charAt(0)).join('').toUpperCase();
+    byId('look-preview').innerHTML = `
+      <div class="store-head store-head--${theme}" style="--h:${lookHue}">
+        <div class="store-panel">
+          <div class="store-head__row">
+            <span class="store-avatar">${esc(letters)}</span>
+            <div class="store-head__text">
+              <p class="store-title">${esc(name)}</p>
+              <p class="store-meta">Seller store &middot; preview</p>
+            </div>
+          </div>
+        </div>
+      </div>`;
+  }
+
+  byId('look-colors').addEventListener('click', (event) => {
+    const button = event.target.closest('[data-hue]');
+    if (button) renderLookColors(Number(button.dataset.hue));
+  });
+  byId('store-look').addEventListener('change', renderLookPreview);
 
   byId('copy-link').addEventListener('click', async () => {
     const field = byId('store-link');
@@ -416,6 +456,8 @@
       store_name: storeName,
       currency: f.currency.value === 'USD' ? 'USD' : 'LKR',
       about,
+      theme: (storeForm.querySelector('input[name="theme"]:checked') || {}).value || 'glass',
+      hue: lookHue,
       contact_whatsapp: whatsapp || null,
       contact_telegram: telegram || null,
       social_facebook: facebook || null,

@@ -349,3 +349,25 @@ input[aria-invalid="true"] + .slip-pick { border-color: var(--danger); }
 .fee-row__amount { font-size: 15px; font-weight: 700; }
 .fee-row__meta { margin-top: 2px; font-size: 13px; color: var(--ink-2); overflow-wrap: anywhere; }
 .fee-row .status-badge { flex: none; }
+
+/* ---------- Your store: Store look (header style and colour) ---------- */
+.store-look { display: grid; gap: 12px; margin: 0; padding: 0; border: 0; min-width: 0; }
+.store-look .field__hint { margin-top: -6px; }
+.look-styles { display: flex; flex-wrap: wrap; gap: 10px; }
+.look-style { display: grid; justify-items: center; gap: 6px; font-size: 13px; font-weight: 600; cursor: pointer; }
+.look-style input { position: absolute; opacity: 0; pointer-events: none; }
+.look-style__swatch { width: 64px; height: 42px; border-radius: 12px; border: 2px solid var(--line); }
+.look-style input:checked + .look-style__swatch { border-color: var(--ink); box-shadow: 0 0 0 3px var(--paper), 0 0 0 5px var(--ink); }
+.look-style input:focus-visible + .look-style__swatch { outline: 2px solid var(--focus); outline-offset: 4px; }
+.look-style__swatch--glass { background: radial-gradient(circle at 25% 30%, hsl(260 85% 70% / .7), transparent 60%), radial-gradient(circle at 80% 80%, hsl(310 85% 72% / .6), transparent 60%), hsl(260 60% 92%); }
+.look-style__swatch--aurora { background: linear-gradient(120deg, hsl(260 80% 80%), hsl(320 80% 80%) 55%, hsl(20 80% 82%)); }
+.look-style__swatch--midnight { background: radial-gradient(circle at 25% 30%, hsl(260 85% 55% / .7), transparent 60%), hsl(260 45% 8%); }
+.look-style__swatch--plain { background: hsl(260 62% 92%); }
+.look-colors { display: flex; flex-wrap: wrap; gap: 8px; }
+.look-color { width: 30px; height: 30px; padding: 0; border: 0; border-radius: 50%; background: hsl(var(--h) 75% 58%); cursor: pointer; }
+.look-color.is-on { box-shadow: 0 0 0 3px var(--paper), 0 0 0 5px var(--ink); }
+.look-color:focus-visible { outline: 2px solid var(--focus); outline-offset: 5px; }
+.look-preview { border-radius: var(--radius); overflow: hidden; border: 1px solid var(--line); }
+.look-preview .store-head { padding: 14px; }
+.look-preview .store-avatar { width: 52px; height: 52px; border-radius: 16px; font-size: 20px; }
+.look-preview .store-title { font-size: 1.4rem; }

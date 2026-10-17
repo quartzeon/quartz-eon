@@ -177,6 +177,18 @@
             <label for="store-about">About your store</label>
             <textarea id="store-about" name="about" rows="3"></textarea>
           </div>
+          <fieldset class="store-look" id="store-look">
+            <legend class="pp-label">Store look</legend>
+            <p class="field__hint">The style and colour of the top of your store page.</p>
+            <div class="look-styles" role="radiogroup" aria-label="Style">
+              <label class="look-style"><input type="radio" name="theme" value="glass"><span class="look-style__swatch look-style__swatch--glass"></span><span>Glass</span></label>
+              <label class="look-style"><input type="radio" name="theme" value="aurora"><span class="look-style__swatch look-style__swatch--aurora"></span><span>Aurora</span></label>
+              <label class="look-style"><input type="radio" name="theme" value="midnight"><span class="look-style__swatch look-style__swatch--midnight"></span><span>Midnight</span></label>
+              <label class="look-style"><input type="radio" name="theme" value="plain"><span class="look-style__swatch look-style__swatch--plain"></span><span>Plain</span></label>
+            </div>
+            <div class="look-colors" id="look-colors" role="radiogroup" aria-label="Colour"></div>
+            <div class="look-preview" id="look-preview" aria-hidden="true"></div>
+          </fieldset>
           <div class="store-contact" id="store-contact">
             <span class="pp-label">WhatsApp and Telegram</span>
             <p class="field__hint">Link your WhatsApp and Telegram so customers can message you from your store and product pages. They are needed for products set to <strong>Customers contact me</strong>: those show <strong>Order on WhatsApp</strong> and <strong>Order on Telegram</strong> buttons instead of Buy.</p>
