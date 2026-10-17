@@ -215,7 +215,8 @@
   padding: 12px 18px; border-radius: var(--radius); background: var(--ink); color: var(--paper);
   font-weight: 500; box-shadow: var(--shadow-2);
 }
-@media (prefers-reduced-motion: no-preference) { .toast { animation: toast-in .2s ease-out; } }
+.toast.is-out { opacity: 0; transform: translateY(8px); }
+@media (prefers-reduced-motion: no-preference) { .toast { animation: toast-in .2s ease-out; transition: opacity .18s ease, transform .18s ease; } }
 @keyframes toast-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
 
 /* A small heading inside a dashboard card (product editor: VPN connection link) */

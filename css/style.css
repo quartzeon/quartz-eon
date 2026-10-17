@@ -115,7 +115,8 @@
 
 /* ---------- Base ---------- */
 *, *::before, *::after { box-sizing: border-box; }
-html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+/* stable gutter: hiding the scrollbar while a dialog is open must not shift the page */
+html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; scrollbar-gutter: stable; }
 /* A column that is at least as tall as the screen, so the footer sits at the bottom on short pages */
 body {
   display: flex; flex-direction: column; min-height: 100vh; min-height: 100dvh;
@@ -1054,9 +1055,20 @@ button.is-locked { opacity: .55; cursor: not-allowed; }
 .auth__done h3 { font: 800 1.4rem/1.1 var(--font-display); letter-spacing: -.02em; }
 .auth__badge { display: grid; place-items: center; width: 52px; height: 52px; border-radius: 50%; background: var(--brand); color: var(--brand-ink); }
 
+/* Dialog motion: open = fade + small rise (keyframes, works everywhere); close = fade out.
+   The close fade needs `overlay` to keep the closing dialog in the top layer, so it only
+   runs where that is supported (Chromium); other browsers close at once as before. */
+dialog:not([open]), dialog:not([open])::backdrop { pointer-events: none; }
 @media (prefers-reduced-motion: no-preference) {
-  .modal[open] { animation: modal-in .25s cubic-bezier(.2, .8, .2, 1); }
-  dialog[open]::backdrop { animation: fade-in .25s ease; }
+  .modal[open] { animation: modal-in .2s cubic-bezier(.2, .8, .2, 1); }
+  .lightbox[open], dialog[open]::backdrop { animation: fade-in .2s ease; }
+  @supports (overlay: auto) {
+    dialog, dialog::backdrop {
+      transition: opacity .18s ease, transform .18s ease, overlay .18s allow-discrete, display .18s allow-discrete;
+    }
+    dialog:not([open]), dialog:not([open])::backdrop { opacity: 0; }
+    .modal:not([open]) { transform: translateY(8px) scale(.98); }
+  }
 }
 @keyframes modal-in { from { transform: translateY(14px) scale(.98); opacity: 0; } to { transform: none; opacity: 1; } }
 @keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }

@@ -60,7 +60,11 @@
     const box = byId('seller-toasts');
     box.innerHTML = `<div class="toast"><span>${esc(message)}</span></div>`;
     window.clearTimeout(toastTimer);
-    toastTimer = window.setTimeout(() => { box.innerHTML = ''; }, 3600);
+    toastTimer = window.setTimeout(() => {
+      /* fade out (.toast.is-out), then remove */
+      if (box.firstElementChild) box.firstElementChild.classList.add('is-out');
+      toastTimer = window.setTimeout(() => { box.innerHTML = ''; }, 200);
+    }, 3600);
   }
 
   function showFieldError(input, message) {
